@@ -268,11 +268,11 @@ MATRIX mtx_elem_cal_opt(MATRIX &l_mtx, MATRIX &r_mtx, uint64_t ln_cnt, uint64_t 
         for(auto i=0; i<elem_cnt; ++i)
             switch (opt_idx)
             {
-            case ELEM_MULT:
+            case MATRIX_ELEM_MULT:
                 mtx_val = mtx_init(elem_cnt);
                 mtx_val[i] = l_mtx[i] * r_mtx[i];
                 break;
-            case ELEM_DIV:
+            case MATRIX_ELEM_DIV:
                 mtx_val = mtx_init(elem_cnt);
                 if(r_mtx[i])
                 {
@@ -295,10 +295,10 @@ MATRIX mtx_elem_cal_opt(MATRIX &mtx_val, double para, uint64_t ln_cnt, uint64_t 
         for(auto i=0; i<elem_cnt; ++i)
             switch (opt_idx)
             {
-            case ELEM_POW:
+            case MATRIX_ELEM_POW:
                 mtx_res[i] = std::pow(mtx_val[i], para);
                 break;
-            case ELEM_DIV:
+            case MATRIX_ELEM_DIV:
                 if(para)
                 {
                     mtx_res[i] = mtx_val[i] / para;
@@ -691,7 +691,7 @@ public:
         if(info.ln_cnt == info.col_cnt && is_matrix()) return matrix(mtx_LU(info.mtx_val, info.ln_cnt), info.ln_cnt, info.col_cnt);
         else return matrix();
     }
-    matrix linear_eq(matrix &val_b, bool eq_idx = EQ_LU)
+    matrix linear_eq(matrix &val_b, bool eq_idx = MATRIX_EQ_LU)
     {
         if(is_matrix() && info.ln_cnt == info.col_cnt && info.ln_cnt==val_b.info.ln_cnt && val_b.info.col_cnt==1)
             if(eq_idx) return matrix(mtx_equation(info.mtx_val, val_b.info.mtx_val, info.ln_cnt), info.ln_cnt, info.col_cnt);

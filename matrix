@@ -4,18 +4,19 @@
 #define MATRIX_BEGIN namespace mtx {
 #define MATRIX_END }
 
+#define MATRIX_NULL nullptr
+#define MATRIX_BLANK matrix();
+
+#define MATRIX std::unique_ptr<double[]>
+
+#define MATRIX_ELEM_MULT 0
+#define MATRIX_ELEM_DIV 1
+#define MATRIX_ELEM_POW 2
+
+#define MATRIX_EQ_LU true
+#define MATRIX_EQ_JACOBI false
+
 MATRIX_BEGIN
-
-const uint64_t ELEM_MULT = 0;
-const uint64_t ELEM_DIV = 1;
-const uint64_t ELEM_POW = 2;
-
-using MATRIX = std::unique_ptr<double[]>;
-
-const uint64_t EQ_LU = true;
-const uint64_t EQ_JACOBI = false;
-
-#define MATRIX_NULL nullptr;
 
 std::default_random_engine rand_e;
 
@@ -45,4 +46,13 @@ struct mtx_extm
 
 MATRIX_END
 
+#define MATRIX_POS mtx::mtx_pos
+#define MATRIX_INFO mtx::mtx_info
+#define MATRIX_EXTREME mtx::mtx_extm
+
 #include "matrix.hpp"
+
+#define vect = mtx::matrix
+#define feature bagrt::net_queue<vect>
+
+template<class _Ty> using vect_t = bagrt::net_queue<bagrt::net_queue<_Ty>>;
