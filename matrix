@@ -1,0 +1,48 @@
+#include <random>
+#include "bagrt"
+// namespace
+#define MATRIX_BEGIN namespace mtx {
+#define MATRIX_END }
+
+MATRIX_BEGIN
+
+const uint64_t ELEM_MULT = 0;
+const uint64_t ELEM_DIV = 1;
+const uint64_t ELEM_POW = 2;
+
+using MATRIX = std::unique_ptr<double[]>;
+
+const uint64_t EQ_LU = true;
+const uint64_t EQ_JACOBI = false;
+
+#define MATRIX_NULL nullptr;
+
+std::default_random_engine rand_e;
+
+struct mtx_pos
+{
+    uint64_t ln = 0;
+    uint64_t col = 0;
+    friend std::ostream& operator<<(std::ostream &input, mtx_pos &val)
+    {
+        input << '(' << val.ln << ", " << val.col << ')';
+        return input;
+    }
+};
+
+struct mtx_info
+{
+    MATRIX mtx_val = nullptr;
+    uint64_t ln_cnt = 0;
+    uint64_t col_cnt = 0;
+};
+
+struct mtx_extm
+{
+    double val = 0;
+    bagrt::net_list<mtx_pos> pos_list;
+};
+
+MATRIX_END
+
+#include "matrix.hpp"

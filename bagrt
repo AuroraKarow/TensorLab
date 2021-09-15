@@ -1,0 +1,20 @@
+#include <iostream>
+#include <chrono>
+#include <functional>
+#include <cmath>
+
+#define BASEALGO_BEGIN namespace bagrt {
+#define BASEALGO_END }
+
+struct
+{
+    long begin;
+    long end;
+} CLK_NOTE;
+double CLK_DUR;
+#define CLOCK_BEGIN {CLK_NOTE.begin = clock();}
+#define CLOCK_END {CLK_NOTE.end = clock(); \
+    CLK_DUR = (double)((CLK_NOTE.end - CLK_NOTE.begin) * 1000 / CLOCKS_PER_SEC);}
+#define CLOCK_DURATION (std::to_string(CLK_DUR) + std::string("ms"))
+
+#include "bagrt.hpp"
