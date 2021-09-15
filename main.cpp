@@ -1,4 +1,4 @@
-#include "matrix"
+#include "funclib"
 
 using namespace std;
 using namespace bagrt;
