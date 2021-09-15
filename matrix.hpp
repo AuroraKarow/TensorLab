@@ -698,6 +698,7 @@ public:
             else return matrix(mtx_jacobi_iterate(info.mtx_val, val_b.info.mtx_val, info.ln_cnt), info.ln_cnt, info.col_cnt);
         else return matrix();
     }
+    double &pos_idx(uint64_t idx) {return info.mtx_val[idx];}
     matrix operator+(matrix &val) {return matrix(mtx_add(info.mtx_val, val.info.mtx_val, info.ln_cnt, info.col_cnt), info.ln_cnt, info.col_cnt);}
     matrix operator-(matrix &val) {return matrix(mtx_add(info.mtx_val, val.info.mtx_val, info.ln_cnt, info.col_cnt, true), info.ln_cnt, info.col_cnt);}
     void operator+=(matrix &val) {new (this)matrix(std::move(*this + val));}
@@ -742,6 +743,7 @@ public:
             }
         }
     }
+    double *operator[](uint64_t ln) {return info.mtx_val.get() + ln * info.col_cnt;}
     friend std::ostream &operator<<(std::ostream &output, matrix &out_matrix)
     {
         if(out_matrix.is_matrix()) for(auto i=0; i<out_matrix.elem_cnt; ++i)

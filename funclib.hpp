@@ -1,28 +1,16 @@
 mtx::matrix vec_travel(mtx::matrix &vec_val, double (*func)(double&))
 {
-    auto vec_cpy = vec_val;
-    vec_cpy.travel(func);
-    return vec_cpy;
+    auto copy_vec = vec_val;
+    for(auto i=0; i<vec_val.ELEM_CNT; ++i) copy_vec.pos_idx(i) = func(vec_val.pos_idx(i));
 }
 
-double sigmoid(double &val){
-    return 1 / (1 + 1 / exp(val));
-}
+double sigmoid(double &val){ return 1 / (1 + 1 / exp(val)); }
 
-double sigmoid_dv(double &val)
-{
-    return sigmoid(val) * (1.0 - sigmoid(val));
-}
+double sigmoid_dv(double &val){ return sigmoid(val) * (1.0 - sigmoid(val)); }
 
-mtx::matrix sigmoid(mtx::matrix &vec_val)
-{
-    return vec_travel(vec_val, sigmoid);
-}
+mtx::matrix sigmoid(mtx::matrix &vec_val){return vec_travel(vec_val, sigmoid);}
 
-mtx::matrix sigmoid_dv(mtx::matrix &vec_val)
-{
-    return vec_travel(vec_val, sigmoid_dv);
-}
+mtx::matrix sigmoid_dv(mtx::matrix &vec_val){return vec_travel(vec_val, sigmoid_dv);}
 
 double ReLU(double &val)
 {
@@ -36,15 +24,9 @@ double ReLU_dv(double &val)
     else return 1;
 }
 
-mtx::matrix ReLU(mtx::matrix &vec_val)
-{
-    return vec_travel(vec_val, ReLU);
-}
+mtx::matrix ReLU(mtx::matrix &vec_val){return vec_travel(vec_val, ReLU);}
 
-mtx::matrix ReLU_dv(mtx::matrix &vec_val)
-{
-    return vec_travel(vec_val, ReLU_dv);
-}
+mtx::matrix ReLU_dv(mtx::matrix &vec_val){return vec_travel(vec_val, ReLU_dv);}
 
 mtx::matrix softmax(mtx::matrix &vec_val)
 {
