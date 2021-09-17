@@ -7,6 +7,8 @@
         "imgdig": "cpp",
         "strin": "cpp",
         "csvop": "cpp",
+        "csvio": "cpp",
+        "bmio": "cpp",
         "bagrt": "cpp",
         "functional": "cpp",
         "memory": "cpp",
@@ -74,6 +76,7 @@
         "xtr1common": "cpp",
         "xtree": "cpp",
         "xutility": "cpp",
-        "funclib": "cpp"
+        "funclib": "cpp",
+        "fstream": "cpp"
     }
 }
