@@ -743,6 +743,17 @@ public:
             }
         }
     }
+    bool operator==(matrix &val)
+    {
+        if(shape_valid(val))
+        {
+            for(auto i=0; i<ELEM_CNT; ++i)
+                if(info.mtx_val[i] != val.info.mtx_val[i]) return false;
+            return true;
+        }
+        else return false;
+    }
+    bool operator!=(matrix &val) {return !(*this == val);}
     double *operator[](uint64_t ln) {return info.mtx_val.get() + ln * info.col_cnt;}
     friend std::ostream &operator<<(std::ostream &output, matrix &out_matrix)
     {
