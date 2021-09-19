@@ -158,7 +158,7 @@ public:
     bool save_img(BMIO_STR dir_root, BMIO_STR name, uint64_t extend, char div_syb = '\\') {return save_img(BMIO_CHARSET(dir_root), BMIO_CHARSET(name), extend, div_syb);}
     BMIO_CHANN gray()
     {
-        if(img_valid) return BMIO_GRAY_WEIGHT_R * R + BMIO_GRAY_WEIGHT_G * G + BMIO_GRAY_WEIGHT_B * B;
+        if(img_valid()) return BMIO_GRAY_WEIGHT_R * R + BMIO_GRAY_WEIGHT_G * G + BMIO_GRAY_WEIGHT_B * B;
         else return BMIO_CHANN::blank_matrix();
     }
     static BMIO_RAW gray_grad(BMIO_CHANN &grad_vec)

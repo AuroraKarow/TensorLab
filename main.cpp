@@ -1,14 +1,12 @@
-#include "funclib"
+#include "bmio"
 
 using namespace std;
-using namespace bagrt;
-using namespace mtx;
+using namespace bmio;
 
 int main(int argc, char *argv[], char *envp[])
 {
     cout << "hello, world." << endl;
-    auto m = matrix({{1, 2},
-                     {3, 4}});
-    vect_t<int> test(10);
+    bitmap map("E:/VS Code project data/TensorLab/Src/Alice.jpg");
+    map.save_img("E:/VS Code project data/TensorLab/Src", "Alice", BMIO_BMP, '/');
     return EXIT_SUCCESS;
 }
