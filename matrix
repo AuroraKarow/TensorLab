@@ -1,3 +1,4 @@
+#pragma once
 #include <random>
 #include "bagrt"
 // namespace
@@ -52,7 +53,9 @@ MATRIX_END
 
 #include "matrix.hpp"
 
-#define vect = mtx::matrix
+#define vect mtx::matrix
 #define feature bagrt::net_queue<vect>
-
 template<class _Ty> using vect_t = bagrt::net_queue<bagrt::net_queue<_Ty>>;
+
+#define blank_vect vect::blank_matrix()
+#define blank_feature feature::blank_queue()

@@ -1,3 +1,4 @@
+#pragma once
 #pragma comment(lib, "gdiplus.lib")
 
 #include <comdef.h>

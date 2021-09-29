@@ -75,6 +75,7 @@ private:
 public:
     bitmap() {}
     bool set_size(uint64_t ln_cnt, uint64_t col_cnt){return init_chann(ln_cnt, col_cnt);}
+    bool set_raw(BMIO_CHANN &R_src, BMIO_CHANN &G_src, BMIO_CHANN &B_src) {return set_chann(R_src, G_src, B_src, true);}
     uint64_t ln_cnt() {return R.LN_CNT;}
     uint64_t col_cnt() {return R.COL_CNT;}
     __declspec (property (get=ln_cnt)) uint64_t HEIGHT;
@@ -87,7 +88,7 @@ public:
     bool load_img(BMIO_WSTR dir)
     {
         GDI_STARTUP(&gph_token, &st_gph, nullptr);
-        GDI_BITMAP *map_ptr = new GDI_BITMAP(dir.c_str());
+        auto map_ptr = new GDI_BITMAP(dir.c_str());
         bool valid_flag = true;
         if(map_ptr)
         {

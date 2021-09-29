@@ -1,0 +1,8 @@
+#pragma once
+#include "funclib"
+
+#define BASNET_BEGIN namespace basnet {
+#define BASNET_END }
+
+#include "fcn.hpp"
+#include "cnn.hpp"

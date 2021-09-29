@@ -1,0 +1,17 @@
+#pragma once
+#include <string>
+#include "bmio"
+#include "csvio"
+
+#define DATASET_BEGIN namespace dataset{
+#define DATASET_END }
+
+#define MNIST_SEQ_ELEM bagrt::net_queue<vect>
+#define MNIST_SEQ_LBL bagrt::net_queue<uint64_t>
+
+#define MNIST_MAGIC_ELEM 0x803
+#define MNIST_MAGIC_LBL 0x801
+
+#define MNIST_ORGN_SIZE 10
+
+#include "dataset.hpp"

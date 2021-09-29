@@ -1,2 +1,12 @@
+#pragma once
 #include "matrix"
 #include "funclib.hpp"
+
+#define SIGMOID sigmoid
+#define SIGMOID_DV sigmoid_dv
+
+#define RELU ReLU
+#define RELU_DV ReLU_dv
+
+#define SOFTMAX softmax
+#define SOFTMAX_GRAD softmax_grad

@@ -77,6 +77,8 @@
         "xtree": "cpp",
         "xutility": "cpp",
         "funclib": "cpp",
-        "fstream": "cpp"
+        "fstream": "cpp",
+        "dataset": "cpp",
+        "basnet": "cpp"
     }
 }
