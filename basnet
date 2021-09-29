@@ -1,8 +1,15 @@
 #pragma once
 #include "funclib"
 
-#define BASNET_BEGIN namespace basnet {
-#define BASNET_END }
+#define NEUNET_FC_BEGIN namespace fc {
+#define NEUNET_FC_END }
 
-#include "fcn.hpp"
-#include "cnn.hpp"
+#define NEUNET_CONV_BEGIN namespace conv {
+#define NEUNET_CONV_END }
+
+#define NEUNET_POOL_AVG 0
+#define NEUNET_POOL_MAX 1
+#define NEUNET_POOL_GAG 2
+
+#include "fc.hpp"
+#include "conv.hpp"

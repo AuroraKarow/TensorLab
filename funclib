@@ -9,4 +9,4 @@
 #define RELU_DV ReLU_dv
 
 #define SOFTMAX softmax
-#define SOFTMAX_GRAD softmax_grad
+#define SOFTMAX_DV softmax_dv

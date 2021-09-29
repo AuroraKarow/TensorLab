@@ -542,13 +542,13 @@ public:
     bool is_matrix() {return info.col_cnt && info.ln_cnt && info.mtx_val && elem_cnt && elem_cnt==info.ln_cnt*info.col_cnt;}
     MATRIX ptr() {return mtx_copy(info.mtx_val, info.ln_cnt, info.col_cnt);}
     matrix() {}
-    matrix(uint64_t ln_cnt, uint64_t col_cnt, double rand_upper = 0, double rand_lower = 1, double rand_acc = 1e-5)
+    matrix(uint64_t ln_cnt, uint64_t col_cnt, bool rand = false, double rand_boundry_first = 0, double rand_boundry_second = 0, double rand_acc = 1e-5)
     {
         if(ln_cnt && col_cnt)
         {
             _init(ln_cnt, col_cnt);
-            if(rand_upper < rand_lower) info.mtx_val = mtx_init(elem_cnt);
-            else info.mtx_val = mtx_init_rand(elem_cnt, rand_upper, rand_lower, rand_acc);
+            if(rand) info.mtx_val = mtx_init_rand(elem_cnt, rand_boundry_first, rand_boundry_second, rand_acc);
+            else info.mtx_val = mtx_init(elem_cnt);
         }
     }
     matrix(MATRIX &&ptr_val, uint64_t ln_cnt, uint64_t col_cnt)
