@@ -10,3 +10,5 @@
 
 #define SOFTMAX softmax
 #define SOFTMAX_DV softmax_dv
+
+#define CEC_GRAD cec_grad

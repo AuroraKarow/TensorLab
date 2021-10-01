@@ -34,7 +34,7 @@ vect softmax(vect &vec_val)
     double sum = 0;
     for(auto i=0; i<vec_val.get_ln_cnt(); ++i)
         for(auto j=0; j<vec_val.get_col_cnt(); ++j)
-            sum += exp(vec_val[i][j]);
+            sum += std::exp(vec_val[i][j]);
     for(auto i=0; i<vec_val.get_ln_cnt(); ++i)
         for(auto j=0; j<vec_val.get_col_cnt(); ++j)
             ans[i][j] = exp(vec_val[i][j]) / sum;
@@ -43,5 +43,27 @@ vect softmax(vect &vec_val)
 
 vect softmax_dv(vect &vec_input, vect &vec_output)
 {
-    
+    auto elem_cnt = vec_input.ELEM_CNT;
+    if(vec_input.shape_valid(vec_output) && vec_input.LN_CNT==elem_cnt)
+    {
+        vect ans(elem_cnt, 1);
+        for(auto i=0; i<elem_cnt; ++i) for(auto j=0; j<elem_cnt; ++j)
+            if(i==j) ans.pos_idx(j) += vec_output.pos_idx(i) * (1 - vec_output.pos_idx(j));
+            else ans.pos_idx(j) += (-1) * vec_output.pos_idx(j) * vec_output.pos_idx(i);
+        return ans;
+    }
+    else return blank_vect;
+}
+
+vect cec_grad(vect &output, vect &origin)
+{
+    auto elem_cnt = output.ELEM_CNT;
+    vect ans(elem_cnt, 1);
+    if(output.shape_valid(origin) && elem_cnt==origin.LN_CNT)
+    {
+        auto orgn_sum = origin.elem_sum();
+        for(auto i=0; i<elem_cnt; ++i)
+            ans.pos_idx(i) = (-1) * orgn_sum / output.pos_idx(i);
+    } 
+    return ans;
 }
