@@ -208,6 +208,13 @@ public:
         }
         return output;
     }
+    void reset()
+    {
+        len = 0;
+        _ptr.reset();
+        _ptr.release();
+        _ptr = nullptr;
+    }
     ~net_queue() {len = 0;}
 };
 

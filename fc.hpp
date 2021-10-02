@@ -17,7 +17,7 @@ vect FeatureTransform(feature &vecInput)
     auto iElemCnt = vecInput[0].ELEM_CNT,
         iChannCnt = vecInput.size(),
         iLnCnt = iChannCnt * iElemCnt,
-        iCpyCnt = 0ULL;
+        iCpyCnt = 0Ui64;
     auto vecResTransForm = vect(iLnCnt, 1);
     for(auto i=0; i<iChannCnt; ++i) for(auto j=0; j<iElemCnt; ++j) vecResTransForm.pos_idx(++ iCpyCnt) = vecInput[i].pos_idx(j);
     return vecResTransForm;
@@ -27,7 +27,7 @@ feature FeatureTransform(vect &vecInput, uint64_t iLnCnt, uint64_t iColCnt)
 {
     auto iElemCnt = iLnCnt * iColCnt,
         iChannCnt = vecInput.LN_CNT / iElemCnt,
-        iCpyCnt = 0ULL;
+        iCpyCnt = 0Ui64;
     feature vecResTransForm(iChannCnt);
     for(auto i=0; i<iChannCnt; ++i) for(auto j=0; j<iElemCnt; ++j) vecResTransForm[i].pos_idx(j) = vecInput.pos_idx(iCpyCnt++);
     return vecResTransForm;
