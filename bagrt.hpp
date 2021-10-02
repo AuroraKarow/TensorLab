@@ -38,7 +38,7 @@ template<typename _T> void quick_sort(std::unique_ptr<_T[]> &seq_val, uint64_t b
     }
 }
 
-template<class _Ty> class net_queue
+template<typename _Ty> class net_queue
 {
 protected:
     std::unique_ptr<_Ty[]> _ptr;
@@ -92,7 +92,7 @@ public:
     }
     static net_queue blank_queue() {return net_queue();}
     uint64_t size() {return len;}
-    template<class...Args> bool insert(uint64_t idx, Args &&...args)
+    template<typename...Args> bool insert(uint64_t idx, Args &&...args)
     {
         if(idx > len) return false;
         else
@@ -103,9 +103,9 @@ public:
             return true;
         }
     }
-    template<class...Args> bool emplace_back(Args &&...args) {return insert(len, args...);}
+    template<typename...Args> bool emplace_back(Args &&...args) {return insert(len, args...);}
     bool push_back(_Ty val) {return insert(len, val);}
-    template<class... Args> net_queue<_Ty> erase(Args &&...idx) {return realloc_dec_ptr(idx...);}
+    template<typename... Args> net_queue<_Ty> erase(Args &&...idx) {return realloc_dec_ptr(idx...);}
     net_queue sub_queue(uint64_t idx_first, uint64_t idx_second)
     {
         net_queue sub_out;
@@ -218,7 +218,7 @@ public:
     ~net_queue() {len = 0;}
 };
 
-template<class _Ty> class net_list
+template<typename _Ty> class net_list
 {
 protected:
     struct _node
@@ -245,6 +245,8 @@ public:
     void reset()
     {
         head.reset();
+        head.release();
+        head = nullptr;
         len = 0;
     }
     net_list(net_list &cpy_val) {*this = cpy_val;}
@@ -256,7 +258,7 @@ public:
         return p_tool;
     }
     bool empty() {return !len;}
-    template<class ... Args> bool insert(uint64_t idx, Args &&...args)
+    template<typename ... Args> bool insert(uint64_t idx, Args &&...args)
     {
         if(idx > len) return false;
         else
@@ -299,7 +301,7 @@ public:
         }
         return temp;
     }
-    template<class ... Args> bool emplace_back(Args &&...args) {return insert(len, args ...);}
+    template<typename ... Args> bool emplace_back(Args &&...args) {return insert(len, args ...);}
     friend std::ostream &operator<<(std::ostream &output, net_list &out_val)
     {
         auto p_tool = out_val.head.get();
@@ -376,7 +378,7 @@ public:
     ~net_list() {len = 0;}
 };
 
-template<class _K, class _V>class net_map
+template<typename _K, typename _V>class net_map
 {
 public:
     struct kv

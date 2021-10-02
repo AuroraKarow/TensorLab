@@ -56,7 +56,7 @@ MATRIX_END
 #define vect mtx::matrix
 #define feature bagrt::net_queue<vect>
 #define tensor bagrt::net_queue<feature>
-template<class _Ty> using vect_t = bagrt::net_queue<bagrt::net_queue<_Ty>>;
+template<typename _Ty> using vect_t = bagrt::net_queue<bagrt::net_queue<_Ty>>;
 
 #define blank_vect vect::blank_matrix()
 #define blank_feature feature::blank_queue()
