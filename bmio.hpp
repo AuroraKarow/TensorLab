@@ -64,11 +64,13 @@ private:
                     {
                         *p_CLSID = img_code_info_ptr[i].Clsid;
                         delete [] img_code_info_ptr;
+                        img_code_info_ptr = nullptr;
                         return true;
                     }
                 }
             }
             delete [] img_code_info_ptr;
+            img_code_info_ptr = nullptr;
         }
         return false;
     }
@@ -124,25 +126,40 @@ public:
             switch (extend)
             {
             case BMIO_PNG:
-                CLSID_encode(L"image/png", &CID_STR);
-                ext_name = L".png";
-                break;
+                if(CLSID_encode(L"image/png", &CID_STR))
+                {
+                    ext_name = L".png";
+                    break;
+                }
+                else return false;
             case BMIO_JPG:
-                CLSID_encode(L"image/jpeg", &CID_STR);
-                ext_name = L".jpg";
-                break;
+                if(CLSID_encode(L"image/jpeg", &CID_STR))
+                {
+                    ext_name = L".jpg";
+                    break;
+                }
+                else return false;
             case BMIO_GIF:
-                CLSID_encode(L"image/gif", &CID_STR);
-                ext_name = L".gif";
-                break;
+                if(CLSID_encode(L"image/gif", &CID_STR))
+                {
+                   ext_name = L".gif";
+                   break; 
+                }
+                else return false;
             case BMIO_TIF:
-                CLSID_encode(L"image/tiff", &CID_STR);
-                ext_name = L".tif";
-                break;
+                if(CLSID_encode(L"image/tiff", &CID_STR))
+                {
+                    ext_name = L".tif";
+                    break;
+                }
+                else return false;
             case BMIO_BMP:
-                CLSID_encode(L"image/bmp", &CID_STR);
-                ext_name = L".bmp";
-                break;
+                if(CLSID_encode(L"image/bmp", &CID_STR))
+                {
+                    ext_name = L".bmp";
+                    break;
+                }
+                else return false;
             default: return false;
             }
             // Draw image
