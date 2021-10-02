@@ -212,6 +212,12 @@ public:
             return true;
         }
     }
+    ~MNIST()
+    {
+        QNTY_STAT = 0;
+        LN_CNT = 0;
+        COL_CNT = 0;
+    }
 };
 
 DATASET_END
