@@ -1,4 +1,4 @@
-NEUNET_CONV_BEGIN
+CONV_BEGIN
 
 vect Conv(vect &vecInput, vect &vecKernel, uint64_t iLnStride, uint64_t iColStride, uint64_t iLnDilation = 0, uint64_t iColDilation = 0, uint64_t iInputPadTop = 0, uint64_t iInputPadRight = 0, uint64_t iInputPadBottom = 0, uint64_t iInputPadLeft = 0, uint64_t iLnDistance = 0, uint64_t iColDistance = 0)
 {
@@ -22,13 +22,11 @@ vect Conv(vect &vecInput, vect &vecKernel, uint64_t iLnStride, uint64_t iColStri
 
 tensor Conv(feature &vecInput, tensor &tenKernel, uint64_t iLnStride, uint64_t iColStride, uint64_t iLnDilation = 0, uint64_t iColDilation = 0, uint64_t iInputPadTop = 0, uint64_t iInputPadRight = 0, uint64_t iInputPadBottom = 0, uint64_t iInputPadLeft = 0, uint64_t iLnDistance = 0, uint64_t iColDistance = 0)
 {
-    auto iFtCnt = tenKernel.size();
-    tensor tenOutput(iFtCnt);
-    for(auto i=0; i<iFtCnt; ++i)
+    tensor tenOutput(tenKernel.size());
+    for(auto i=0; i<tenKernel.size(); ++i)
     {
-        auto iChannCnt = vecInput.size();
-        tenOutput[i].init(iChannCnt);
-        for(auto j=0; j<iChannCnt; ++j) 
+        tenOutput[i].init(vecInput.size());
+        for(auto j=0; j<vecInput.size(); ++j) 
         {
             tenOutput[i][j] = Conv(vecInput[j], tenKernel[i][j], iLnStride, iColStride, iLnDilation, iColDilation, iInputPadTop, iInputPadRight, iInputPadBottom, iInputPadLeft, iLnDistance, iColDistance);
             if(!tenOutput[i][j].is_matrix()) return blank_tensor;
@@ -39,9 +37,8 @@ tensor Conv(feature &vecInput, tensor &tenKernel, uint64_t iLnStride, uint64_t i
 
 feature MergeChann(tensor &tenInput)
 {
-    auto iChannCnt = tenInput.size();
-    feature vecFeatureMap(iChannCnt);
-    for(auto i=0; i<iChannCnt; ++i)
+    feature vecFeatureMap(tenInput.size());
+    for(auto i=0; i<tenInput.size(); ++i)
     {
         vect vecSglChann;
         for(auto j=0; j<tenInput[i].size(); ++j)
@@ -65,9 +62,8 @@ vect GradLossToKernel(vect &vecGradLossToOutput, vect &vecInput, uint64_t iLnStr
 
 tensor GradLossToKernel(feature &vecGradLossToOutput, feature &vecInput, uint64_t iLnStride, uint64_t iColStride, uint64_t iLnDilation = 0, uint64_t iColDilation = 0, uint64_t iInputPadTop = 0, uint64_t iInputPadRight = 0, uint64_t iInputPadBottom = 0, uint64_t iInputPadLeft = 0, uint64_t iLnDistance = 0, uint64_t iColDistance = 0)
 {
-    auto iFtCnt = vecGradLossToOutput.size();
-    tensor tenGrad(iFtCnt);
-    for(auto i=0; i<iFtCnt; ++i)
+    tensor tenGrad(vecGradLossToOutput.size());
+    for(auto i=0; i<vecGradLossToOutput.size(); ++i)
     {
         auto iChannCnt = vecInput.size();
         tenGrad[i].init(iChannCnt);
@@ -96,8 +92,7 @@ vect GradLossToInput(vect &vecGradLossToOutput, vect &vecKernel, uint64_t iLnStr
 feature GradLossToInput(feature &vecGradLossToOutput, tensor &tenKernel, uint64_t iLnStride, uint64_t iColStride, uint64_t iLnDilation = 0, uint64_t iColDilation = 0, uint64_t iInputPadTop = 0, uint64_t iInputPadRight = 0, uint64_t iInputPadBottom = 0, uint64_t iInputPadLeft = 0, uint64_t iLnDistance = 0, uint64_t iColDistance = 0)
 {
     feature vecGrad;
-    auto iFtCnt = tenKernel.size();
-    if(vecGradLossToOutput.size() == iFtCnt) for(auto i=0; i<iFtCnt; ++i)
+    if(vecGradLossToOutput.size() == tenKernel.size()) for(auto i=0; i<tenKernel.size(); ++i)
     {
         auto iChannCnt = tenKernel[i].size();
         if(!vecGrad.size()) vecGrad.init(iChannCnt);
@@ -113,4 +108,42 @@ feature GradLossToInput(feature &vecGradLossToOutput, tensor &tenKernel, uint64_
     return vecGrad;
 }
 
-NEUNET_CONV_END
+vect PoolDown(vect &vecInput, uint64_t iFilterLnCnt, uint64_t iFilterColCnt, uint64_t iLnStride, uint64_t iColStride, uint64_t iPoolType = POOL_DOWN_MAX, uint64_t iLnDilation = 0, uint64_t iColDilation = 0)
+{
+    vect vecOutput;
+    if(SAMP_VALID(vecInput.LN_CNT, iFilterLnCnt, iLnStride, iLnDilation) &&
+    SAMP_VALID(vecInput.COL_CNT, iFilterColCnt, iColStride, iColDilation))
+    {
+        auto iOutputLnCnt = SAMP_INPUT_DIR_CNT(vecInput.LN_CNT, iFilterLnCnt, iLnStride, iLnDilation),
+            iOutputColCnt = SAMP_INPUT_DIR_CNT(vecInput.COL_CNT, iFilterColCnt, iColStride, iColDilation);
+        vecOutput = vect(iOutputLnCnt, iOutputColCnt);
+        for(auto i=0; i<vecOutput.LN_CNT; ++i)
+            for(auto j=0; j<vecOutput.COL_CNT; ++j)
+            {
+                double dPoolElem = 0;
+                if(iPoolType == POOL_DOWN_MAX) dPoolElem = vecInput.extremum(SAMP_TRACE_POS(i, 0, iLnStride, iLnDilation), SAMP_TRACE_POS(i, iFilterLnCnt-1, iLnStride, iLnDilation), SAMP_TRACE_POS(j, 0, iColStride, iColDilation), SAMP_TRACE_POS(j, iFilterColCnt-1, iColStride, iColDilation), iLnDilation, iColDilation).val;
+                else if(iPoolType == POOL_DOWN_AVG) dPoolElem = vecInput.elem_sum(SAMP_TRACE_POS(i, 0, iLnStride, iLnDilation), SAMP_TRACE_POS(i, iFilterLnCnt-1, iLnStride, iLnDilation), SAMP_TRACE_POS(j, 0, iColStride, iColDilation), SAMP_TRACE_POS(j, iFilterColCnt-1, iColStride, iColDilation), iLnDilation, iColDilation) / (iFilterLnCnt * iFilterColCnt);
+                else return blank_vect;
+                vecOutput[i][j] = dPoolElem;
+            }
+        return vecOutput;
+    }
+    return vecOutput;
+}
+
+vect PoolDown(vect &vecInput) {return vect(vecInput.elem_sum()/vecInput.ELEM_CNT);}
+
+feature PoolDown(feature &vecInput, uint64_t iPoolType = POOL_DOWN_MAX, uint64_t iFilterLnCnt = 0, uint64_t iFilterColCnt = 0, uint64_t iLnStride = 0, uint64_t iColStride = 0, uint64_t iLnDilation = 0, uint64_t iColDilation = 0)
+{
+    feature vecOutput(vecInput.size());
+    for(auto i=0; i<vecInput.size(); ++i)
+    {
+        if(iPoolType == POOL_DOWN_GAG) vecOutput[i] = PoolDown(vecInput[i]);
+        else vecOutput[i] = PoolDown(vecInput[i], iFilterLnCnt, iFilterColCnt, iLnStride, iColStride, iPoolType, iLnDilation, iColDilation
+        );
+        if(!vecOutput[i].is_matrix()) return blank_feature;
+    }
+    return vecOutput;
+}
+
+CONV_END

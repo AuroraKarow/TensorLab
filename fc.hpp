@@ -1,4 +1,4 @@
-NEUNET_FC_BEGIN
+FC_BEGIN
 
 vect InitWeight(uint64_t iInputLnCnt, uint64_t iOutputLnCnt, double dRandBoundryFirst = 0, double dRandBoundrySecond = 0, double dAcc = 1e-5)
 {
@@ -33,4 +33,4 @@ feature FeatureTransform(vect &vecInput, uint64_t iLnCnt, uint64_t iColCnt)
     return vecResTransForm;
 }
 
-NEUNET_FC_END
+FC_END

@@ -620,7 +620,7 @@ public:
     }
     matrix child(uint64_t from_ln, uint64_t to_ln, uint64_t from_col, uint64_t to_col, uint64_t ln_dilation = 0, uint64_t col_dilation = 0) 
     {
-        auto child_info = mtx_child_vec(info.mtx_val, from_ln, to_ln, from_col, to_col, ln_dilation, col_dilation);
+        auto child_info = mtx_child_vec(info.mtx_val, from_ln, to_ln, from_col, to_col, info.ln_cnt, info.ln_cnt, col_dilation);
         return matrix(std::move(child_info.mtx_val), child_info.ln_cnt, child_info.col_cnt);
     }
     matrix counter_clockwise_rotate_rect()
