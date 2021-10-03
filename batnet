@@ -1,0 +1,8 @@
+#include "basnet"
+
+#define ADA_BEGIN namespace ada{
+#define ADA_END }
+
+#include "ada.hpp"
+#include "fcbat.hpp"
+#include "convbat.hpp"

@@ -79,6 +79,7 @@
         "funclib": "cpp",
         "fstream": "cpp",
         "dataset": "cpp",
-        "basnet": "cpp"
+        "basnet": "cpp",
+        "batnet": "cpp"
     }
 }
