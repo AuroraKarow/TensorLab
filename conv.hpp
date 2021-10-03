@@ -94,9 +94,8 @@ feature GradLossToInput(feature &vecGradLossToOutput, tensor &tenKernel, uint64_
     feature vecGrad;
     if(vecGradLossToOutput.size() == tenKernel.size()) for(auto i=0; i<tenKernel.size(); ++i)
     {
-        auto iChannCnt = tenKernel[i].size();
-        if(!vecGrad.size()) vecGrad.init(iChannCnt);
-        for(auto j=0; j<iChannCnt; ++j)
+        if(!vecGrad.size()) vecGrad.init(tenKernel[i].size());
+        for(auto j=0; j<tenKernel[i].size(); ++j)
         {
             auto vecSglGrad = GradLossToInput(vecGradLossToOutput[i], tenKernel[i][j], iLnStride, iColStride, iLnDilation, iColDilation, iInputPadTop, iInputPadRight, iInputPadBottom, iInputPadLeft, iLnDistance, iColDistance);
             if(vecSglGrad.is_matrix())
@@ -108,7 +107,7 @@ feature GradLossToInput(feature &vecGradLossToOutput, tensor &tenKernel, uint64_
     return vecGrad;
 }
 
-vect PoolDown(vect &vecInput, uint64_t iFilterLnCnt, uint64_t iFilterColCnt, uint64_t iLnStride, uint64_t iColStride, uint64_t iPoolType = POOL_DOWN_MAX, uint64_t iLnDilation = 0, uint64_t iColDilation = 0)
+vect PoolDownMaxAvg(vect &vecInput, uint64_t iFilterLnCnt, uint64_t iFilterColCnt, uint64_t iLnStride, uint64_t iColStride, uint64_t iPoolType = POOL_DOWN_MAX, uint64_t iLnDilation = 0, uint64_t iColDilation = 0)
 {
     vect vecOutput;
     if(SAMP_VALID(vecInput.LN_CNT, iFilterLnCnt, iLnStride, iLnDilation) &&
@@ -131,17 +130,76 @@ vect PoolDown(vect &vecInput, uint64_t iFilterLnCnt, uint64_t iFilterColCnt, uin
     return vecOutput;
 }
 
-vect PoolDown(vect &vecInput) {return vect(vecInput.elem_sum()/vecInput.ELEM_CNT);}
+vect PoolDownGlbAvg(vect &vecInput) {return vect(vecInput.elem_sum()/vecInput.ELEM_CNT);}
 
 feature PoolDown(feature &vecInput, uint64_t iPoolType = POOL_DOWN_MAX, uint64_t iFilterLnCnt = 0, uint64_t iFilterColCnt = 0, uint64_t iLnStride = 0, uint64_t iColStride = 0, uint64_t iLnDilation = 0, uint64_t iColDilation = 0)
 {
     feature vecOutput(vecInput.size());
     for(auto i=0; i<vecInput.size(); ++i)
     {
-        if(iPoolType == POOL_DOWN_GAG) vecOutput[i] = PoolDown(vecInput[i]);
-        else vecOutput[i] = PoolDown(vecInput[i], iFilterLnCnt, iFilterColCnt, iLnStride, iColStride, iPoolType, iLnDilation, iColDilation
+        if(iPoolType == POOL_DOWN_GAG) vecOutput[i] = PoolDownGlbAvg(vecInput[i]);
+        else vecOutput[i] = PoolDownMaxAvg(vecInput[i], iFilterLnCnt, iFilterColCnt, iLnStride, iColStride, iPoolType, iLnDilation, iColDilation
         );
         if(!vecOutput[i].is_matrix()) return blank_feature;
+    }
+    return vecOutput;
+}
+
+vect PoolUpGlbAvg(vect &vecInput, uint64_t iUpLnCnt, uint64_t iUpColCnt)
+{
+    if(vecInput.ELEM_CNT == 1)
+    {
+        vect vecOuput(iUpLnCnt, iUpColCnt);
+        vecOuput.value_fill(vecInput.atom() / vecOuput.ELEM_CNT);
+        return vecOuput;
+    }
+    else return blank_vect;
+}
+
+vect PoolUpMaxAvg(vect &vecInput, uint64_t iFilterLnCnt, uint64_t iFilterColCnt, uint64_t iLnStride, uint64_t iColStride, vect &vecTraceInput = vect(), uint64_t iPoolType = POOL_UP_MAX, uint64_t iLnDilation = 0, uint64_t iColDilation = 0)
+{
+    auto iOutputLnCnt = 0, iOutputColnCnt = 0;
+    if(vecTraceInput.is_matrix())
+    {
+        iOutputLnCnt = vecTraceInput.LN_CNT;
+        iOutputColnCnt = vecTraceInput.COL_CNT;
+    }
+    else
+    {
+        iOutputLnCnt = SAMP_INPUT_DIR_CNT(vecInput.LN_CNT, iFilterLnCnt, iLnStride, iLnDilation);
+        iOutputColnCnt = SAMP_INPUT_DIR_CNT(vecInput.COL_CNT, iFilterColCnt, iColStride, iColDilation);
+    }
+    vect vecOutput(iOutputLnCnt, iOutputColnCnt);
+    for(auto i=0; i<vecInput.LN_CNT; ++i) for(auto j=0; j<vecInput.COL_CNT; ++j) 
+            for(auto k=0; k<iFilterLnCnt; ++k) for(auto l=0; l<iFilterColCnt; ++l)
+            {
+                auto iTraceLn = SAMP_TRACE_POS(i, k, iLnStride, iLnDilation),
+                    iTraceCol = SAMP_TRACE_POS(j, l, iColStride, iColDilation);
+                switch (iPoolType)
+                {
+                case POOL_UP_AVG:
+                    vecOutput[iTraceLn][iTraceCol] += vecInput[i][j] / (iFilterLnCnt * iFilterColCnt);
+                    break;
+                case POOL_UP_MAX:
+                    if(vecTraceInput[iTraceLn][iTraceCol] == vecInput[i][j]) vecOutput[iTraceLn][iTraceCol] += vecInput[i][j];
+                    break;
+                case POOL_UP_FIL:
+                    vecOutput[iTraceLn][iTraceCol] += vecInput[i][j];
+                    break;
+                default: return blank_vect;
+                }
+            }
+    return vecOutput;
+}
+
+feature PoolUp(feature &vecInput, uint64_t iPoolType = POOL_UP_MAX, vect &vecTraceInput = vect(), uint64_t iFilterLnCnt = 0, uint64_t iFilterColCnt = 0, uint64_t iLnStride = 0, uint64_t iColStride = 0, uint64_t iLnDilation = 0, uint64_t iColDilation = 0)
+{
+    feature vecOutput(vecInput.size());
+    for(auto i=0; i<vecInput.size(); ++i) 
+    {
+        if(iPoolType == POOL_UP_GAG) vecInput[i] = PoolUpGlbAvg(vecInput[i], vecTraceInput.LN_CNT, vecTraceInput.COL_CNT);
+        else vecInput[i] = PoolUpMaxAvg(vecInput[i], iFilterLnCnt, iFilterColCnt, iLnStride, iColStride, vecTraceInput, iPoolType, iLnDilation, iColDilation);
+        if(!vecInput[i].is_matrix()) return blank_feature;
     }
     return vecOutput;
 }

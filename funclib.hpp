@@ -2,6 +2,7 @@ vect vec_travel(vect &vec_val, double (*func)(double&))
 {
     auto copy_vec = vec_val;
     for(auto i=0; i<vec_val.ELEM_CNT; ++i) copy_vec.pos_idx(i) = func(vec_val.pos_idx(i));
+    return copy_vec;
 }
 
 double sigmoid(double &val){ return 1 / (1 + 1 / exp(val)); }

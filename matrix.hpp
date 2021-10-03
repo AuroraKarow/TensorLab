@@ -668,21 +668,21 @@ public:
     matrix broadcast_subtract(double val, bool is_subtrahend = true) {return matrix(mtx_broadcast_subtract(info.mtx_val, elem_cnt, val, is_subtrahend), info.ln_cnt, info.col_cnt);}
     matrix pad(uint64_t ln_t = 0, uint64_t col_r = 0, uint64_t ln_b = 0, uint64_t col_l = 0, uint64_t ln_dist = 0, uint64_t col_dist = 0)
     {
-        if(ln_t || col_r || ln_b || col_l || ln_dist || col_dist) return *this;
-        else
+        if(ln_t || col_r || ln_b || col_l || ln_dist || col_dist)
         {
             auto pad_info = mtx_pad(info.mtx_val, info.ln_cnt, info.col_cnt, ln_t, col_r, ln_b, col_l, ln_dist, col_dist);
             return matrix(pad_info.mtx_val, pad_info.ln_cnt, pad_info.col_cnt);
         }
+        else return *this;
     }
     matrix crop(uint64_t ln_t = 0, uint64_t col_r = 0, uint64_t ln_b = 0, uint64_t col_l = 0, uint64_t ln_dist = 0, uint64_t col_dist = 0)
     {
-        if(ln_t || col_r || ln_b || col_l || ln_dist || col_dist) return *this;
-        else
+        if(ln_t || col_r || ln_b || col_l || ln_dist || col_dist)
         {
             auto crop_info = mtx_crop(info.mtx_val, info.ln_cnt, info.col_cnt, ln_t, col_r, ln_b, col_l, ln_dist, col_dist);
             return matrix(crop_info.mtx_val, crop_info.ln_cnt, crop_info.col_cnt);
-        }    
+        }
+        else return *this;  
     }
     matrix round_fit() 
     {
