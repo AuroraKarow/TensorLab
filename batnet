@@ -10,12 +10,6 @@
 #define FC_GRAD_INPUT   1
 #define FC_GRAD_WEIGHT  2
 
-ADA_BEGIN
-
-
-
-ADA_END
-
 #include "ada.hpp"
 #include "fcbat.hpp"
 #include "convbat.hpp"

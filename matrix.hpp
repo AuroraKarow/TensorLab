@@ -773,7 +773,7 @@ public:
         }
         return output;
     }
-    ~matrix() {_para_reset();}
+    // ~matrix() {_para_reset();}
 };
 
 MATRIX_END

@@ -71,4 +71,30 @@ set<feature> FeatureTransform(set<vect> &setInput, uint64_t iLnCnt, uint64_t iCo
     return setOuput;
 }
 
+struct FCBN
+{
+    vect vecMiuBeta;
+    vect vecSigmaSqr;
+    set<vect> setBarX;
+    set<vect> setY;
+    FCBN(){}
+    FCBN(FCBN &FCBNVal) {*this = FCBNVal;}
+    FCBN(FCBN &&FCBNVal) {*this = std::move(FCBNVal);}
+    void operator=(FCBN &FCBNVal)
+    {
+        vecMiuBeta = FCBNVal.vecMiuBeta;
+        vecSigmaSqr = FCBNVal.vecSigmaSqr;
+        setBarX = FCBNVal.setBarX;
+        setY = FCBNVal.setY;
+    }
+    void operator=(FCBN &&FCBNVal)
+    {
+        vecMiuBeta = std::move(FCBNVal.vecMiuBeta);
+        vecSigmaSqr = std::move(FCBNVal.vecSigmaSqr);
+        setBarX = std::move(FCBNVal.setBarX);
+        setY = std::move(FCBNVal.setY);
+    }
+    // ~FCBN() {}
+};
+
 FC_END

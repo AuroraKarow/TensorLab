@@ -206,7 +206,7 @@ public:
     bool operator!=(bitmap &val) {return !(*this == val);}
     void operator=(bitmap &val) {set_chann(val.R, val.G, val. B);}
     void operator=(bitmap &&val) {set_chann(val.R, val.G, val. B, true);}
-    ~bitmap() {}
+    // ~bitmap() {}
 };
 
 BMIO_END

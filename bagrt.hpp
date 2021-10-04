@@ -221,7 +221,7 @@ public:
         _ptr.release();
         _ptr = nullptr;
     }
-    ~net_queue() {len = 0;}
+    // ~net_queue() {len = 0;}
 };
 
 template<typename _Ty> class net_list
@@ -381,7 +381,7 @@ public:
         else return false;
     }
     bool operator!=(net_list &src_val) {return !(*this == src_val);}
-    ~net_list() {len = 0;}
+    // ~net_list() {len = 0;}
 };
 
 template<typename _K, typename _V>class net_map
@@ -478,7 +478,7 @@ public:
         }
         return output;
     }
-    ~net_map() {}
+    // ~net_map() {}
 };
 
 bool acc_valid(double acc)
