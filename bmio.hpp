@@ -95,8 +95,8 @@ public:
         if(map_ptr)
         {
             init_chann(map_ptr->GetHeight(), map_ptr->GetWidth());
-            for(uint64_t i=0; i<map_ptr->GetHeight(); i++)
-                for(uint64_t j=0; j<map_ptr->GetWidth(); j++)
+            for(uint64_t i=0; i<map_ptr->GetHeight(); ++i)
+                for(uint64_t j=0; j<map_ptr->GetWidth(); ++j)
                 {
                     GDI_COLOR color;
                     map_ptr->GetPixel(i, j, &color);

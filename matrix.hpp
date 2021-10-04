@@ -382,7 +382,7 @@ MATRIX mtx_equation(MATRIX &coefficient, MATRIX &b, int dms)
         for (int i=dms; i>0; --i) if (i - dms)
         {
             double temp = 0.0;
-            for (int n=i-1; n<dms-1; n++) temp += u[mtx_elem_pos(i-1, n+1, dms, dms)] * x[n+1];
+            for (int n=i-1; n<dms-1; ++n) temp += u[mtx_elem_pos(i-1, n+1, dms, dms)] * x[n+1];
             x[i-1] = (y[i-1] - temp) / u[mtx_elem_pos(i-1, i-1, dms, dms)];
         }
         else x[dms-1] = y[dms-1] / u[mtx_elem_pos(dms-1, dms-1, dms, dms)];
@@ -472,10 +472,13 @@ MATRIX mtx_rotate_rect(MATRIX &mtx_val, int ln_cnt, int col_cnt)
 
 MATRIX mtx_mirror_flip(MATRIX &mtx_src, uint64_t ln_cnt, uint64_t col_cnt)
 {
-    auto mtx_val = mtx_copy(mtx_src, ln_cnt, col_cnt);
+    auto mtx_val = mtx_init(ln_cnt, col_cnt);
     for(auto i=0; i<ln_cnt; ++i)
-        for(int j=0,k=col_cnt-1; k>j; ++j,--k)
-            std::swap(mtx_val[mtx_elem_pos(i,j,ln_cnt,col_cnt)], mtx_val[mtx_elem_pos(i,k,ln_cnt,col_cnt)]);
+        for(int j=0; j<col_cnt; ++j)
+        {
+            auto src_pos = col_cnt-1-j;
+            if(src_pos != j)mtx_val[mtx_elem_pos(i, j, ln_cnt, col_cnt)] = mtx_src[mtx_elem_pos(i, src_pos, ln_cnt, col_cnt)];
+        }
     return mtx_val;
 }
 

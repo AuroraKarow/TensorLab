@@ -55,7 +55,7 @@ template <typename T> void output_table(bagrt::net_queue<bagrt::net_queue<T>>out
     std::ofstream oFile;
     oFile.open(file_path,std::ios::out|std::ios::trunc);
     for(auto i=0; i<output_strings.size(); ++i){
-        for(auto i=0; i<output_strings[i].size(); ++j) oFile << output_strings[i][j] << ',';
+        for(auto j=0; j<output_strings[i].size(); ++j) oFile << output_strings[i][j] << ',';
         oFile << std::endl;
     }oFile.close();
 }
