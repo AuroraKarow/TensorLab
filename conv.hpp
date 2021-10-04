@@ -35,23 +35,6 @@ tensor Conv(feature &vecInput, tensor &tenKernel, uint64_t iLnStride, uint64_t i
     return tenOutput;
 }
 
-feature MergeChann(tensor &tenInput)
-{
-    feature vecFeatureMap(tenInput.size());
-    for(auto i=0; i<tenInput.size(); ++i)
-    {
-        vect vecSglChann;
-        for(auto j=0; j<tenInput[i].size(); ++j)
-        {
-            if(vecSglChann.is_matrix()) vecSglChann += tenInput[i][j];
-            else vecSglChann = tenInput[i][j];
-            if(!vecSglChann.is_matrix()) return blank_feature;
-        }
-        vecFeatureMap[i] = vecSglChann;
-    }
-    return vecFeatureMap;
-}
-
 vect GradLossToKernel(vect &vecGradLossToOutput, vect &vecInput, uint64_t iLnStride, uint64_t iColStride, uint64_t iLnDilation = 0, uint64_t iColDilation = 0, uint64_t iInputPadTop = 0, uint64_t iInputPadRight = 0, uint64_t iInputPadBottom = 0, uint64_t iInputPadLeft = 0, uint64_t iLnDistance = 0, uint64_t iColDistance = 0)
 {
     auto vecPrepInput = vecInput.pad(iInputPadTop, iInputPadRight, iInputPadBottom, iInputPadLeft, iLnDistance, iColDistance);

@@ -1,26 +1,20 @@
 #pragma once
 #include "funclib"
 
-#define FC_BEGIN namespace fc {
-#define FC_END }
+#define FC_BEGIN        namespace fc {
+#define FC_END          }
 
-#define CONV_BEGIN namespace conv {
-#define CONV_END }
+#define CONV_BEGIN      namespace conv {
+#define CONV_END        }
 
-#define SAMP_BLOCK_CNT(FILTER_DIR_CNT, DIR_DILATION) (uint64_t)((DIR_DILATION + 1) * FILTER_DIR_CNT - DIR_DILATION)
-#define SAMP_TRACE_POS(OUTPUT_DIR_POS, FILTER_DIR_POS, DIR_STRIDE, DIR_DILATION) (uint64_t)(OUTPUT_DIR_POS * DIR_STRIDE + FILTER_DIR_POS * (1 + DIR_DILATION))
-#define SAMP_OUTPUT_DIR_CNT(INPUT_DIR_CNT, FILTER_DIR_CNT, DIR_STRIDE, DIR_DILATION) (uint64_t)(INPUT_DIR_CNT - SAMP_BLOCK_CNT(FILTER_DIR_CNT, DIR_STRIDE) / DIR_DILATION + 1)
-#define SAMP_INPUT_DIR_CNT(OUTPUT_DIR_CNT, FILTER_DIR_CNT, DIR_STRIDE, DIR_DILATION) (uint64_t)((OUTPUT_DIR_CNT - 1) * DIR_STRIDE + SAMP_BLOCK_CNT(FILTER_DIR_CNT, DIR_DILATION))
-#define SAMP_VALID(INPUT_DIR_CNT, FILTER_DIR_CNT, DIR_STRIDE, DIR_DILATION) (uint64_t)((INPUT_DIR_CNT - SAMP_BLOCK_CNT(FILTER_DIR_CNT, DIR_DILATION)) % DIR_STRIDE == 0)
+#define POOL_DOWN_AVG   0
+#define POOL_DOWN_MAX   1
+#define POOL_DOWN_GAG   2
 
-#define POOL_DOWN_AVG 0
-#define POOL_DOWN_MAX 1
-#define POOL_DOWN_GAG 2
-
-#define POOL_UP_AVG 0
-#define POOL_UP_MAX 1
-#define POOL_UP_GAG 2
-#define POOL_UP_FIL 3
+#define POOL_UP_AVG     0
+#define POOL_UP_MAX     1
+#define POOL_UP_GAG     2
+#define POOL_UP_FIL     3
 
 #include "fc.hpp"
 #include "conv.hpp"

@@ -189,7 +189,7 @@ public:
             RGB_gradient[BMIO_B] = grad_vec * BMIO_GRAY_WEIGHT_B;
             return RGB_gradient;
         }
-        else return bagrt::net_queue<mtx::matrix>::blank_queue();
+        else return BMIO_RAW::blank_queue();
     }
     BMIO_RAW img_vec()
     {
