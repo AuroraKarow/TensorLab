@@ -6,10 +6,6 @@
 #define CONV_BN_SHIFT   0
 #define CONV_BN_SCALE   1
 
-#define FC_OUTPUT       0
-#define FC_GRAD_INPUT   1
-#define FC_GRAD_WEIGHT  2
-
 #include "ada.hpp"
 #include "fcbat.hpp"
 #include "convbat.hpp"

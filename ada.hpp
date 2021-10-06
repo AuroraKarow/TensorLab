@@ -75,11 +75,30 @@ public:
         dExpDelta = dRho * dExpDelta + (1 - dRho) * std::pow(dPreDelta, 2);
         return dPreDelta;
     }
-    ~AdaDeltaVal()
-    {
-        dExpGrad = 0;
-        dExpDelta = 0;
-    }
+    // ~AdaDeltaVal()
+    // {
+    //     dExpGrad = 0;
+    //     dExpDelta = 0;
+    // }
 };
 
 ADA_END
+
+FC_BEGIN
+
+vect AdaDeltaUpdateWeight(vect &vecWeight, vect &vecGradLossToWeight, ada::AdaDeltaVect &advCurrLayerDelta)
+{
+    auto vecCurrDelta = advCurrLayerDelta.Delta(vecGradLossToWeight);
+    if(vecCurrDelta.is_matrix()) return vecWeight - vecCurrDelta;
+    else return blank_vect;
+}
+
+double AdaDeltaUpdateScaleShift(double dGammaBeta, double dGradLossToScaleShift, ada::AdaDeltaVal advCurrDelta) {return dGammaBeta - advCurrDelta.Delta(dGradLossToScaleShift);}
+
+FC_END
+
+CONV_BEGIN
+
+
+
+CONV_END
