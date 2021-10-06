@@ -11,7 +11,8 @@
 #define SOFTMAX             softmax
 #define SOFTMAX_DV          softmax_dv
 
-#define CEC_GRAD            cec_grad
+#define GRAD_CEC            cec_grad
+#define GRAD_SOFTMAX_CEC    softmax_cec_grad
 
 #define SAMP_BLOCK_CNT      samp_block_cnt
 #define SAMP_TRACE_POS      samp_trace_pos

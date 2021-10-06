@@ -69,6 +69,8 @@ vect cec_grad(vect &output, vect &origin)
     return ans;
 }
 
+vect softmax_cec_grad(vect &softmax_output, vect &origin) {return softmax_output - origin;}
+
 vect divisor_dominate(vect &divisor, double epsilon)
 {
     auto cpy_val = divisor;
