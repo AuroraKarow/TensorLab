@@ -1,0 +1,6 @@
+#include "batnet"
+
+#define NEUNET_BEGIN namespace neunet   {
+#define NEUNET_END                      }
+
+#include "neunet.hpp"
