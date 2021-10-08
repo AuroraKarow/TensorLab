@@ -255,18 +255,18 @@ vect BNUpdateScaleShiftBat(vect &vecGammaBeta, vect &vecGrad, double dLearnRate 
     else return blank_vect;
 }
 
-set<feature> ConvBNDeduce(set<feature> &setNetInput, vect &vecBeta, vect &vecGamma, uint64_t iMiniBatchSize = 0, double dEpsilon = 1e-10)
+set<feature> BNDeduce(set<feature> &setNetInput, vect &vecBeta, vect &vecGamma, uint64_t iMiniBatchSize = 0, double dEpsilon = 1e-10)
 {
-    uint64_t iBatSize = setNetInput.size(), iBatCnt = 0, iChannCnt = setNetInput[0].size();
-    if(iMiniBatchSize) iBatCnt = iBatSize / iMiniBatchSize;
+    auto iBatCnt = 0;
+    if(iMiniBatchSize) iBatCnt = setNetInput.size() / iMiniBatchSize;
     else iBatCnt = 1;
-    feature vecEX(iChannCnt), vecVarX(iChannCnt);
+    feature vecEX(setNetInput[ZERO_IDX].size()), vecVarX(setNetInput[ZERO_IDX].size());
     for(auto i=0; i<iBatCnt; ++i)
     {
         ConvBN ConvBNMiniBatOutput;
         if(iMiniBatchSize) ConvBNMiniBatOutput = BNTrain(setNetInput.sub_queue(i*iMiniBatchSize, (i+1)*iMiniBatchSize-1), vecBeta, vecGamma, false);
         else ConvBNMiniBatOutput = BNTrain(setNetInput, vecBeta, vecGamma, false);
-        for(auto j=0; j<iChannCnt; ++j)
+        for(auto j=0; j<setNetInput[ZERO_IDX].size(); ++j)
         {
             if(vecEX[j].is_matrix()) vecEX[j] += ConvBNMiniBatOutput.vecMiuBeta[j];
             else vecEX[j] = ConvBNMiniBatOutput.vecMiuBeta[j];
@@ -274,7 +274,7 @@ set<feature> ConvBNDeduce(set<feature> &setNetInput, vect &vecBeta, vect &vecGam
             else vecVarX[j] = ConvBNMiniBatOutput.vecSigmaSqr[j];
         }
     }
-    for(auto i=0; i<iChannCnt; ++i)
+    for(auto i=0; i<setNetInput[ZERO_IDX].size(); ++i)
     {
         vecEX[i] = vecEX[i].elem_cal_opt(iBatCnt, MATRIX_ELEM_DIV);
         auto iVarDistbt = 0;
@@ -282,14 +282,14 @@ set<feature> ConvBNDeduce(set<feature> &setNetInput, vect &vecBeta, vect &vecGam
         else iVarDistbt = iBatCnt;
         vecVarX[i] = iVarDistbt * vecVarX[i].elem_cal_opt(iBatCnt, MATRIX_ELEM_DIV);
     }
-    set<feature> setConvBNDeduceOutput(iBatSize);
-    for(auto i=0; i<iBatSize; ++i)
+    set<feature> setConvBNDeduceOutput(setNetInput.size());
+    for(auto i=0; i<setNetInput.size(); ++i)
     {
-        setConvBNDeduceOutput[i].init(iChannCnt);
-        for(auto j=0; j<iChannCnt; ++j)
+        setConvBNDeduceOutput[i].init(setNetInput[ZERO_IDX].size());
+        for(auto j=0; j<setNetInput[ZERO_IDX].size(); ++j)
         {
             auto vecBarX = (setNetInput[i][j] - vecEX[j]).elem_cal_opt(DIV_DOM(vecVarX[j], dEpsilon).elem_cal_opt(0.5, MATRIX_ELEM_POW), MATRIX_ELEM_DIV);
-            setConvBNDeduceOutput[i][j] = (vecGamma[j][0] * vecBarX).broadcast_add(vecBeta[j][0]);
+            setConvBNDeduceOutput[i][j] = (vecGamma[j][ZERO_IDX] * vecBarX).broadcast_add(vecBeta[j][ZERO_IDX]);
         }
     }
     return setConvBNDeduceOutput;
