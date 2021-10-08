@@ -99,6 +99,27 @@ FC_END
 
 CONV_BEGIN
 
+tensor AdaDeltaUpdateKernel(tensor &tenKernel, tensor &tenGradLossToKernel, ada::ten_ada<ada::AdaDeltaVect> &advCurrDelta)
+{
+    if(tenKernel.size() == tenGradLossToKernel.size())
+    {
+        tensor tenUpdatedKernel(tenKernel.size());
+        for(auto i=0; i<tenKernel.size(); ++i)
+            if(tenKernel[i].size() == tenGradLossToKernel[i].size()) for(auto j=0; j<tenKernel[i].size(); ++j)
+            {
+                tenUpdatedKernel[i][j] = tenKernel[i][j] - advCurrDelta[i][j].Delta(tenGradLossToKernel[i][j]);
+                if(!tenUpdatedKernel[i][j].is_matrix()) return blank_tensor;
+            }
+            else return blank_tensor;
+        return tenUpdatedKernel;
+    }
+    else return blank_tensor;
+}
 
+vect BNAdaDeltaUpdateScaleShift(vect &vecGammaBeta, vect &vecGradLossToScaleShift, ada::AdaDeltaVect &advCurrDelta)
+{
+    if(vecGammaBeta.shape_valid(vecGradLossToScaleShift)) return vecGammaBeta - advCurrDelta.Delta(vecGradLossToScaleShift);
+    else return blank_vect;
+}
 
 CONV_END

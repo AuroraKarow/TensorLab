@@ -16,5 +16,7 @@
 #define POOL_UP_GAG     2
 #define POOL_UP_FIL     3
 
+#define ZERO_IDX        0
+
 #include "fc.hpp"
 #include "conv.hpp"

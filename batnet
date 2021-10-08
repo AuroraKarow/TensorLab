@@ -7,5 +7,13 @@
 #define CONV_BN_SCALE   1
 
 #include "ada.hpp"
+
+ADA_BEGIN
+
+template<typename _Ty> using ten_ada = vect_t<_Ty>;
+template<typename _Ty> using ft_ada = set<_Ty>;
+
+ADA_END
+
 #include "fcbat.hpp"
 #include "convbat.hpp"
