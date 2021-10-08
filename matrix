@@ -53,6 +53,9 @@ MATRIX_END
 
 #include "matrix.hpp"
 
+template<typename _Ty> using set = bagrt::net_queue<_Ty>;
+template<typename _Ty> using vect_t = bagrt::net_queue<bagrt::net_queue<_Ty>>;
+
 #define vect                mtx::matrix
 #define feature             bagrt::net_queue<vect>
 #define tensor              bagrt::net_queue<feature>
@@ -63,6 +66,4 @@ MATRIX_END
 
 #define blank_vect_seq      blank_feature
 #define blank_ft_seq        blank_tensor
-
-template<typename _Ty> using vect_t = bagrt::net_queue<bagrt::net_queue<_Ty>>;
-template<typename _Ty> using set = bagrt::net_queue<_Ty>;
+#define blank_ten_seq       set<tensor>::blank_queue()
