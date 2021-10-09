@@ -3,4 +3,6 @@
 #define NEUNET_BEGIN namespace neunet   {
 #define NEUNET_END                      }
 
+#define SIGMOID                         0
+
 #include "neunet.hpp"
