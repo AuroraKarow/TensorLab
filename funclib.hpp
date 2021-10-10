@@ -128,16 +128,11 @@ bool samp_valid(uint64_t input_dir_cnt, uint64_t filter_dir_cnt, uint64_t dir_st
 feature merge_channel(tensor &input)
 {
     feature ft_map(input.size());
-    for(auto i=0; i<input.size(); ++i)
+    for(auto i=0; i<input.size(); ++i) for(auto j=0; j<input[i].size(); ++j)
     {
-        vect sgl_chann;
-        for(auto j=0; j<input[i].size(); ++j)
-        {
-            if(sgl_chann.is_matrix()) sgl_chann += input[i][j];
-            else sgl_chann = input[i][j];
-            if(!sgl_chann.is_matrix()) return blank_feature;
-        }
-        ft_map[i] = sgl_chann;
+        if(ft_map[i].is_matrix()) ft_map[i] += input[i][j];
+        else ft_map[i] = input[i][j];
+        if(!ft_map[i].is_matrix()) return blank_feature;
     }
     return ft_map;
 }
@@ -145,14 +140,10 @@ feature merge_channel(tensor &input)
 set<feature> merge_channel(set<tensor> &input)
 {
     set<feature> set_ft_map(input.size());
-    for(auto i=0; i<input.size(); ++i)
+    for(auto i=0; i<input.size(); ++i) for(auto j=0; j<input[i].size(); ++j)
     {
-        feature sgl_ft;
-        for(auto j=0; j<input[i].size(); ++j)
-        {
-            set_ft_map[i] = merge_channel(input[i]);
-            if(!sgl_ft.size()) return blank_ft_seq;
-        }
+        set_ft_map[i] = merge_channel(input[i]);
+        if(!set_ft_map[i].size()) return blank_ft_seq;
     }
     return set_ft_map;
 }

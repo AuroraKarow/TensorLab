@@ -4,5 +4,7 @@
 #define NEUNET_END                      }
 
 #define SIGMOID                         0
+#define RELU                            1
+#define SOFTMAX                         2
 
 #include "neunet.hpp"
