@@ -168,7 +168,7 @@ double BNGradLossToShift(set<vect> &setGradLossToOutput)
     return vecGradBeta.elem_sum();
 }
 
-double UpdateScaleShift(double dScaleShift, double dGradLossToScaleShift, double dLearnRate) {return dScaleShift - dLearnRate * dGradLossToScaleShift;}
+double BNUpdateScaleShift(double dScaleShift, double dGradLossToScaleShift, double dLearnRate) {return dScaleShift - dLearnRate * dGradLossToScaleShift;}
 
 bagrt::net_queue<vect> BNDeduce(bagrt::net_queue<vect> &setNetInput, double dBeta, double dGamma, uint64_t iMiniBatchSize = 0, double dEpsilon = 1e-10)
 {

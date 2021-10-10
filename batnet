@@ -3,9 +3,6 @@
 #define ADA_BEGIN       namespace ada{
 #define ADA_END         }
 
-#define CONV_BN_SHIFT   0
-#define CONV_BN_SCALE   1
-
 #include "ada.hpp"
 
 ADA_BEGIN

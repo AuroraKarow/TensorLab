@@ -84,13 +84,13 @@ set<feature> GradLossToInput(set<feature> &setGradLossToOutput, tensor &tenKerne
     return setGradLossToInput;
 }
 
-set<feature> Pool(set<feature> &vecInput, uint64_t iPoolType = POOL_DOWN_MAX, bool bDownSamp = true, vect &vecTraceInput = vect(), uint64_t iFilterLnCnt = 0, uint64_t iFilterColCnt = 0, uint64_t iLnStride = 0, uint64_t iColStride = 0, uint64_t iLnDilation = 0, uint64_t iColDilation = 0)
+set<feature> Pool(set<feature> &vecInput, uint64_t iPoolType = POOL_DOWN_MAX, bool bDownSamp = true, set<feature> &setTraceInput = set<feature>(), uint64_t iFilterLnCnt = 0, uint64_t iFilterColCnt = 0, uint64_t iLnStride = 0, uint64_t iColStride = 0, uint64_t iLnDilation = 0, uint64_t iColDilation = 0)
 {
     set<feature> setOutput(vecInput.size());
     for(auto i=0; i<vecInput.size(); ++i)
     {
         if(bDownSamp) setOutput[i] = PoolDown(vecInput[i], iPoolType, iFilterLnCnt, iFilterColCnt, iLnStride, iColStride, iLnDilation, iColDilation);
-        else setOutput[i] = PoolUp(vecInput[i], iPoolType, vecTraceInput, iFilterLnCnt, iFilterColCnt, iLnStride, iColStride, iLnDilation, iColDilation);
+        else setOutput[i] = PoolUp(vecInput[i], iPoolType, setTraceInput[i], iFilterLnCnt, iFilterColCnt, iLnStride, iColStride, iLnDilation, iColDilation);
         if(!setOutput[i].size()) return blank_ft_seq;
     }
     return setOutput;
@@ -122,10 +122,10 @@ struct ConvBN
     // ~ConvBN() {}
 };
 
-vect BNInitScaleShift(uint64_t nChannCnt, bool bConvScaleShift = CONV_BN_SCALE)
+vect BNInitScaleShift(uint64_t iChannCnt, double dFillVal)
 {
-    vect vecSS(nChannCnt, 1);
-    if(bConvScaleShift == CONV_BN_SCALE) for(auto i=0; i<nChannCnt; ++i) vecSS[i][ZERO_IDX] = 1;
+    vect vecSS(iChannCnt, 1);
+    if(dFillVal) for(auto i=0; i<iChannCnt; ++i) vecSS[i][ZERO_IDX] = dFillVal;
     return vecSS;
 }
 

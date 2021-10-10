@@ -175,13 +175,13 @@ vect PoolUpMaxAvg(vect &vecInput, uint64_t iFilterLnCnt, uint64_t iFilterColCnt,
     return vecOutput;
 }
 
-feature PoolUp(feature &vecInput, uint64_t iPoolType = POOL_UP_MAX, vect &vecTraceInput = vect(), uint64_t iFilterLnCnt = 0, uint64_t iFilterColCnt = 0, uint64_t iLnStride = 0, uint64_t iColStride = 0, uint64_t iLnDilation = 0, uint64_t iColDilation = 0)
+feature PoolUp(feature &vecInput, uint64_t iPoolType = POOL_UP_MAX, feature &vecTraceInput = feature(), uint64_t iFilterLnCnt = 0, uint64_t iFilterColCnt = 0, uint64_t iLnStride = 0, uint64_t iColStride = 0, uint64_t iLnDilation = 0, uint64_t iColDilation = 0)
 {
     feature vecOutput(vecInput.size());
     for(auto i=0; i<vecInput.size(); ++i) 
     {
-        if(iPoolType == POOL_UP_GAG) vecInput[i] = PoolUpGlbAvg(vecInput[i], vecTraceInput.LN_CNT, vecTraceInput.COL_CNT);
-        else vecInput[i] = PoolUpMaxAvg(vecInput[i], iFilterLnCnt, iFilterColCnt, iLnStride, iColStride, vecTraceInput, iPoolType, iLnDilation, iColDilation);
+        if(iPoolType == POOL_UP_GAG) vecInput[i] = PoolUpGlbAvg(vecInput[i], vecTraceInput[i].LN_CNT, vecTraceInput[i].COL_CNT);
+        else vecInput[i] = PoolUpMaxAvg(vecInput[i], iFilterLnCnt, iFilterColCnt, iLnStride, iColStride, vecTraceInput[i], iPoolType, iLnDilation, iColDilation);
         if(!vecInput[i].is_matrix()) return blank_feature;
     }
     return vecOutput;

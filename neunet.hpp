@@ -1,5 +1,7 @@
 NEUNET_BEGIN
 
+template<typename CT, typename PT> const std::shared_ptr<CT> ChildInstancePtrFromParentPtr(std::shared_ptr<PT> &pParentInstance) {return std::dynamic_pointer_cast<CT>(pParentInstance);}
+
 struct Layer
 {
     uint64_t iActFuncType = SIGMOID;
@@ -12,7 +14,6 @@ class LayerFC : public Layer
 {
 protected:
     vect vecWeight;
-
 public:
     LayerFC(uint64_t iActFuncIdx = SIGMOID) : Layer(iActFuncIdx) {}
     bool InitLayerWeight(uint64_t iInputLnCnt, uint64_t iOutputLnCnt, double dRandBoundryFirst = 0.0, double dRandBoundrySecond = 0.0, double dAcc = 1e-05)
@@ -45,6 +46,52 @@ public:
     {
         auto setGradBack = fc::GradLossToInput(setGrad, vecWeight);
         vecWeight = fc::AdaDeltaUpdateWeight(vecWeight, fc::GradLossToWeight(setGrad, setInput), advLayerDelta);
+        return setGradBack;
+    }
+};
+
+class LayerBNFC : public Layer
+{
+protected:
+    fc::FCBN fcbnData;
+    // Shift
+    double dBeta = 0;
+    // Scale
+    double dGamma = 1;
+    double dEpsilon = 1e-10;
+public:
+    LayerBNFC(double dShift = 0, double dScale = 1, double dBNDominator = 1e-10) : dBeta(dShift), dGamma(dScale), dEpsilon(dBNDominator) {}
+    set<vect> ForwProp(set<vect> &setInput)
+    {
+        fcbnData = fc::BNTrain(setInput, dBeta, dGamma, true, dEpsilon);
+        return fcbnData.setY;
+    }
+    set<vect> BackProp(set<vect> &setInput, set<vect> &setGrad, double dLearnRate)
+    {
+        auto setGradBack = fc::BNGradLossToInput(fcbnData, setInput, setGrad, dGamma, dEpsilon);
+        dGamma = fc::BNUpdateScaleShift(dGamma, fc::BNGradLossToScale(setGrad, fcbnData), dLearnRate);
+        dBeta = fc::BNUpdateScaleShift(dBeta, fc::BNGradLossToShift(setGrad), dLearnRate);
+        return setGradBack;
+    }
+    set<vect> Deduce(set<vect> &setInput, uint64_t iMiniBatchSize) {return fc::BNDeduce(setInput, dBeta, dGamma, iMiniBatchSize, dEpsilon);}
+};
+
+class LayerBNFCAda : public LayerBNFC
+{
+protected: 
+    ada::AdaDeltaVal advBeta;
+    ada::AdaDeltaVal advGamma;
+public:
+    LayerBNFCAda(double dDecayController = 0.95, double dAdaDominator = 1e-3, double dShift = 0, double dScale = 1, double dBNDominator = 1e-10) : LayerBNFC(dShift, dScale, dBNDominator)
+    {
+        advBeta = ada::AdaDeltaVal(0, 0, dDecayController, dAdaDominator);
+        advGamma = ada::AdaDeltaVal(0, 0, dDecayController, dAdaDominator);
+    }
+    set<vect> BackProp(set<vect> &setInput, set<vect> &setGrad)
+    {
+        auto setGradBack = fc::BNGradLossToInput(fcbnData, setInput, setGrad, dGamma, dEpsilon);
+        dGamma = fc::AdaDeltaUpdateScaleShift(dGamma, fc::BNGradLossToScale(setGrad, fcbnData), advGamma);
+        dBeta = fc::AdaDeltaUpdateScaleShift(dBeta, fc::BNGradLossToShift(setGrad), advBeta);
         return setGradBack;
     }
 };
@@ -116,6 +163,57 @@ public:
         tenKernel = conv::AdaDeltaUpdateKernel(tenKernel, conv::GradLossToKernel(setGrad, setInput, iLayerLnStride, iLayerColStride, iLayerLnDilation, iLayerColDilation, iLayerInputPadTop, iLayerInputPadRight, iLayerInputPadBottom, iLayerInputPadLeft, iLayerLnDistance, iLayerColDistance), advLayerDelta);
         return setGradBack;
     }
+};
+
+class LayerPool : public Layer
+{
+protected:
+    uint64_t iPoolType = POOL_MAX;
+    uint64_t iLayerFilterLnCnt = 0;
+    uint64_t iLayerFilterColCnt = 0;
+    uint64_t iLayerLnStride = 0;
+    uint64_t iLayerColStride = 0;
+    uint64_t iLayerLnDilation = 0;
+    uint64_t iLayerColDilation = 0;
+    uint64_t PoolUpType()
+    {
+        switch (iPoolType)
+        {
+        case POOL_AVG: return POOL_UP_AVG;
+        case POOL_GAG: return POOL_UP_GAG;
+        case POOL_MAX: return POOL_UP_MAX;
+        default: return (uint64_t)NAN;
+        }
+    }
+public:
+    LayerPool(uint64_t iPoolIdx = POOL_MAX) : iPoolType(iPoolIdx) {}
+    void InitPara(uint64_t iFilterLnCnt = 0, uint64_t iFilterColCnt = 0, uint64_t iLnStride = 0, uint64_t iColStride = 0, uint64_t iLnDilation = 0, uint64_t iColDilation = 0)
+    {
+        iLayerFilterLnCnt = iFilterLnCnt; iLayerFilterColCnt = iFilterColCnt;
+        iLayerLnStride = iLnStride; iLayerColStride = iColStride;
+        iLayerLnDilation = iLnDilation; iLayerColDilation = iColDilation;
+    }
+    LayerPool(uint64_t iFilterLnCnt = 0, uint64_t iFilterColCnt = 0, uint64_t iLnStride = 0, uint64_t iColStride = 0, uint64_t iPoolIdx = POOL_MAX, uint64_t iLnDilation = 0, uint64_t iColDilation = 0) : iPoolType(iPoolIdx) {InitPara(iFilterLnCnt, iFilterColCnt, iLnStride, iColStride, iLnDilation, iColDilation);}
+    set<feature> ForwProp(set<feature> &setInput) {return conv::Pool(setInput, iPoolType, true, set<feature>(), iLayerFilterLnCnt, iLayerFilterColCnt, iLayerLnStride, iLayerColStride, iLayerLnDilation, iLayerColDilation);}
+    set<feature> BackProp(set<feature> &setGrad, set<feature> &setInput = set<feature>()) {return conv::Pool(setGrad, PoolUpType(), false, setInput, iLayerFilterLnCnt, iLayerFilterColCnt, iLayerLnStride, iLayerColStride, iLayerLnDilation, iLayerColDilation);}
+};
+
+class LayerBNConv : public Layer
+{
+protected:
+    conv::ConvBN convbnData;
+    // Shift
+    vect vecBeta;
+    // Scale
+    vect vecGamma;
+    double dEpsilon = 1e-5;
+public:
+    LayerBNConv(double iChannCnt, double dShift = 0, double dScale = 1, double dBNDominator = 1e-5) : dEpsilon(dBNDominator)
+    {
+        vecBeta = conv::BNInitScaleShift(iChannCnt, dShift);
+        vecGamma = conv::BNInitScaleShift(iChannCnt, dScale);
+    }
+    
 };
 
 NEUNET_END

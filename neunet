@@ -7,4 +7,8 @@
 #define RELU                            1
 #define SOFTMAX                         2
 
+#define POOL_AVG                        0
+#define POOL_MAX                        1
+#define POOL_GAG                        2
+
 #include "neunet.hpp"
