@@ -4,4 +4,9 @@
 #define NEUNET_BEGIN namespace neunet   {
 #define NEUNET_END                      }
 
+#define layer_ptr                       std::shared_ptr<layer::Layer>
+#define layer_list                      bagrt::net_list<layer_ptr>
+
+#define _LAYER                          layer::
+
 #include "neunet.hpp"

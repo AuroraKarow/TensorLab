@@ -202,7 +202,7 @@ public:
         }
     }
     void operator=(net_queue &&val)
-        {
+    {
         _ptr = std::move(val._ptr);
         len = val.len;
         val.len = 0;
@@ -232,7 +232,7 @@ protected:
     struct _node
     {
         _Ty data;
-        std::unique_ptr<_node> next_node;
+        std::unique_ptr<_node> next_node = nullptr;
     };
     std::unique_ptr<_node> head = nullptr;
     uint64_t len = 0;
