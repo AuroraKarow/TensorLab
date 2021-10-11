@@ -1,0 +1,19 @@
+#pragma once
+#include "netbatlib"
+
+#define LAYER_BEGIN namespace   {
+#define LAYER_END               }
+
+#define SIGMOID                 0
+#define RELU                    1
+#define SOFTMAX                 2
+
+#define POOL_AVG                0
+#define POOL_MAX                1
+#define POOL_GAG                2
+
+#define _CONV                   conv::
+#define _FC                     fc::
+#define _ADA                    ada::
+
+#include "layer.hpp"

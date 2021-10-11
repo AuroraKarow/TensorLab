@@ -6,6 +6,8 @@ uint64_t num_cnt(uint64_t from, uint64_t to)
     else return 0;
 }
 
+template<typename CT, typename PT> const std::shared_ptr<CT> derive_instance_ptr(std::shared_ptr<PT> &pBaseInstance) {return std::dynamic_pointer_cast<CT>(pBaseInstance);}
+
 template<typename _T> void quick_sort(std::unique_ptr<_T[]> &seq_val, uint64_t begin, uint64_t end, bool asc = true, std::function<bool(_T&, _T&)>func_comp = [](_T &_first, _T &_second){return _first > _second;})
 {
     if(end == begin) return;

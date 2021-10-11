@@ -80,6 +80,9 @@
         "fstream": "cpp",
         "dataset": "cpp",
         "basnet": "cpp",
-        "batnet": "cpp"
+        "batnet": "cpp",
+        "layer": "cpp",
+        "netbaslib": "cpp",
+        "netbatlib": "cpp"
     }
 }
