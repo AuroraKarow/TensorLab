@@ -6,6 +6,21 @@
 
 #define layer_ptr                       std::shared_ptr<layer::Layer>
 #define layer_list                      bagrt::net_list<layer_ptr>
+#define layer_node                      bagrt::net_list<layer_ptr>::_node
+
+#define LAYER                           layer::Layer
+
+#define LAYER_FC                        layer::LayerFC
+#define LAYER_FC_ADA                    layer::LayerFCAda
+#define LAYER_CONV                      layer::LayerConv
+#define LAYER_CONV_ADA                  layer::LayerConvAda
+
+#define LAYER_POOL                      layer::LayerPool
+
+#define LAYER_BN_FC                     layer::LayerBNFC
+#define LAYER_BN_FC_ADA                 layer::LayerBNFCAda
+#define LAYER_BN_CONV                   layer::LayerBNConv
+#define LAYER_BN_CONV_ADA               layer::LayerBNConvAda
 
 #define _LAYER                          layer::
 

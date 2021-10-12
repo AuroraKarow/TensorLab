@@ -228,12 +228,13 @@ public:
 
 template<typename _Ty> class net_list
 {
-protected:
+public:
     struct _node
     {
         _Ty data;
         std::unique_ptr<_node> next_node = nullptr;
     };
+protected:
     std::unique_ptr<_node> head = nullptr;
     uint64_t len = 0;
     _Ty temp;

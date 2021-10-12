@@ -1,13 +1,12 @@
 LAYER_BEGIN
 
-template<typename T, typename ... Args, typename = std::enable_if_t<std::is_base_of_v<Layer, T>>> std::shared_ptr<T> InitLayerPtr(Args&& ... args) {return std::make_shared<T>(std::forward<Args>(args)...);}
-
 class Layer
 {
 protected:
     uint64_t iActFuncType = SIGMOID;
     bool bFirstLayer = false;
     template <typename inputT> struct InputData{inputT vecLayerInput;};
+    uint64_t iLayerType = FC;
 public:
     virtual void setActFunc(uint64_t iActFuncIdx) { iActFuncType = iActFuncIdx;}
     Layer(uint64_t iActFuncIdx = SIGMOID, bool bIsFirstLayer = false) : iActFuncType(iActFuncIdx), bFirstLayer(bIsFirstLayer) {}
