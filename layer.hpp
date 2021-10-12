@@ -430,4 +430,45 @@ public:
     }
 };
 
+class LayerTransFeature : public Layer
+{
+protected:
+    uint64_t iLayerInputLnCnt = 0;
+    uint64_t iLayerInputColCnt = 0;
+public:
+    set<vect> ForwProp(set<feature> &setInput)
+    {
+        iLayerInputLnCnt = setInput[ZERO_IDX][ZERO_IDX].LN_CNT;
+        iLayerInputColCnt = setInput[ZERO_IDX][ZERO_IDX].COL_CNT;
+        return _FC FeatureTransform(setInput);
+    }
+    set<feature> BackProp(set<vect> &setGrad) {return _FC FeatureTransform(setGrad, iLayerInputLnCnt, iLayerInputColCnt);}
+    LayerTransFeature(bool isFirstLayer = false) : Layer(0, isFirstLayer) {}
+    LayerTransFeature(LayerTransFeature &lyrSrc) {*this = lyrSrc;}
+    void operator=(LayerTransFeature &lyrSrc)
+    {
+        Layer::operator=(lyrSrc);
+        iLayerInputLnCnt = lyrSrc.iLayerInputLnCnt;
+        iLayerInputColCnt = lyrSrc.iLayerInputColCnt;
+    }
+};
+
+class LayerTransVect : public Layer
+{
+protected:
+    uint64_t iLayerChannLnCnt = 0;
+    uint64_t iLayerChannColCnt = 0;
+public:
+    LayerTransVect(uint64_t iChannLnCnt, uint64_t iChannColCnt, bool isFirstLayer = false) : Layer(0, isFirstLayer), iLayerChannLnCnt(iChannLnCnt), iLayerChannColCnt(iChannColCnt) {}
+    set<feature> ForwProp(set<vect> &setInput) {return _FC FeatureTransform(setInput, iLayerChannLnCnt, iLayerChannColCnt);}
+    set<vect> BackProp(set<feature> &setGrad) {return _FC FeatureTransform(setGrad);}
+    LayerTransVect(LayerTransVect &lyrSrc) {*this = lyrSrc;}
+    void operator=(LayerTransVect &lyrSrc)
+    {
+        Layer::operator=(lyrSrc);
+        iLayerChannLnCnt = lyrSrc.iLayerChannLnCnt;
+        iLayerChannColCnt = lyrSrc.iLayerChannColCnt;
+    }
+};
+
 LAYER_END

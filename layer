@@ -19,5 +19,9 @@
 #define FC                          0
 #define CONV                        1
 #define POOL                        2
+#define BN_FC                       3
+#define BN_CONV                     4
+#define TRAN_TO_VECT                5
+#define TRAN_TO_FEAT                6
 
 #include "layer.hpp"
