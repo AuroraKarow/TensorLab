@@ -4,6 +4,8 @@
 #define LAYER_BEGIN namespace layer {
 #define LAYER_END                   }
 
+#define NULL_FUNC                   NAN
+
 #define SIGMOID                     0
 #define RELU                        1
 #define SOFTMAX                     2
@@ -17,11 +19,15 @@
 #define _ADA                        ada::
 
 #define FC                          0
-#define CONV                        1
-#define POOL                        2
-#define BN_FC                       3
-#define BN_CONV                     4
-#define TRAN_TO_VECT                5
-#define TRAN_TO_FEAT                6
+#define FC_ADA                      1
+#define CONV                        2
+#define CONV_ADA                    3
+#define POOL                        4
+#define BN_FC                       5
+#define BN_FC_ADA                   6
+#define BN_CONV                     7
+#define BN_CONV_ADA                 8
+#define TRANS_TO_VECT               9
+#define TRANS_TO_FEAT               10
 
 #include "layer.hpp"

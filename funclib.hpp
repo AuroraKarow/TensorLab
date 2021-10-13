@@ -69,7 +69,39 @@ vect cec_grad(vect &output, vect &origin)
     return ans;
 }
 
+feature cec_grad(feature &output, feature &origin)
+{
+    if(output.size() == origin.size())
+    {
+        feature ans(output.size());
+        for(auto i=0; i<origin.size(); ++i) ans[i] = cec_grad(output[i], origin[i]);
+        return ans;
+    }
+    else return blank_feature;
+}
+set<feature> cec_grad(set<feature> &output, set<feature> &origin)
+{
+    if(output.size() == origin.size())
+    {
+        set<feature> ans(output.size());
+        for(auto i=0; i<origin.size(); ++i) ans[i] = cec_grad(output[i], origin[i]);
+        return ans;
+    }
+    else return output;
+}
+
 vect softmax_cec_grad(vect &softmax_output, vect &origin) {return softmax_output - origin;}
+
+set<vect> softmax_cec_grad(set<vect> &setSoftmaxOutput, set<vect> &setOrigin)
+{
+    if(setSoftmaxOutput.size() == setOrigin.size())
+    {
+        set<vect> setGradOutput(setOrigin.size());
+        for(auto i=0; i<setOrigin.size(); ++i) setGradOutput[i] = softmax_cec_grad(setSoftmaxOutput[i], setOrigin[i]);
+        return setGradOutput;
+    }
+    else return blank_vect_seq;
+}
 
 vect divisor_dominate(vect &divisor, double epsilon)
 {

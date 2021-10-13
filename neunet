@@ -4,9 +4,9 @@
 #define NEUNET_BEGIN namespace neunet   {
 #define NEUNET_END                      }
 
-#define layer_ptr                       std::shared_ptr<layer::Layer>
-#define layer_list                      bagrt::net_list<layer_ptr>
-#define layer_node                      bagrt::net_list<layer_ptr>::_node
+#define LAYER_PTR                       std::shared_ptr<layer::Layer>
+#define LAYER_LIST                      bagrt::net_list<LAYER_PTR>
+#define LAYER_NODE                      bagrt::net_list<LAYER_PTR>::_node
 
 #define LAYER                           layer::Layer
 
@@ -23,5 +23,6 @@
 #define LAYER_BN_CONV_ADA               layer::LayerBNConvAda
 
 #define _LAYER                          layer::
+#define LAYER_INSTANCE                  bagrt::derive_instance_ptr 
 
 #include "neunet.hpp"
