@@ -57,7 +57,7 @@ public:
         }
         else return false;
     }
-    LayerFC(uint64_t iInputLnCnt, uint64_t iOutputLnCnt, uint64_t iActFuncIdx = SIGMOID, uint64_t iCurrLayerType = FC, bool bIsFirstLayer = false, double dRandBoundryFirst = 0.0, double dRandBoundrySecond = 0.0, double dAcc = 1e-05) : Layer(iCurrLayerType, iActFuncIdx, bIsFirstLayer) {InitLayerWeight(iInputLnCnt, iOutputLnCnt, dRandBoundryFirst, dRandBoundrySecond, dAcc);}
+    LayerFC(uint64_t iInputLnCnt, uint64_t iOutputLnCnt, uint64_t iActFuncIdx = SIGMOID, uint64_t iCurrLayerType = FC, bool bIsFirstLayer = false, double dRandBoundryFirst = 0.0, double dRandBoundrySecond = 0.0, double dAcc = 1e-05) : Layer(iActFuncIdx, iCurrLayerType, bIsFirstLayer) {InitLayerWeight(iInputLnCnt, iOutputLnCnt, dRandBoundryFirst, dRandBoundrySecond, dAcc);}
     set<vect> ForwProp(set<vect> &setInput)
     {
         if(bFirstLayer)setLayerInput = setInput;
@@ -92,8 +92,7 @@ class LayerFCAda : public LayerFC
 protected:
     _ADA AdaDeltaVect advLayerDelta;
 public:
-    LayerFCAda(uint64_t iActFuncIdx = SIGMOID, uint64_t iCurrLayerType = FC_ADA, bool bIsFirstLayer = false) : LayerFC(iCurrLayerType, iActFuncIdx, bIsFirstLayer) {}
-    LayerFCAda(uint64_t iInputLnCnt, uint64_t iOutputLnCnt, uint64_t iActFuncIdx = SIGMOID, uint64_t iCurrLayerType = FC_ADA, bool bIsFirstLayer = false, double dRandBoundryFirst = 0.0, double dRandBoundrySecond = 0.0, double dAcc = 1e-05) : LayerFC(iInputLnCnt, iOutputLnCnt, iCurrLayerType, iActFuncIdx, bIsFirstLayer, dRandBoundryFirst, dRandBoundrySecond, dAcc) {}
+    LayerFCAda(uint64_t iInputLnCnt, uint64_t iOutputLnCnt, uint64_t iActFuncIdx = SIGMOID, double dDecayController = 0.95, double dAdaDominator = 1e-6, uint64_t iCurrLayerType = FC_ADA, bool bIsFirstLayer = false, double dRandBoundryFirst = 0.0, double dRandBoundrySecond = 0.0, double dAcc = 1e-05) : LayerFC(iInputLnCnt, iOutputLnCnt, iActFuncIdx, iCurrLayerType, bIsFirstLayer, dRandBoundryFirst, dRandBoundrySecond, dAcc) {advLayerDelta = _ADA AdaDeltaVect(vecLayerWeight.LN_CNT, vecLayerWeight.COL_CNT, dDecayController, dAdaDominator);}
     set<vect> BackProp(set<vect> &setGrad)
     {
         auto setGradBack = Derivative<vect>(setOutput, _FC GradLossToInput(setGrad, vecLayerWeight));
@@ -130,7 +129,7 @@ protected:
         dGamma = lyrSrc.dGamma;
     }
 public:
-    LayerBNFC(uint64_t iActFuncIdx = NULL_FUNC, double dShift = 0, double dScale = 1, bool bIsFirstLayer = false, uint64_t iCurrLayerType = BN_FC, double dBNDominator = 1e-10) : Layer(iActFuncIdx, iCurrLayerType, bIsFirstLayer), dBeta(dShift), dGamma(dScale), dEpsilon(dBNDominator) {}
+    LayerBNFC(uint64_t iActFuncIdx = NULL_FUNC, double dShift = 0, double dScale = 1, uint64_t iCurrLayerType = BN_FC, bool bIsFirstLayer = false, double dBNDominator = 1e-10) : Layer(iActFuncIdx, iCurrLayerType, bIsFirstLayer), dBeta(dShift), dGamma(dScale), dEpsilon(dBNDominator) {}
     set<vect> ForwProp(set<vect> &setInput)
     {
         if(bFirstLayer) setLayerInput = setInput;
@@ -170,10 +169,10 @@ protected:
     _ADA AdaDeltaVal advBeta;
     _ADA AdaDeltaVal advGamma;
 public:
-    LayerBNFCAda(uint64_t iActFuncIdx = NULL_FUNC, bool bIsFirstLayer = false, double dShift = 0, double dScale = 1, uint64_t iCurrLayerType = BN_FC_ADA, double dDecayController = 0.95, double dAdaDominator = 1e-3, double dBNDominator = 1e-10) : LayerBNFC(iActFuncIdx, bIsFirstLayer, dShift, dScale, iCurrLayerType, dBNDominator)
+    LayerBNFCAda(uint64_t iActFuncIdx = NULL_FUNC, double dShift = 0, double dScale = 1, uint64_t iCurrLayerType = BN_FC_ADA, bool bIsFirstLayer = false, double dDecayController = 0.95, double dAdaDominator = 1e-6, double dBNDominator = 1e-10) : LayerBNFC(iActFuncIdx, dShift, dScale, iCurrLayerType, bIsFirstLayer, dBNDominator)
     {
-        advBeta = _ADA AdaDeltaVal(0, 0, dDecayController, dAdaDominator);
-        advGamma = _ADA AdaDeltaVal(0, 0, dDecayController, dAdaDominator);
+        advBeta = _ADA AdaDeltaVal(dDecayController, dAdaDominator);
+        advGamma = _ADA AdaDeltaVal(dDecayController, dAdaDominator);
     }
     set<vect> BackProp(set<vect> &setGrad)
     {
@@ -296,8 +295,15 @@ public:
         LayerConv::operator=(std::move(lyrSrc));
         advLayerDelta = std::move(lyrSrc.advLayerDelta);
     }
-    LayerConvAda(uint64_t iActFuncIdx = RELU, uint64_t iCurrLayerType = CONV_ADA, bool bIsFirstLayer = false) : LayerConv(iActFuncIdx, iCurrLayerType, bIsFirstLayer) {}
-    LayerConvAda(uint64_t iKernelAmt, uint64_t iKernelChannCnt, uint64_t iKernelLnCnt, uint64_t iKernelColCnt, uint64_t iLnStride, uint64_t iColStride, uint64_t iActFuncIdx = RELU, uint64_t iCurrLayerType = CONV_ADA, bool bIsFirstLayer = false, double dRandBoundryFirst = 0, double dRandBoundrySecond = 0, double dAcc = 1e-5, uint64_t iLnDilation = 0, uint64_t iColDilation = 0, uint64_t iInputPadTop = 0, uint64_t iInputPadRight = 0, uint64_t iInputPadBottom = 0, uint64_t iInputPadLeft = 0, uint64_t iLnDistance = 0, uint64_t iColDistance = 0) : LayerConv(iKernelAmt, iKernelChannCnt, iKernelLnCnt, iKernelColCnt, iLnStride, iColStride, iActFuncIdx, iCurrLayerType, bIsFirstLayer, dRandBoundryFirst, dRandBoundrySecond, dAcc, iLnDilation, iColDilation, iInputPadTop, iInputPadRight, iInputPadBottom, iInputPadLeft, iLnDistance, iColDistance) {}
+    LayerConvAda(uint64_t iKernelAmt, uint64_t iKernelChannCnt, uint64_t iKernelLnCnt, uint64_t iKernelColCnt, uint64_t iLnStride, uint64_t iColStride, uint64_t iActFuncIdx = RELU, uint64_t iCurrLayerType = CONV_ADA, bool bIsFirstLayer = false, double dDecayController = 0.95, double dRandBoundryFirst = 0, double dRandBoundrySecond = 0, double dAcc = 1e-5, double dAdaDominator = 1e-6, uint64_t iLnDilation = 0, uint64_t iColDilation = 0, uint64_t iInputPadTop = 0, uint64_t iInputPadRight = 0, uint64_t iInputPadBottom = 0, uint64_t iInputPadLeft = 0, uint64_t iLnDistance = 0, uint64_t iColDistance = 0) : LayerConv(iKernelAmt, iKernelChannCnt, iKernelLnCnt, iKernelColCnt, iLnStride, iColStride, iActFuncIdx, iCurrLayerType, bIsFirstLayer, dRandBoundryFirst, dRandBoundrySecond, dAcc, iLnDilation, iColDilation, iInputPadTop, iInputPadRight, iInputPadBottom, iInputPadLeft, iLnDistance, iColDistance)
+    {
+        advLayerDelta.init(iKernelAmt);
+        for(auto i=0; i<iKernelAmt; ++i)
+        {
+            advLayerDelta[i].init(iKernelChannCnt);
+            for(auto j=0; j<iKernelChannCnt; ++j) advLayerDelta[i][j] = _ADA AdaDeltaVect(iKernelLnCnt, iKernelColCnt, dDecayController, dAdaDominator);
+        }
+    }
     set<feature> BackProp(set<feature> &setGrad)
     {
         auto setGradBack = Derivative(setOutput, _CONV GradLossToInput(setGrad, tenKernel, iLayerLnStride, iLayerColStride, iLayerLnDilation, iLayerColDilation, iLayerInputPadTop, iLayerInputPadRight, iLayerInputPadBottom, iLayerInputPadLeft, iLayerLnDistance, iLayerColDistance));
@@ -359,7 +365,7 @@ public:
         iLayerLnStride = iLnStride; iLayerColStride = iColStride;
         iLayerLnDilation = iLnDilation; iLayerColDilation = iColDilation;
     }
-    LayerPool(uint64_t iFilterLnCnt = 0, uint64_t iFilterColCnt = 0, uint64_t iLnStride = 0, bool bIsFirstLayer = false, uint64_t iColStride = 0, uint64_t iPoolIdx = POOL_MAX, uint64_t iActFuncIdx = NULL_FUNC, uint64_t iCurrLayerType = POOL, uint64_t iLnDilation = 0, uint64_t iColDilation = 0) : Layer(iActFuncIdx, iCurrLayerType, bIsFirstLayer), iPoolType(iPoolIdx) {InitPara(iFilterLnCnt, iFilterColCnt, iLnStride, iColStride, iLnDilation, iColDilation);}
+    LayerPool(uint64_t iFilterLnCnt = 0, uint64_t iFilterColCnt = 0, uint64_t iLnStride = 0, uint64_t iColStride = 0, uint64_t iPoolIdx = POOL_MAX, uint64_t iActFuncIdx = NULL_FUNC, uint64_t iCurrLayerType = POOL, bool bIsFirstLayer = false, uint64_t iLnDilation = 0, uint64_t iColDilation = 0) : Layer(iActFuncIdx, iCurrLayerType, bIsFirstLayer), iPoolType(iPoolIdx) {InitPara(iFilterLnCnt, iFilterColCnt, iLnStride, iColStride, iLnDilation, iColDilation);}
     set<feature> ForwProp(set<feature> &setInput)
     {
         if(bFirstLayer) setLayerInput = setInput;
@@ -401,7 +407,7 @@ public:
         vecGamma = std::move(lyrSrc.vecGamma);
         dEpsilon = lyrSrc.dEpsilon;
     }
-    LayerBNConv(bool bIsFirstLayer = false, uint64_t iChannCnt = 1, uint64_t iActFuncIdx = NULL_FUNC, double dShift = 0, double dScale = 1, uint64_t iCurrLayerType = BN_CONV, double dBNDominator = 1e-5) : Layer(iActFuncIdx, iCurrLayerType, bIsFirstLayer), dEpsilon(dBNDominator)
+    LayerBNConv(uint64_t iChannCnt = 1, uint64_t iActFuncIdx = NULL_FUNC, double dShift = 0, double dScale = 1, uint64_t iCurrLayerType = BN_CONV, bool bIsFirstLayer = false, double dBNDominator = 1e-5) : Layer(iActFuncIdx, iCurrLayerType, bIsFirstLayer), dEpsilon(dBNDominator)
     {
         vecBeta = _CONV BNInitScaleShift(iChannCnt, dShift);
         vecGamma = _CONV BNInitScaleShift(iChannCnt, dScale);
@@ -443,7 +449,7 @@ public:
         advBeta = std::move(lyrSrc.advBeta);
         advGamma = std::move(lyrSrc.advGamma);
     }
-    LayerBNConvAda(bool bIsFirstLayer = false, uint64_t iChannCnt = 1, uint64_t iCurrLayerType = BN_CONV, double dDecayController = 0.95, double dAdaDominator = 1e-3, double dShift = 0, double dScale = 1, double dBNDominator = 1e-10) : LayerBNConv(bIsFirstLayer, iChannCnt, dShift, dScale, iCurrLayerType, dBNDominator)
+    LayerBNConvAda(uint64_t iChannCnt = 1, double dShift = 0, double dScale = 1, uint64_t iCurrLayerType = BN_CONV, bool bIsFirstLayer = false, double dDecayController = 0.95, double dAdaDominator = 1e-3, double dBNDominator = 1e-10) : LayerBNConv(iChannCnt, NULL_FUNC, dShift, dScale, iCurrLayerType, bIsFirstLayer, dBNDominator)
     {
         advBeta = _ADA AdaDeltaVect(iChannCnt, 1, dDecayController, dAdaDominator);
         advGamma = _ADA AdaDeltaVect(iChannCnt, 1, dDecayController, dAdaDominator);
@@ -470,7 +476,7 @@ public:
         return _FC FeatureTransform(setInput);
     }
     set<feature> BackProp(set<vect> &setGrad) {return _FC FeatureTransform(setGrad, iLayerInputLnCnt, iLayerInputColCnt);}
-    LayerTransToVect(uint64_t iCurrLayerType = TRANS_TO_VECT, uint64_t iActFuncIdx = NULL_FUNC, bool isFirstLayer = false) : Layer(iActFuncIdx, iCurrLayerType, isFirstLayer) {}
+    LayerTransToVect(uint64_t iActFuncIdx = NULL_FUNC, uint64_t iCurrLayerType = TRANS_TO_VECT, bool isFirstLayer = false) : Layer(iActFuncIdx, iCurrLayerType, isFirstLayer) {}
     LayerTransToVect(LayerTransToVect &lyrSrc) {*this = lyrSrc;}
     void operator=(LayerTransToVect &lyrSrc)
     {
@@ -486,7 +492,7 @@ protected:
     uint64_t iLayerChannLnCnt = 0;
     uint64_t iLayerChannColCnt = 0;
 public:
-    LayerTransToFeat(uint64_t iChannLnCnt, uint64_t iChannColCnt, uint64_t iCurrLayerType = TRANS_TO_FEAT, uint64_t iActFuncIdx = NULL_FUNC, bool isFirstLayer = false) : Layer(iActFuncIdx, iCurrLayerType, isFirstLayer), iLayerChannLnCnt(iChannLnCnt), iLayerChannColCnt(iChannColCnt) {}
+    LayerTransToFeat(uint64_t iChannLnCnt, uint64_t iChannColCnt, uint64_t iActFuncIdx = NULL_FUNC, uint64_t iCurrLayerType = TRANS_TO_FEAT, bool isFirstLayer = false) : Layer(iActFuncIdx, iCurrLayerType, isFirstLayer), iLayerChannLnCnt(iChannLnCnt), iLayerChannColCnt(iChannColCnt) {}
     set<feature> ForwProp(set<vect> &setInput) {return _FC FeatureTransform(setInput, iLayerChannLnCnt, iLayerChannColCnt);}
     set<vect> BackProp(set<feature> &setGrad) {return _FC FeatureTransform(setGrad);}
     LayerTransToFeat(LayerTransToFeat &lyrSrc) {*this = lyrSrc;}

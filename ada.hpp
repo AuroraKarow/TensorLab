@@ -7,7 +7,7 @@ private:
     vect vecExpDelta;
 public:
     double dRho = 0.95;
-    double dEpsilon = 1e-3;
+    double dEpsilon = 1e-6;
     vect vecPreDelta;
     AdaDeltaVect(){}
     AdaDeltaVect(AdaDeltaVect &asSrc) {*this = asSrc;}
@@ -54,10 +54,9 @@ private:
     double dExpDelta = 0;
 public:
     double dRho = 0.95;
-    double dEpsilon = 1e-3;
+    double dEpsilon = 1e-6;
     double dPreDelta = 0;
-    AdaDeltaVal(double dExpGradVal = 0, double dExpDeltaVal = 0, double dRhoVal = 0.95, double dEpsilonVal = 1e-6) :
-    dExpGrad(dExpGradVal), dExpDelta(dExpDeltaVal), dRho(dRhoVal), dEpsilon(dEpsilonVal) {}
+    AdaDeltaVal(double dRhoVal = 0.95, double dEpsilonVal = 1e-6) : dRho(dRhoVal), dEpsilon(dEpsilonVal) {}
     void operator=(AdaDeltaVal &adSrc)
     {
         dExpGrad = adSrc.dExpGrad;
