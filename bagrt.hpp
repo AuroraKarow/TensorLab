@@ -169,7 +169,7 @@ public:
     net_queue<uint64_t> find(_Ty &target, uint64_t range_first = 0, uint64_t range_second = 0) {return find(std::move(target), range_first, range_second);}
     _Ty sum(std::function<void(_Ty&, _Ty&)> add_func = [](_Ty &first, _Ty &second){return first + second})
     {
-        auto rtn_val = _ptr[0];
+        auto rtn_val = _ptr[ZERO_IDX];
         for(auto i=1; i<len; ++i) rtn_val = add_func(rtn_val, _ptr[i]);
         return rtn_val;
     }
@@ -432,7 +432,7 @@ public:
     net_list<_K> find_key(_V &value) {return find_key(std::move(value));}
     bool insert(_K &&key, _V &&value)
     {
-        if(this->find_idx(key) || val[0].key==key) return false;
+        if(this->find_idx(key) || val[ZERO_IDX].key==key) return false;
         else
         {
             kv in_temp;

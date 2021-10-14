@@ -76,7 +76,7 @@ mtx_info mtx_child_vec(MATRIX &mtx_src, uint64_t from_ln, uint64_t to_ln, uint64
     return mtx_info;
 }
 
-double mtx_atom(MATRIX &mtx_val) {return mtx_val[0];}
+double mtx_atom(MATRIX &mtx_val) {return mtx_val[ZERO_IDX];}
 
 bool mtx_refresh(MATRIX &mtx_val, uint64_t elem_cnt)
 {
@@ -109,7 +109,7 @@ double mtx_det(MATRIX &mtx_val, int dms)
     if(mtx_val)
     {
         if (dms == 1)
-        return mtx_val[0];
+        return mtx_val[ZERO_IDX];
         auto ac = mtx_init((dms - 1) * (dms - 1));
         int mov = 0;
         double sum = 0.0;
@@ -567,7 +567,7 @@ public:
     matrix(double atom) 
     {
         _init(1, 1, true);
-        info.mtx_val[0] = atom;
+        info.mtx_val[ZERO_IDX] = atom;
     }
     matrix(matrix &val) {*this = val;}
     matrix(matrix &&val) {*this = std::move(val);}
@@ -618,7 +618,7 @@ public:
     mtx_extm extremum(uint64_t from_ln, uint64_t to_ln, uint64_t from_col, uint64_t to_col, uint64_t ln_dilation = 0, uint64_t col_dilation = 0, bool max_flag = true) {return mtx_extm_val(info.mtx_val, from_ln, to_ln, from_col, to_col, info.ln_cnt, info.col_cnt, ln_dilation, col_dilation, max_flag);}
     double atom()
     {
-        if(elem_cnt==1 && is_matrix()) return info.mtx_val[0];
+        if(elem_cnt==1 && is_matrix()) return info.mtx_val[ZERO_IDX];
         else return NAN;
     }
     matrix child(uint64_t from_ln, uint64_t to_ln, uint64_t from_col, uint64_t to_col, uint64_t ln_dilation = 0, uint64_t col_dilation = 0) 

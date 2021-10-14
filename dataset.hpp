@@ -110,10 +110,20 @@ public:
         if(lbl_val < 10)
         {
             vect _orgn(MNIST_ORGN_SIZE, 1);
-            _orgn[lbl_val][0] = 1;
+            _orgn[lbl_val][ZERO_IDX] = 1;
             return _orgn;
         }
         else return vect::blank_matrix();
+    }
+    set<vect> orgn()
+    {
+        set<vect> orgn_set(elem_lbl.size());
+        for(auto i=0; i<elem_lbl.size(); ++i)
+        {
+            orgn_set[i] = vect(MNIST_ORGN_SIZE, SGL_IDX);
+            orgn_set[i][elem_lbl[i]][ZERO_IDX] = 1;
+        }
+        return orgn_set;
     }
     bool load_data(std::string &dat_dir, std::string &lbl_dir, uint64_t load_qnty = 0, bool by_lbl = false)
     {
@@ -131,7 +141,8 @@ public:
                     auto curr_lbl = read_curr_lbl();
                     if(qnty_list[curr_lbl] < load_qnty)
                     {
-                        elem[elem_cnt] = read_curr_dat();
+                        elem[elem_cnt].init();
+                        elem[elem_cnt][ZERO_IDX] = read_curr_dat();
                         elem_lbl[elem_cnt ++] = curr_lbl;
                         ++ qnty_list[curr_lbl];
                     }
@@ -148,7 +159,9 @@ public:
                 for(auto i=0,j=0; j<load_qnty; ++i)
                     if(i==lbl_data_stat[j])
                     {
-                        elem[j] = read_curr_dat();
+                        
+                        elem[j].init();
+                        elem[j][ZERO_IDX] = read_curr_dat();
                         elem_lbl[j ++] = read_curr_lbl();
                     }
                     else
@@ -164,7 +177,8 @@ public:
                 elem_lbl.init(load_qnty);
                 for(auto i=0; i<load_qnty; ++i)
                 {
-                    elem[i] = read_curr_dat();
+                    elem[i].init();
+                    elem[i][ZERO_IDX] = read_curr_dat();
                     elem_lbl[i] = read_curr_lbl();
                 }
             }
@@ -184,7 +198,8 @@ public:
                 auto curr_lbl = read_curr_lbl();
                 if(qnty_list[curr_lbl])
                 {
-                    elem[elem_cnt] = read_curr_dat();
+                    elem[elem_cnt].init();
+                    elem[elem_cnt][ZERO_IDX] = read_curr_dat();
                     elem_lbl[elem_cnt ++] = curr_lbl;
                     -- qnty_list[curr_lbl];
                 }
@@ -195,8 +210,8 @@ public:
         close_stream();
         return pcdr_flag;
     }
-    MNIST(std::string &dat_dir, std::string &lbl_dir, bool elem_bool, uint64_t load_qnty = 0, bool by_lbl = false) : is_bool(elem_bool) {load_data(dat_dir, lbl_dir, load_qnty, by_lbl);}
-    MNIST(std::string &dat_dir, std::string &lbl_dir, bool elem_bool, bagrt::net_queue<uint64_t> &qnty_list) : is_bool(elem_bool) {load_data(dat_dir, lbl_dir, qnty_list);}
+    MNIST(std::string dat_dir, std::string lbl_dir, bool elem_bool, uint64_t load_qnty = 0, bool by_lbl = false) : is_bool(elem_bool) {load_data(dat_dir, lbl_dir, load_qnty, by_lbl);}
+    MNIST(std::string dat_dir, std::string lbl_dir, bool elem_bool, bagrt::net_queue<uint64_t> &qnty_list) : is_bool(elem_bool) {load_data(dat_dir, lbl_dir, qnty_list);}
     bool output_bitmap(std::string &dir_root, uint64_t extend, char div_syb = '\\')
     {
         if(is_bool || elem.size()!=BMIO_RGB_CNT) return false;
@@ -206,7 +221,8 @@ public:
             for(auto i=0; i<elem.size(); ++i)
             {
                 auto name = '[' + std::to_string(elem_lbl[i]) + ']' + std::to_string(cnt++);
-                bmio::bitmap img(elem); 
+                bmio::bitmap img;
+                img.set_raw(elem[i][BMIO_R], elem[i][BMIO_G], elem[i][BMIO_B]);
                 if(!img.save_img(dir_root, name, extend, div_syb)) return false;
             }
             return true;

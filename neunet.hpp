@@ -74,9 +74,9 @@ protected:
     }
     bool BackProp(set<vect> &setOrigin)
     {
-        if(bLastIsVect) {setGradVec = softmax_cec_grad(setOutputVec, setOrigin);}
-        else setGradVec = cec_grad(setOutputVec, setOrigin);
         auto tail = lsLayer.tail_node();
+        if(bLastIsVect)  setGradVec = softmax_cec_grad(setOutputVec, setOrigin);
+        else setGradVec = cec_grad(setOutputVec, setOrigin);
         while(tail)
         {
             switch (tail->data->iLayerType)
@@ -167,21 +167,19 @@ public:
      * - LAYER_BN_CONV
      * iChannCnt, iActFuncIdx = NULL_FUNC, dShift = 0, dScale = 1, iCurrLayerType = BN_CONV, bIsFirstLayer = false, dBNDominator = 1e-5
      * - LAYER_BN_CONV_ADA
-     * iChannCnt = 1, dShift = 0, dScale = 1, iCurrLayerType = BN_CONV, bIsFirstLayer = false, dDecayController = 0.95, dAdaDominator = 1e-3, dBNDominator = 1e-10
+     * iChannCnt = 1, iActFuncIdx = NULL_FUNC, dShift = 0, dScale = 1, iCurrLayerType = BN_CONV, bIsFirstLayer = false, dDecayController = 0.95, dAdaDominator = 1e-3, dBNDominator = 1e-10
      * - TRANS_TO_VECT
      * iActFuncIdx = NULL_FUNC, iCurrLayerType = TRANS_TO_VECT, isFirstLayer = false
      * - TRANS_TO_FEAT
      * iChannLnCnt, iChannColCnt, iActFuncIdx = NULL_FUNC, iCurrLayerType = TRANS_TO_FEAT, isFirstLayer = false
      */
-    template<typename LayerType, typename ... Args,  typename = std::enable_if_t<std::is_base_of_v<_LAYER Layer, LayerType>>>bool AddLayer(Args&& ... pacArgs) {return lsLayer.emplace_back(pacArgs...);}
-    template<typename LayerType, typename ... Args,  typename = std::enable_if_t<std::is_base_of_v<_LAYER Layer, LayerType>>>bool InsertLayer(uint64_t iIdx, Args&& ... pacArgs) {return lsLayer.insert(iIdx, pacArgs...);}
-    void Run(set<vect> &setInputVec, set<feature> &setInputFt, set<vect> &setOrigin)
+    template<typename LayerType, typename ... Args,  typename = std::enable_if_t<std::is_base_of_v<_LAYER Layer, LayerType>>> bool AddLayer(Args&& ... pacArgs) {return lsLayer.emplace_back(pacArgs...);}
+    template<typename LayerType, typename ... Args,  typename = std::enable_if_t<std::is_base_of_v<_LAYER Layer, LayerType>>> bool InsertLayer(uint64_t iIdx, Args&& ... pacArgs) {return lsLayer.insert(iIdx, pacArgs...);}
+    bool Run(set<vect> &setInputVec, set<feature> &setInputFt, set<vect> &setOrigin)
     {
-        do
-        {
-            ForwProp(setInputVec, setInputFt);
-            BackProp(setOrigin);
-        } while (IterateFlag(setInputVec, setInputFt, setOrigin));
+        do if(!ForwProp(setInputVec, setInputFt) || !BackProp(setOrigin)) return false;
+        while (IterateFlag(setInputVec, setInputFt, setOrigin));
+        return true;
     }
 };
 

@@ -22,6 +22,9 @@
 #define LAYER_BN_CONV                   layer::LayerBNConv
 #define LAYER_BN_CONV_ADA               layer::LayerBNConvAda
 
+#define LAYER_TRAN_TO_VECT              layer::LayerTransToVect
+#define LAYER_TRAN_TO_FEAT              layer::LayerTransToFeat
+
 #define _LAYER                          layer::
 #define LAYER_INSTANCE                  bagrt::derive_instance_ptr 
 

@@ -449,7 +449,7 @@ public:
         advBeta = std::move(lyrSrc.advBeta);
         advGamma = std::move(lyrSrc.advGamma);
     }
-    LayerBNConvAda(uint64_t iChannCnt = 1, double dShift = 0, double dScale = 1, uint64_t iCurrLayerType = BN_CONV, bool bIsFirstLayer = false, double dDecayController = 0.95, double dAdaDominator = 1e-3, double dBNDominator = 1e-10) : LayerBNConv(iChannCnt, NULL_FUNC, dShift, dScale, iCurrLayerType, bIsFirstLayer, dBNDominator)
+    LayerBNConvAda(uint64_t iChannCnt = 1, uint64_t iActFuncIdx = NULL_FUNC, double dShift = 0, double dScale = 1, uint64_t iCurrLayerType = BN_CONV, bool bIsFirstLayer = false, double dDecayController = 0.95, double dAdaDominator = 1e-3, double dBNDominator = 1e-10) : LayerBNConv(iChannCnt, iActFuncIdx, dShift, dScale, iCurrLayerType, bIsFirstLayer, dBNDominator)
     {
         advBeta = _ADA AdaDeltaVect(iChannCnt, 1, dDecayController, dAdaDominator);
         advGamma = _ADA AdaDeltaVect(iChannCnt, 1, dDecayController, dAdaDominator);

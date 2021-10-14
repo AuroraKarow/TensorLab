@@ -6,7 +6,7 @@
 #define DATASET_BEGIN       namespace dataset{
 #define DATASET_END         }
 
-#define MNIST_SEQ_ELEM      set<vect>
+#define MNIST_SEQ_ELEM      set<feature>
 #define MNIST_SEQ_LBL       set<uint64_t>
 
 #define MNIST_MAGIC_ELEM    0x803
