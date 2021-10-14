@@ -44,8 +44,8 @@ class LayerFC : public Layer
 {
 protected:
     vect vecLayerWeight;
-    set<vect> vecLayerInput;
-    set<vect> vecOutput;
+    set<vect> setLayerInput;
+    set<vect> setOutput;
 public:
     LayerFC(uint64_t iActFuncIdx = SIGMOID, uint64_t iCurrLayerType = FC, bool bIsFirstLayer = false) : Layer(iCurrLayerType, iActFuncIdx, bIsFirstLayer) {}
     bool InitLayerWeight(uint64_t iInputLnCnt, uint64_t iOutputLnCnt, double dRandBoundryFirst = 0.0, double dRandBoundrySecond = 0.0, double dAcc = 1e-05)
@@ -60,15 +60,15 @@ public:
     LayerFC(uint64_t iInputLnCnt, uint64_t iOutputLnCnt, uint64_t iActFuncIdx = SIGMOID, uint64_t iCurrLayerType = FC, bool bIsFirstLayer = false, double dRandBoundryFirst = 0.0, double dRandBoundrySecond = 0.0, double dAcc = 1e-05) : Layer(iCurrLayerType, iActFuncIdx, bIsFirstLayer) {InitLayerWeight(iInputLnCnt, iOutputLnCnt, dRandBoundryFirst, dRandBoundrySecond, dAcc);}
     set<vect> ForwProp(set<vect> &setInput)
     {
-        if(bFirstLayer)vecLayerInput = setInput;
-        else vecLayerInput = std::move(setInput);
-        vecOutput = _FC Output(setInput, vecLayerWeight);
-        return Activate(vecOutput);
+        if(bFirstLayer)setLayerInput = setInput;
+        else setLayerInput = std::move(setInput);
+        setOutput = _FC Output(setInput, vecLayerWeight);
+        return Activate(setOutput);
     }
     set<vect> BackProp(set<vect> &setGrad, double dLearnRate)
     {
-        auto setGradBack = Derivative<vect>(vecOutput, _FC GradLossToInput(setGrad, vecLayerWeight));
-        vecLayerWeight -= dLearnRate * _FC GradLossToWeight(setGrad, vecLayerInput);
+        auto setGradBack = Derivative<vect>(setOutput, _FC GradLossToInput(setGrad, vecLayerWeight));
+        vecLayerWeight -= dLearnRate * _FC GradLossToWeight(setGrad, setLayerInput);
         return setGradBack;
     }
     LayerFC(LayerFC &lyrSrc) {*this = lyrSrc;}
@@ -77,13 +77,13 @@ public:
     {
         Layer::operator=(lyrSrc);
         vecLayerWeight = lyrSrc.vecLayerWeight;
-        vecLayerInput = lyrSrc.vecLayerInput;
+        setLayerInput = lyrSrc.setLayerInput;
     }
     void operator=(LayerFC &&lyrSrc)
     {
         Layer::operator=(lyrSrc);
         vecLayerWeight = std::move(lyrSrc.vecLayerWeight);
-        vecLayerInput = std::move(lyrSrc.vecLayerInput);
+        setLayerInput = std::move(lyrSrc.setLayerInput);
     }
 };
 
@@ -94,10 +94,10 @@ protected:
 public:
     LayerFCAda(uint64_t iActFuncIdx = SIGMOID, uint64_t iCurrLayerType = FC_ADA, bool bIsFirstLayer = false) : LayerFC(iCurrLayerType, iActFuncIdx, bIsFirstLayer) {}
     LayerFCAda(uint64_t iInputLnCnt, uint64_t iOutputLnCnt, uint64_t iActFuncIdx = SIGMOID, uint64_t iCurrLayerType = FC_ADA, bool bIsFirstLayer = false, double dRandBoundryFirst = 0.0, double dRandBoundrySecond = 0.0, double dAcc = 1e-05) : LayerFC(iInputLnCnt, iOutputLnCnt, iCurrLayerType, iActFuncIdx, bIsFirstLayer, dRandBoundryFirst, dRandBoundrySecond, dAcc) {}
-    set<vect> BackProp(set<vect> &setInput, set<vect> &setGrad)
+    set<vect> BackProp(set<vect> &setGrad)
     {
-        auto setGradBack = Derivative<vect>(vecOutput, _FC GradLossToInput(setGrad, vecLayerWeight));
-        vecLayerWeight = _FC AdaDeltaUpdateWeight(vecLayerWeight, _FC GradLossToWeight(setGrad, setInput), advLayerDelta);
+        auto setGradBack = Derivative<vect>(setOutput, _FC GradLossToInput(setGrad, vecLayerWeight));
+        vecLayerWeight = _FC AdaDeltaUpdateWeight(vecLayerWeight, _FC GradLossToWeight(setGrad, setLayerInput), advLayerDelta);
         return setGradBack;
     }
     LayerFCAda(LayerFCAda &lyrSrc) {*this = lyrSrc;}

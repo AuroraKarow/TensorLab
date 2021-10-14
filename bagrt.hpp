@@ -235,6 +235,7 @@ public:
         _node *prev_node = nullptr;
         std::unique_ptr<_node> next_node = nullptr;
         _node *next() {return next_node.get()}
+        _node *prev() {return prev_node;}
     };
 protected:
     std::unique_ptr<_node> head = nullptr;
