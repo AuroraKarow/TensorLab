@@ -167,10 +167,10 @@ public:
         return idx_set;
     }
     net_queue<uint64_t> find(_Ty &target, uint64_t range_first = 0, uint64_t range_second = 0) {return find(std::move(target), range_first, range_second);}
-    _Ty sum(std::function<void(_Ty&, _Ty&)> add_func = [](_Ty &first, _Ty &second){return first + second})
+    _Ty sum(std::function<_Ty(_Ty&, _Ty&)> add_func = [](_Ty &first, _Ty &second){return first + second;})
     {
         auto rtn_val = _ptr[ZERO_IDX];
-        for(auto i=1; i<len; ++i) rtn_val = add_func(rtn_val, _ptr[i]);
+        for(auto i=1; i<len; ++i) rtn_val = std::move(add_func(rtn_val, _ptr[i]));
         return rtn_val;
     }
     _Ty &operator[](uint64_t idx)
@@ -234,7 +234,7 @@ public:
         _Ty data;
         _node *prev_node = nullptr;
         std::unique_ptr<_node> next_node = nullptr;
-        _node *next() {return next_node.get()}
+        _node *next() {return next_node.get();}
         _node *prev() {return prev_node;}
     };
 protected:

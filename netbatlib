@@ -3,8 +3,6 @@
 #define ADA_BEGIN       namespace ada{
 #define ADA_END         }
 
-#include "ada.hpp"
-
 ADA_BEGIN
 
 template<typename _Ty> using ten_ada = vect_t<_Ty>;
@@ -12,5 +10,6 @@ template<typename _Ty> using ft_ada = set<_Ty>;
 
 ADA_END
 
+#include "ada.hpp"
 #include "fcbat.hpp"
 #include "convbat.hpp"

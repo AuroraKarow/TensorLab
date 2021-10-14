@@ -173,8 +173,8 @@ public:
      * - TRANS_TO_FEAT
      * iChannLnCnt, iChannColCnt, iActFuncIdx = NULL_FUNC, iCurrLayerType = TRANS_TO_FEAT, isFirstLayer = false
      */
-    template<typename LayerType, typename ... Args,  typename = std::enable_if_t<std::is_base_of_v<_LAYER Layer, LayerType>>> bool AddLayer(Args&& ... pacArgs) {return lsLayer.emplace_back(pacArgs...);}
-    template<typename LayerType, typename ... Args,  typename = std::enable_if_t<std::is_base_of_v<_LAYER Layer, LayerType>>> bool InsertLayer(uint64_t iIdx, Args&& ... pacArgs) {return lsLayer.insert(iIdx, pacArgs...);}
+    template<typename LayerType, typename ... Args,  typename = std::enable_if_t<std::is_base_of_v<_LAYER Layer, LayerType>>> bool AddLayer(Args&& ... pacArgs) {return lsLayer.emplace_back(std::make_shared<LayerType>(pacArgs...));}
+    template<typename LayerType, typename ... Args,  typename = std::enable_if_t<std::is_base_of_v<_LAYER Layer, LayerType>>> bool InsertLayer(uint64_t iIdx, Args&& ... pacArgs) {return lsLayer.insert(iIdx, std::make_shared<LayerType>(pacArgs...));}
     bool Run(set<vect> &setInputVec, set<feature> &setInputFt, set<vect> &setOrigin)
     {
         do if(!ForwProp(setInputVec, setInputFt) || !BackProp(setOrigin)) return false;
