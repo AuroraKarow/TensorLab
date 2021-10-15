@@ -94,9 +94,9 @@ public:
     }
     net_queue(net_queue &&mov_val)
     {
-        _ptr = std::move(val._ptr);
-        len = val.len;
-        val.len = 0;
+        _ptr = std::move(mov_val._ptr);
+        len = mov_val.len;
+        mov_val.len = 0;
     }
     bool init(uint64_t _size = 1)
     {
