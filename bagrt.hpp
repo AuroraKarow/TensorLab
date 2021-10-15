@@ -347,6 +347,7 @@ public:
         return temp;
     }
     template<typename ... Args> bool emplace_back(Args &&...args) {return insert(len, args ...);}
+    bool push_back(_Ty val) {return insert(len, val);}
     friend std::ostream &operator<<(std::ostream &output, net_list &out_val)
     {
         auto p_tool = out_val.head.get();
