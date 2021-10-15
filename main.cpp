@@ -57,6 +57,14 @@ protected:
                 setOutputFt = LAYER_INSTANCE<LAYER_BN_CONV_ADA>(head->data) -> ForwProp(setOutputFt);
                 if(setOutputFt.size()) break;
                 else return false;
+            case TRANS_TO_VECT:
+                setOutputVec = LAYER_INSTANCE<LAYER_TRAN_TO_VECT>(head->data) -> ForwProp(setOutputFt);
+                if(setOutputVec.size()) break;
+                else return false;
+            case TRANS_TO_FEAT:
+                setOutputFt = LAYER_INSTANCE<LAYER_TRAN_TO_FEAT>(head->data) -> ForwProp(setOutputVec);
+                if(setOutputFt.size()) break;
+                else return false;
             default: return false;
             }
             head = head -> next();
@@ -107,6 +115,14 @@ protected:
             case BN_CONV_ADA:
                 setGradFt = LAYER_INSTANCE<LAYER_BN_CONV_ADA>(tail->data) -> BackProp(setGradFt);
                 if(setGradFt.size()) break;
+                else return false;
+            case TRANS_TO_VECT:
+                setGradFt = LAYER_INSTANCE<LAYER_TRAN_TO_VECT>(tail->data) -> BackProp(setGradVec);
+                if(setGradFt.size()) break;
+                else return false;
+            case TRANS_TO_FEAT:
+                setGradVec = LAYER_INSTANCE<LAYER_TRAN_TO_FEAT>(tail->data) -> BackProp(setGradFt);
+                if(setGradVec.size()) break;
                 else return false;
             default: return false;
             }
