@@ -1,7 +1,7 @@
 #pragma once
 #include "layer"
 
-#define NEUNET_BEGIN namespace neunet   {
+#define NEUNET_BEGIN                    namespace neunet {
 #define NEUNET_END                      }
 
 #define LAYER_PTR                       std::shared_ptr<layer::Layer>

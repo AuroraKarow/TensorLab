@@ -569,8 +569,8 @@ public:
         _init(1, 1, true);
         info.mtx_val[ZERO_IDX] = atom;
     }
-    matrix(matrix &val) {*this = val;}
-    matrix(matrix &&val) {*this = std::move(val);}
+    matrix(matrix &val) {value_copy(val);}
+    matrix(matrix &&val) {value_move(std::move(val));}
     matrix(std::initializer_list<std::initializer_list<double>> _vect) {*this = _vect;}
     bool value_copy(matrix &val)
     {
@@ -719,8 +719,8 @@ public:
     matrix operator*(double val) {return matrix(mtx_mult(info.mtx_val, val, info.ln_cnt, info.col_cnt), info.ln_cnt, info.col_cnt);}
     void operator*=(double val) {new (this)matrix(std::move(*this * val));}
     friend matrix operator*(double val, matrix &r_val) {return r_val * val;}
-    void operator=(matrix &val) {value_copy(val);}
-    void operator=(matrix &&val) {value_move(std::move(val));}
+    void operator=(matrix &val) {new(this)matrix(val);}
+    void operator=(matrix &&val) {new(this)matrix(std::move(val));}
     void operator=(std::initializer_list<std::initializer_list<double>> _vect)
     {
         bagrt::net_list<double> elem_temp;

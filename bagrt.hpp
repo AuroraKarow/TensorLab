@@ -80,8 +80,24 @@ protected:
     _Ty temp;
 public:
     net_queue(uint64_t _size = 0) {realloc_inc_ptr(_size);}
-    net_queue(net_queue &cpy_val) {*this = cpy_val;}
-    net_queue(net_queue &&mov_val){*this = std::move(mov_val);}
+    net_queue(net_queue &cpy_val)
+    {
+        if(cpy_val.len)
+        {
+            if(len != cpy_val.len)
+            {
+                len = cpy_val.len;
+                _ptr = std::make_unique<_Ty []>(len);
+            }
+            for(auto i=0; i<len; ++i) _ptr[i] = cpy_val._ptr[i];
+        }
+    }
+    net_queue(net_queue &&mov_val)
+    {
+        _ptr = std::move(val._ptr);
+        len = val.len;
+        val.len = 0;
+    }
     bool init(uint64_t _size = 1)
     {
         if(_size > 0)
@@ -189,24 +205,8 @@ public:
         else return false;
     }
     bool operator!=(net_queue &val) {return !(val == *this);}
-    void operator=(net_queue &val)
-    {
-        if(val.len)
-        {
-            if(len != val.len)
-            {
-                len = val.len;
-                _ptr = std::make_unique<_Ty []>(len);
-            }
-            for(auto i=0; i<len; ++i) _ptr[i] = val._ptr[i];
-        }
-    }
-    void operator=(net_queue &&val)
-    {
-        _ptr = std::move(val._ptr);
-        len = val.len;
-        val.len = 0;
-    }
+    void operator=(net_queue &val) {new(this)net_queue(val);}
+    void operator=(net_queue &&val) {new(this)net_queue(std::move(val));}
     friend std::ostream& operator<<(std::ostream &output, net_queue &val)
     {
         for(auto i=0; i<val.len; ++i)
@@ -253,8 +253,42 @@ public:
     }
     uint64_t size() {return len;}
     bool empty() {return !len;}
-    net_list(net_list &cpy_val) {*this = cpy_val;}
-    net_list(net_list &&cpy_val) {*this = std::move(cpy_val);}
+    net_list(net_list &cpy_val)
+    {
+        if(!len)
+        {
+            head = create_node();
+            ++ len;
+        }
+        auto p_tool = head.get(),
+            src_tool = cpy_val.head.get();
+        p_tool -> data = src_tool -> data;
+        auto cpy_len = 0;
+        if(len < cpy_val.len) cpy_len = len;
+        else cpy_len = cpy_val.len;
+        len = cpy_val.len;
+        for(auto i=1; i<cpy_len; ++i)
+        {
+            p_tool = p_tool -> next_node.get();
+            src_tool = src_tool -> next_node.get();
+            p_tool -> data = src_tool -> data;
+        }
+        if(cpy_val.len == cpy_len) p_tool -> next_node = nullptr;
+        else for(auto i=cpy_len; i<cpy_val.len; ++i)
+        {
+            p_tool -> next_node = create_node();
+            p_tool -> next_node.get() -> prev_node = p_tool;
+            p_tool = p_tool -> next_node.get();
+            src_tool = src_tool->next_node.get();
+            p_tool->data = src_tool->data;
+        }
+    }
+    net_list(net_list &&cpy_val)
+    {
+        len = cpy_val.len;
+        head = std::move(cpy_val.head);
+        cpy_val.len = 0;
+    }
     template<typename ... Args> bool insert(uint64_t idx, Args &&...args)
     {
         if(idx > len) return false;
@@ -324,12 +358,7 @@ public:
         }
         return output;
     }
-    void operator=(net_list &&cpy_val)
-    {
-        len = cpy_val.len;
-        head = std::move(cpy_val.head);
-        cpy_val.len = 0;
-    }
+    void operator=(net_list &&val) {new (this)net_list(std::move(val));}
     _Ty &operator[](uint64_t idx)
     {
         if(idx < len)
@@ -340,36 +369,7 @@ public:
         }
         else return temp;
     }
-    void operator=(net_list &val)
-    {
-        if(!len)
-        {
-            head = create_node();
-            ++ len;
-        }
-        auto p_tool = head.get(),
-            src_tool = val.head.get();
-        p_tool -> data = src_tool -> data;
-        auto cpy_len = 0;
-        if(len < val.len) cpy_len = len;
-        else cpy_len = val.len;
-        len = val.len;
-        for(auto i=1; i<cpy_len; ++i)
-        {
-            p_tool = p_tool -> next_node.get();
-            src_tool = src_tool -> next_node.get();
-            p_tool -> data = src_tool -> data;
-        }
-        if(val.len == cpy_len) p_tool -> next_node = nullptr;
-        else for(auto i=cpy_len; i<val.len; ++i)
-        {
-            p_tool -> next_node = create_node();
-            p_tool -> next_node.get() -> prev_node = p_tool;
-            p_tool = p_tool -> next_node.get();
-            src_tool = src_tool->next_node.get();
-            p_tool->data = src_tool->data;
-        }
-    }
+    void operator=(net_list &val) {new(this)net_list(val);}
     bool operator==(net_list &src_val)
     {
         if(len == src_val.len)
@@ -414,8 +414,8 @@ protected:
     kv kv_temp;
 public:
     net_map() {}
-    net_map(net_map &src) {*this = src;}
-    net_map(net_map &&src) {*this = std::move(src);}
+    net_map(net_map &src) {val = src.val;}
+    net_map(net_map &&src) {val = std::move(src.val);}
     uint64_t size() {return val.size();}
     uint64_t find_idx(_K &&key)
     {
@@ -460,8 +460,8 @@ public:
         return val[tar_idx].value;
     }
     _V &operator[](_K &key) {return this->operator[](std::move(key));}
-    void operator=(net_map &src) {val = src.val;}
-    void operator=(net_map &&src) {val = std::move(src.val);}
+    void operator=(net_map &src) {new(this)net_map(src);}
+    void operator=(net_map &&src) {new(this)net_map(std:move(src));}
     bool operator==(net_map &val) {return val == val.val;}
     bool operator!=(net_map &val) {return val != val.val;}
     friend std::ostream &operator<<(std::ostream &output, net_map &out_val)
