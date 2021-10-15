@@ -255,33 +255,37 @@ public:
     bool empty() {return !len;}
     net_list(net_list &cpy_val)
     {
-        if(!len)
+        if(capy_val.len)
         {
-            head = create_node();
-            ++ len;
-        }
-        auto p_tool = head.get(),
-            src_tool = cpy_val.head.get();
-        p_tool -> data = src_tool -> data;
-        auto cpy_len = 0;
-        if(len < cpy_val.len) cpy_len = len;
-        else cpy_len = cpy_val.len;
-        len = cpy_val.len;
-        for(auto i=1; i<cpy_len; ++i)
-        {
-            p_tool = p_tool -> next_node.get();
-            src_tool = src_tool -> next_node.get();
+            if(!len)
+            {
+                head = create_node();
+                ++ len;
+            }
+            auto p_tool = head.get(),
+                src_tool = cpy_val.head.get();
             p_tool -> data = src_tool -> data;
+            auto cpy_len = 0;
+            if(len < cpy_val.len) cpy_len = len;
+            else cpy_len = cpy_val.len;
+            len = cpy_val.len;
+            for(auto i=1; i<cpy_len; ++i)
+            {
+                p_tool = p_tool -> next_node.get();
+                src_tool = src_tool -> next_node.get();
+                p_tool -> data = src_tool -> data;
+            }
+            if(cpy_val.len == cpy_len) p_tool -> next_node = nullptr;
+            else for(auto i=cpy_len; i<cpy_val.len; ++i)
+            {
+                p_tool -> next_node = create_node();
+                p_tool -> next_node.get() -> prev_node = p_tool;
+                p_tool = p_tool -> next_node.get();
+                src_tool = src_tool->next_node.get();
+                p_tool->data = src_tool->data;
+            }
         }
-        if(cpy_val.len == cpy_len) p_tool -> next_node = nullptr;
-        else for(auto i=cpy_len; i<cpy_val.len; ++i)
-        {
-            p_tool -> next_node = create_node();
-            p_tool -> next_node.get() -> prev_node = p_tool;
-            p_tool = p_tool -> next_node.get();
-            src_tool = src_tool->next_node.get();
-            p_tool->data = src_tool->data;
-        }
+            
     }
     net_list(net_list &&cpy_val)
     {
