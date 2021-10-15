@@ -20,17 +20,14 @@ vect Conv(vect &vecInput, vect &vecKernel, uint64_t iLnStride, uint64_t iColStri
     else return blank_vect;
 }
 
-tensor Conv(feature &vecInput, tensor &tenKernel, uint64_t iLnStride, uint64_t iColStride, uint64_t iLnDilation = 0, uint64_t iColDilation = 0, uint64_t iInputPadTop = 0, uint64_t iInputPadRight = 0, uint64_t iInputPadBottom = 0, uint64_t iInputPadLeft = 0, uint64_t iLnDistance = 0, uint64_t iColDistance = 0)
+feature Conv(feature &vecInput, tensor &tenKernel, uint64_t iLnStride, uint64_t iColStride, uint64_t iLnDilation = 0, uint64_t iColDilation = 0, uint64_t iInputPadTop = 0, uint64_t iInputPadRight = 0, uint64_t iInputPadBottom = 0, uint64_t iInputPadLeft = 0, uint64_t iLnDistance = 0, uint64_t iColDistance = 0)
 {
-    tensor tenOutput(tenKernel.size());
-    for(auto i=0; i<tenKernel.size(); ++i)
+    feature tenOutput(tenKernel.size());
+    for(auto i=0; i<tenKernel.size(); ++i) for(auto j=0; j<vecInput.size(); ++j) 
     {
-        tenOutput[i].init(vecInput.size());
-        for(auto j=0; j<vecInput.size(); ++j) 
-        {
-            tenOutput[i][j] = Conv(vecInput[j], tenKernel[i][j], iLnStride, iColStride, iLnDilation, iColDilation, iInputPadTop, iInputPadRight, iInputPadBottom, iInputPadLeft, iLnDistance, iColDistance);
-            if(!tenOutput[i][j].is_matrix()) return blank_tensor;
-        }
+        if(tenOutput[i].is_matrix()) tenOutput[i] += Conv(vecInput[j], tenKernel[i][j], iLnStride, iColStride, iLnDilation, iColDilation, iInputPadTop, iInputPadRight, iInputPadBottom, iInputPadLeft, iLnDistance, iColDistance);
+        else tenOutput[i] = Conv(vecInput[j], tenKernel[i][j], iLnStride, iColStride, iLnDilation, iColDilation, iInputPadTop, iInputPadRight, iInputPadBottom, iInputPadLeft, iLnDistance, iColDistance);
+        if(!tenOutput[i].is_matrix()) return blank_feature;
     }
     return tenOutput;
 }
@@ -96,8 +93,8 @@ vect PoolDownMaxAvg(vect &vecInput, uint64_t iFilterLnCnt, uint64_t iFilterColCn
     if(SAMP_VALID(vecInput.LN_CNT, iFilterLnCnt, iLnStride, iLnDilation) &&
     SAMP_VALID(vecInput.COL_CNT, iFilterColCnt, iColStride, iColDilation))
     {
-        auto iOutputLnCnt = SAMP_INPUT_DIR_CNT(vecInput.LN_CNT, iFilterLnCnt, iLnStride, iLnDilation),
-            iOutputColCnt = SAMP_INPUT_DIR_CNT(vecInput.COL_CNT, iFilterColCnt, iColStride, iColDilation);
+        auto iOutputLnCnt = SAMP_OUTPUT_DIR_CNT(vecInput.LN_CNT, iFilterLnCnt, iLnStride, iLnDilation),
+            iOutputColCnt = SAMP_OUTPUT_DIR_CNT(vecInput.COL_CNT, iFilterColCnt, iColStride, iColDilation);
         vecOutput = vect(iOutputLnCnt, iOutputColCnt);
         for(auto i=0; i<vecOutput.LN_CNT; ++i)
             for(auto j=0; j<vecOutput.COL_CNT; ++j)

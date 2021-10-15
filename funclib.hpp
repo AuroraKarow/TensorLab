@@ -151,7 +151,7 @@ uint64_t samp_block_cnt(uint64_t filter_dir_cnt, uint64_t dir_dilation) {return 
 
 uint64_t samp_trace_pos(uint64_t output_dir_pos, uint64_t filter_dir_pos, uint64_t dir_stride, uint64_t dir_dilation) {return output_dir_pos * dir_stride + filter_dir_pos * (1 + dir_dilation);}
 
-uint64_t samp_output_dir_cnt(uint64_t input_dir_cnt, uint64_t filter_dir_cnt, uint64_t dir_stride, uint64_t dir_dilation) {return input_dir_cnt - samp_block_cnt(filter_dir_cnt, dir_stride) / dir_dilation + 1;}
+uint64_t samp_output_dir_cnt(uint64_t input_dir_cnt, uint64_t filter_dir_cnt, uint64_t dir_stride, uint64_t dir_dilation) {return (input_dir_cnt - samp_block_cnt(filter_dir_cnt, dir_dilation)) / dir_stride + 1;}
 
 uint64_t samp_input_dir_cnt(uint64_t output_dir_cnt, uint64_t filter_dir_cnt, uint64_t dir_stride, uint64_t dir_dilation) {return (output_dir_cnt - 1) * dir_stride + samp_block_cnt(filter_dir_cnt, dir_dilation);}
 

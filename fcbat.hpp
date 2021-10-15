@@ -28,25 +28,16 @@ set<vect> GradLossToInput(set<vect> &setGradLossToOutput, vect &vecWeight)
     return setGradLossToInput;
 }
 
-set<vect> GradLossToWeightSet(set<vect> &setGradLossToOutput, set<vect> &setInput)
-{
-    set<vect> vecGradLossToWeight;
-    if(setGradLossToOutput.size() == setInput.size())
-    {
-        vecGradLossToWeight.init(setInput.size());
-        for(auto i=0; i<setInput.size(); ++i)
-        {
-            vecGradLossToWeight[i] = GradLossToWeight(setGradLossToOutput[i], setInput[i]);
-            if(!vecGradLossToWeight[i].is_matrix()) return blank_vect_seq;
-        }
-    }
-    return vecGradLossToWeight;
-}
-
 vect GradLossToWeight(set<vect> &setGradLossToOutput, set<vect> &setInput)
 {
-    auto setGradLossToWeight = GradLossToWeightSet(setGradLossToOutput, setInput);
-    return setGradLossToWeight.sum();
+    vect vecGradLossToWeight;
+    if(setGradLossToOutput.size() == setInput.size()) for(auto i=0; i<setInput.size(); ++i)
+    {
+        if(vecGradLossToWeight.is_matrix()) vecGradLossToWeight += GradLossToWeight(setGradLossToOutput[i], setInput[i]);
+        else vecGradLossToWeight = GradLossToWeight(setGradLossToOutput[i], setInput[i]);
+        if(!vecGradLossToWeight.is_matrix()) return blank_vect;
+    }
+    return vecGradLossToWeight;
 }
 
 set<vect> FeatureTransform(set<feature> &setInput)

@@ -137,7 +137,8 @@ public:
 int main(int argc, char *argv[], char *envp[])
 {
     cout << "hello, world." << endl;
-    MNIST dataset(".../MNIST/train-images.idx3-ubyte", ".../MNIST/train-labels.idx1-ubyte", true, 20, true);
+    string root_dir = "E:\\VS Code project data\\MNIST\\";
+    MNIST dataset(root_dir + "train-images.idx3-ubyte", root_dir + "train-labels.idx1-ubyte", 20, true, true, 2);
     Basnet net;
     /* Need to appoint the first layer
      * It needn't appoint current layer's activate function if next one is BN layer
@@ -155,6 +156,5 @@ int main(int argc, char *argv[], char *envp[])
     net.AddLayer<LAYER_BN_FC_ADA>(SIGMOID);
     net.AddLayer<LAYER_FC>(84, 10, SOFTMAX);
     net.Run(set<vect>(), dataset.elem, dataset.orgn());
-
     return EXIT_SUCCESS;
 }

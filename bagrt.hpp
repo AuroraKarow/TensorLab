@@ -255,7 +255,7 @@ public:
     bool empty() {return !len;}
     net_list(net_list &cpy_val)
     {
-        if(capy_val.len)
+        if(cpy_val.len)
         {
             if(!len)
             {
@@ -285,7 +285,6 @@ public:
                 p_tool->data = src_tool->data;
             }
         }
-            
     }
     net_list(net_list &&cpy_val)
     {

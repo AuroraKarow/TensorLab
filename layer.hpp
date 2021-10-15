@@ -61,12 +61,13 @@ public:
     {
         if(bFirstLayer)setLayerInput = setInput;
         else setLayerInput = std::move(setInput);
-        setOutput = _FC Output(setInput, vecLayerWeight);
+        setOutput = _FC Output(setLayerInput, vecLayerWeight);
         return Activate(setOutput);
     }
     set<vect> BackProp(set<vect> &setGrad, double dLearnRate)
     {
-        auto setGradBack = Derivative<vect>(setOutput, _FC GradLossToInput(setGrad, vecLayerWeight));
+        setGrad = Derivative(setOutput, setGrad);
+        auto setGradBack = _FC GradLossToInput(setGrad, vecLayerWeight);
         vecLayerWeight -= dLearnRate * _FC GradLossToWeight(setGrad, setLayerInput);
         return setGradBack;
     }
@@ -92,7 +93,8 @@ public:
     LayerFCAda(uint64_t iInputLnCnt, uint64_t iOutputLnCnt, uint64_t iActFuncIdx = SIGMOID, double dDecayController = 0.95, double dAdaDominator = 1e-6, uint64_t iCurrLayerType = FC_ADA, bool bIsFirstLayer = false, double dRandBoundryFirst = 0.0, double dRandBoundrySecond = 0.0, double dAcc = 1e-05) : LayerFC(iInputLnCnt, iOutputLnCnt, iActFuncIdx, iCurrLayerType, bIsFirstLayer, dRandBoundryFirst, dRandBoundrySecond, dAcc) {advLayerDelta = _ADA AdaDeltaVect(vecLayerWeight.LN_CNT, vecLayerWeight.COL_CNT, dDecayController, dAdaDominator);}
     set<vect> BackProp(set<vect> &setGrad)
     {
-        auto setGradBack = Derivative<vect>(setOutput, _FC GradLossToInput(setGrad, vecLayerWeight));
+        setGrad = Derivative(setOutput, setGrad);
+        auto setGradBack = _FC GradLossToInput(setGrad, vecLayerWeight);
         vecLayerWeight = _FC AdaDeltaUpdateWeight(vecLayerWeight, _FC GradLossToWeight(setGrad, setLayerInput), advLayerDelta);
         return setGradBack;
     }
@@ -123,12 +125,13 @@ public:
     {
         if(bFirstLayer) setLayerInput = setInput;
         else setLayerInput = std::move(setInput);
-        fcbnData = _FC BNTrain(setInput, dBeta, dGamma, true, dEpsilon);
+        fcbnData = _FC BNTrain(setLayerInput, dBeta, dGamma, true, dEpsilon);
         return Activate(fcbnData.setY);
     }
     set<vect> BackProp(set<vect> &setGrad, double dLearnRate)
-    {
-        auto setGradBack = Derivative<vect>(fcbnData.setY, _FC BNGradLossToInput(fcbnData, setLayerInput, setGrad, dGamma, dEpsilon));
+    { 
+        setGrad = Derivative(fcbnData.setY, setGrad);
+        auto setGradBack = _FC BNGradLossToInput(fcbnData, setLayerInput, setGrad, dGamma, dEpsilon);
         dGamma = _FC BNUpdateScaleShift(dGamma, _FC BNGradLossToScale(setGrad, fcbnData), dLearnRate);
         dBeta = _FC BNUpdateScaleShift(dBeta, _FC BNGradLossToShift(setGrad), dLearnRate);
         return setGradBack;
@@ -163,7 +166,8 @@ public:
     }
     set<vect> BackProp(set<vect> &setGrad)
     {
-        auto setGradBack = Derivative<vect>(fcbnData.setY, _FC BNGradLossToInput(fcbnData, setLayerInput, setGrad, dGamma, dEpsilon));
+        setGrad = Derivative(fcbnData.setY, setGrad);
+        auto setGradBack = _FC BNGradLossToInput(fcbnData, setLayerInput, setGrad, dGamma, dEpsilon);
         dGamma = _FC BNAdaDeltaUpdateScaleShift(dGamma, _FC BNGradLossToScale(setGrad, fcbnData), advGamma);
         dBeta = _FC BNAdaDeltaUpdateScaleShift(dBeta, _FC BNGradLossToShift(setGrad), advBeta);
         return setGradBack;
@@ -250,12 +254,13 @@ public:
     {
         if(bFirstLayer) setLayerInput = setInput;
         else setLayerInput = std::move(setInput);
-        setOutput =  MRG_CHANN(_CONV Conv(setInput, tenKernel, iLayerLnStride, iLayerColStride, iLayerLnDilation, iLayerColDilation, iLayerInputPadTop, iLayerInputPadRight, iLayerInputPadBottom, iLayerInputPadLeft, iLayerLnDistance, iLayerColDistance));
+        setOutput = _CONV Conv(setLayerInput, tenKernel, iLayerLnStride, iLayerColStride, iLayerLnDilation, iLayerColDilation, iLayerInputPadTop, iLayerInputPadRight, iLayerInputPadBottom, iLayerInputPadLeft, iLayerLnDistance, iLayerColDistance);
         return Activate(setOutput);
     }
     set<feature> BackProp(set<feature> &setGrad, double dLearnRate) 
     {
-        auto setGradBack = Derivative(setOutput, _CONV GradLossToInput(setGrad, tenKernel, iLayerLnStride, iLayerColStride, iLayerLnDilation, iLayerColDilation, iLayerInputPadTop, iLayerInputPadRight, iLayerInputPadBottom, iLayerInputPadLeft, iLayerLnDistance, iLayerColDistance));
+        setGrad = Derivative(setOutput, setGrad);
+        auto setGradBack = _CONV GradLossToInput(setGrad, tenKernel, iLayerLnStride, iLayerColStride, iLayerLnDilation, iLayerColDilation, iLayerInputPadTop, iLayerInputPadRight, iLayerInputPadBottom, iLayerInputPadLeft, iLayerLnDistance, iLayerColDistance);
         tenKernel = _CONV UpdateKernel(tenKernel, _CONV GradLossToKernel(setGrad, setLayerInput, iLayerLnStride, iLayerColStride, iLayerLnDilation, iLayerColDilation, iLayerInputPadTop, iLayerInputPadRight, iLayerInputPadBottom, iLayerInputPadLeft, iLayerLnDistance, iLayerColDistance), dLearnRate);
         return setGradBack;
     }
@@ -281,7 +286,8 @@ public:
     }
     set<feature> BackProp(set<feature> &setGrad)
     {
-        auto setGradBack = Derivative(setOutput, _CONV GradLossToInput(setGrad, tenKernel, iLayerLnStride, iLayerColStride, iLayerLnDilation, iLayerColDilation, iLayerInputPadTop, iLayerInputPadRight, iLayerInputPadBottom, iLayerInputPadLeft, iLayerLnDistance, iLayerColDistance));
+        setGrad = Derivative(setOutput, setGrad);
+        auto setGradBack = _CONV GradLossToInput(setGrad, tenKernel, iLayerLnStride, iLayerColStride, iLayerLnDilation, iLayerColDilation, iLayerInputPadTop, iLayerInputPadRight, iLayerInputPadBottom, iLayerInputPadLeft, iLayerLnDistance, iLayerColDistance);
         tenKernel = _CONV AdaDeltaUpdateKernel(tenKernel, _CONV GradLossToKernel(setGrad, setLayerInput, iLayerLnStride, iLayerColStride, iLayerLnDilation, iLayerColDilation, iLayerInputPadTop, iLayerInputPadRight, iLayerInputPadBottom, iLayerInputPadLeft, iLayerLnDistance, iLayerColDistance), advLayerDelta);
         return setGradBack;
     }
@@ -342,10 +348,13 @@ public:
     {
         if(bFirstLayer) setLayerInput = setInput;
         else setLayerInput = std::move(setInput);
-        setOutput = _CONV Pool(setInput, iPoolType, true, set<feature>(), iLayerFilterLnCnt, iLayerFilterColCnt, iLayerLnStride, iLayerColStride, iLayerLnDilation, iLayerColDilation);
+        setOutput = _CONV Pool(setLayerInput, iPoolType, true, set<feature>(), iLayerFilterLnCnt, iLayerFilterColCnt, iLayerLnStride, iLayerColStride, iLayerLnDilation, iLayerColDilation);
         return Activate(setOutput);
     }
-    set<feature> BackProp(set<feature> &setGrad) {return Derivative(setOutput, _CONV Pool(setGrad, PoolUpType(iPoolType), false, setLayerInput, iLayerFilterLnCnt, iLayerFilterColCnt, iLayerLnStride, iLayerColStride, iLayerLnDilation, iLayerColDilation));}
+    set<feature> BackProp(set<feature> &setGrad)
+    {
+        return _CONV Pool(Derivative(setOutput, setGrad), PoolUpType(iPoolType), false, setLayerInput, iLayerFilterLnCnt, iLayerFilterColCnt, iLayerLnStride, iLayerColStride, iLayerLnDilation, iLayerColDilation);
+    }
 };
 
 class LayerBNConv : public Layer
@@ -386,12 +395,13 @@ public:
     {
         if(bFirstLayer) setLayerInput = setInput;
         else setLayerInput = std::move(setInput);
-        convbnData = _CONV BNTrain(setInput, vecBeta, vecGamma, true, dEpsilon);
+        convbnData = _CONV BNTrain(setLayerInput, vecBeta, vecGamma, true, dEpsilon);
         return Activate(convbnData.setY);
     }
     set<feature> BackProp(set<feature> &setGrad, double dLearnRate)
     {
-        auto setGradBack = Derivative(convbnData.setY, _CONV BNGradLossToInput(convbnData, setLayerInput, setGrad, vecGamma, dEpsilon));
+        setGrad = Derivative(convbnData.setY, setGrad);
+        auto setGradBack = _CONV BNGradLossToInput(convbnData, setLayerInput, setGrad, vecGamma, dEpsilon);
         vecBeta = _CONV BNUpdateScaleShiftBat(vecBeta, _CONV BNGradLossToShift(setGrad), dLearnRate);
         vecGamma = _CONV BNUpdateScaleShiftBat(vecGamma, _CONV BNGradLossToScale(setGrad, convbnData), dLearnRate);
         return setGradBack;
@@ -417,14 +427,15 @@ public:
     }
     void operator=(LayerBNConvAda &lyrSrc) {new(this)LayerBNConvAda(lyrSrc);}
     void operator=(LayerBNConvAda &&lyrSrc) {new(this)LayerBNConvAda(std::move(lyrSrc));}
-    LayerBNConvAda(uint64_t iChannCnt = 1, uint64_t iActFuncIdx = NULL_FUNC, double dShift = 0, double dScale = 1, uint64_t iCurrLayerType = BN_CONV, bool bIsFirstLayer = false, double dDecayController = 0.95, double dAdaDominator = 1e-3, double dBNDominator = 1e-10) : LayerBNConv(iChannCnt, iActFuncIdx, dShift, dScale, iCurrLayerType, bIsFirstLayer, dBNDominator)
+    LayerBNConvAda(uint64_t iChannCnt = 1, uint64_t iActFuncIdx = NULL_FUNC, double dShift = 0, double dScale = 1, uint64_t iCurrLayerType = BN_CONV_ADA, bool bIsFirstLayer = false, double dDecayController = 0.95, double dAdaDominator = 1e-3, double dBNDominator = 1e-10) : LayerBNConv(iChannCnt, iActFuncIdx, dShift, dScale, iCurrLayerType, bIsFirstLayer, dBNDominator)
     {
         advBeta = _ADA AdaDeltaVect(iChannCnt, 1, dDecayController, dAdaDominator);
         advGamma = _ADA AdaDeltaVect(iChannCnt, 1, dDecayController, dAdaDominator);
     }
     set<feature> BackProp(set<feature> &setGrad)
     {
-        auto setGradBack = Derivative(convbnData.setY, _CONV BNGradLossToInput(convbnData, setLayerInput, setGrad, vecGamma, dEpsilon));
+        setGrad = Derivative(convbnData.setY, setGrad);
+        auto setGradBack = _CONV BNGradLossToInput(convbnData, setLayerInput, setGrad, vecGamma, dEpsilon);
         vecBeta = _CONV BNAdaDeltaUpdateScaleShift(vecBeta, _CONV BNGradLossToShift(setGrad), advBeta);
         vecGamma = _CONV BNAdaDeltaUpdateScaleShift(vecGamma, _CONV BNGradLossToScale(setGrad, convbnData), advGamma);
         return setGradBack;

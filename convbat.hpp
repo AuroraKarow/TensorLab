@@ -6,49 +6,32 @@ tensor InitKernel(uint64_t iAmt, uint64_t iChannCnt, uint64_t iLnCnt, uint64_t i
     for(auto i=0; i<iAmt; ++i)
     {
         tenKernel[i].init(iChannCnt);
-        for(auto j=0; j<iChannCnt; ++j) tenKernel[i][j] = vect(iLnCnt, iColCnt, dRandBoundryFirst, dRandBoundrySecond, dAcc);
+        for(auto j=0; j<iChannCnt; ++j) tenKernel[i][j] = vect(iLnCnt, iColCnt, true, dRandBoundryFirst, dRandBoundrySecond, dAcc);
     }
     return tenKernel;
 }
 
-set<tensor> Conv(set<feature> &setInput, tensor &tenKernel, uint64_t iLnStride, uint64_t iColStride, uint64_t iLnDilation = 0, uint64_t iColDilation = 0, uint64_t iInputPadTop = 0, uint64_t iInputPadRight = 0, uint64_t iInputPadBottom = 0, uint64_t iInputPadLeft = 0, uint64_t iLnDistance = 0, uint64_t iColDistance = 0)
+set<feature> Conv(set<feature> &setInput, tensor &tenKernel, uint64_t iLnStride, uint64_t iColStride, uint64_t iLnDilation = 0, uint64_t iColDilation = 0, uint64_t iInputPadTop = 0, uint64_t iInputPadRight = 0, uint64_t iInputPadBottom = 0, uint64_t iInputPadLeft = 0, uint64_t iLnDistance = 0, uint64_t iColDistance = 0)
 {
-    set<tensor> setOutput(setInput.size());
+    set<feature> setOutput(setInput.size());
     for(auto i=0; i<setInput.size(); ++i)
     {
         setOutput[i] = Conv(setInput[i], tenKernel, iLnStride, iColStride, iLnDilation, iColDilation, iInputPadTop, iInputPadRight, iInputPadBottom, iInputPadLeft, iLnDistance, iColDistance);
-        if(!setOutput[i].size()) return blank_ten_seq;
+        if(!setOutput[i].size()) return blank_ft_seq;
     }
     return setOutput;
 }
 
-set<tensor> GradLossToKernelSet(set<feature> &setGradLossToOutput, set<feature> &setInput, uint64_t iLnStride, uint64_t iColStride, uint64_t iLnDilation = 0, uint64_t iColDilation = 0, uint64_t iInputPadTop = 0, uint64_t iInputPadRight = 0, uint64_t iInputPadBottom = 0, uint64_t iInputPadLeft = 0, uint64_t iLnDistance = 0, uint64_t iColDistance = 0)
+tensor GradLossToKernel(set<feature> &setGradLossToOutput, set<feature> &setInput, uint64_t iLnStride, uint64_t iColStride, uint64_t iLnDilation = 0, uint64_t iColDilation = 0, uint64_t iInputPadTop = 0, uint64_t iInputPadRight = 0, uint64_t iInputPadBottom = 0, uint64_t iInputPadLeft = 0, uint64_t iLnDistance = 0, uint64_t iColDistance = 0)
 {
-    set<tensor> setGradLossToKernel(setInput.size());
+    tensor tenGradLossToKernel(setInput.size());
     for(auto i=0; i<setInput.size(); ++i)
     {
-        setGradLossToKernel[i] = GradLossToKernel(setGradLossToOutput[i], setInput[i], iLnStride, iColStride, iLnDilation, iColDilation, iInputPadTop, iInputPadRight, iInputPadBottom, iInputPadLeft, iLnDistance, iColDistance);
-        if(!setGradLossToKernel[i].size()) return blank_ten_seq;
-    }
-    return setGradLossToKernel;
-}
-
-tensor GradLossToKernel(set<feature> &setGradLossToOutput, tensor &setInput, uint64_t iLnStride, uint64_t iColStride, uint64_t iLnDilation = 0, uint64_t iColDilation = 0, uint64_t iInputPadTop = 0, uint64_t iInputPadRight = 0, uint64_t iInputPadBottom = 0, uint64_t iInputPadLeft = 0, uint64_t iLnDistance = 0, uint64_t iColDistance = 0)
-{
-    auto setGradLossToKernel = GradLossToKernelSet(setGradLossToOutput, setInput, iLnStride, iColStride, iLnDilation, iColDilation, iInputPadTop, iInputPadRight, iInputPadBottom, iInputPadLeft, iLnDistance, iColDistance);
-    tensor tenGradLossToKernel;
-    if(setGradLossToKernel.size())
-    {
-        for(auto i=0; i<setGradLossToKernel.size(); ++i)
-        {
-            if(!tenGradLossToKernel.size()) tenGradLossToKernel = setGradLossToKernel[i];
-            else for(auto j=0; j<setGradLossToKernel[i].size(); ++j)
-                for(auto k=0; k<setGradLossToKernel[i][j].size(); ++k)
-                {
-                    tenGradLossToKernel[j][k] += setGradLossToKernel[i][j][k];
-                    if(!tenGradLossToKernel[j][k].is_matrix()) return blank_tensor;
-                }
-        }
+        auto tenSglGrad = GradLossToKernel(setGradLossToOutput[i], setInput[i], iLnStride, iColStride, iLnDilation, iColDilation, iInputPadTop, iInputPadRight, iInputPadBottom, iInputPadLeft, iLnDistance, iColDistance);
+        if(tenGradLossToKernel.size()) for(auto j=0; j<tenGradLossToKernel[i].size(); ++j)
+            tenGradLossToKernel[i][j] += tenSglGrad[i][j];
+        else tenGradLossToKernel = std::move(tenSglGrad);
+        if(!tenGradLossToKernel.size()) return blank_tensor;
     }
     return tenGradLossToKernel;
 }
