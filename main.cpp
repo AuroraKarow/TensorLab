@@ -167,6 +167,7 @@ int main(int argc, char *argv[], char *envp[])
     net.AddLayer<LAYER_BN_CONV_ADA>(16, RELU);
     net.AddLayer<LAYER_POOL>(2, 2, 2, 2);
     net.AddLayer<LAYER_CONV_ADA>(120, 16, 5, 5, 1, 1, NULL_FUNC);
+    net.AddLayer<LAYER_BN_CONV_ADA>(120, RELU);
     net.AddLayer<LAYER_TRAN_TO_VECT>();
     net.AddLayer<LAYER_FC_ADA>(120, 80, NULL_FUNC);
     net.AddLayer<LAYER_BN_FC_ADA>(SIGMOID);
