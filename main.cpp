@@ -155,7 +155,7 @@ int main(int argc, char *argv[], char *envp[])
     cout << "hello, world." << endl;
     string root_dir = "E:\\VS Code project data\\MNIST\\";
     MNIST dataset(root_dir + "train-images.idx3-ubyte", root_dir + "train-labels.idx1-ubyte", 20, true, true, 2);
-    Basnet net;
+    TestNet net;
     /* Need to appoint the first layer
      * It needn't appoint current layer's activate function if next one is BN layer
      */
