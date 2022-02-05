@@ -1,5 +1,31 @@
 MATRIX_BEGIN
 
+std::default_random_engine  rand_e;
+
+struct mtx_pos
+{
+    uint64_t ln = 0;
+    uint64_t col = 0;
+    friend std::ostream& operator<<(std::ostream &input, mtx_pos &val)
+    {
+        input << '(' << val.ln << ", " << val.col << ')';
+        return input;
+    }
+};
+
+struct mtx_info
+{
+    MATRIX mtx_val = nullptr;
+    uint64_t ln_cnt = 0;
+    uint64_t col_cnt = 0;
+};
+
+struct mtx_extm
+{
+    double val = 0;
+    bagrt::net_list<mtx_pos> pos_list;
+};
+
 bool mtx_pos_valid(uint64_t ln, uint64_t col, uint64_t ln_cnt, uint64_t col_cnt)
 {
     if (ln<ln_cnt && col<col_cnt) return true;
@@ -76,7 +102,7 @@ mtx_info mtx_child_vec(MATRIX &mtx_src, uint64_t from_ln, uint64_t to_ln, uint64
     return mtx_info;
 }
 
-double mtx_atom(MATRIX &mtx_val) {return mtx_val[ZERO_IDX];}
+double mtx_atom(MATRIX &mtx_val) {return mtx_val[IDX_ZERO];}
 
 bool mtx_refresh(MATRIX &mtx_val, uint64_t elem_cnt)
 {
@@ -109,7 +135,7 @@ double mtx_det(MATRIX &mtx_val, int dms)
     if(mtx_val)
     {
         if (dms == 1)
-        return mtx_val[ZERO_IDX];
+        return mtx_val[IDX_ZERO];
         auto ac = mtx_init((dms - 1) * (dms - 1));
         int mov = 0;
         double sum = 0.0;
@@ -310,9 +336,11 @@ MATRIX mtx_elem_cal_opt(MATRIX &mtx_val, double para, uint64_t ln_cnt, uint64_t 
     if(mtx_val && ln_cnt && col_cnt)
     {
         auto elem_cnt = ln_cnt * col_cnt;
-        auto mtx_res = mtx_init(elem_cnt);
-        for(auto i=0; i<elem_cnt; ++i)
-            switch (opt_idx)
+        MATRIX mtx_res;
+        if(para != 1)
+        {
+            mtx_res = mtx_init(ln_cnt, col_cnt);
+            for(auto i=0; i<elem_cnt; ++i) switch (opt_idx)
             {
             case MATRIX_ELEM_POW:
                 mtx_res[i] = std::pow(mtx_val[i], para);
@@ -325,6 +353,8 @@ MATRIX mtx_elem_cal_opt(MATRIX &mtx_val, double para, uint64_t ln_cnt, uint64_t 
                 }
             default: return MATRIX_NULL;
             }
+        }
+        else mtx_res = mtx_copy(mtx_val, ln_cnt, col_cnt);
         return mtx_res;
     }
     else return MATRIX_NULL;
@@ -641,7 +671,7 @@ public:
     matrix(double atom) 
     {
         _init(1, 1, true);
-        info.mtx_val[ZERO_IDX] = atom;
+        info.mtx_val[IDX_ZERO] = atom;
     }
     matrix(matrix &val) {value_copy(val);}
     matrix(matrix &&val) {value_move(std::move(val));}
@@ -724,7 +754,7 @@ public:
     mtx_extm extremum(uint64_t from_ln, uint64_t to_ln, uint64_t from_col, uint64_t to_col, uint64_t ln_dilation = 0, uint64_t col_dilation = 0, bool max_flag = true) {return mtx_extm_val(info.mtx_val, from_ln, to_ln, from_col, to_col, info.ln_cnt, info.col_cnt, ln_dilation, col_dilation, max_flag);}
     double atom()
     {
-        if(elem_cnt==1 && is_matrix()) return info.mtx_val[ZERO_IDX];
+        if(elem_cnt==1 && is_matrix()) return info.mtx_val[IDX_ZERO];
         else return NAN;
     }
     matrix child(uint64_t from_ln, uint64_t to_ln, uint64_t from_col, uint64_t to_col, uint64_t ln_dilation = 0, uint64_t col_dilation = 0) 

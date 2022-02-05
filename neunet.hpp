@@ -19,8 +19,6 @@ protected:
     uint64_t iNetMiniBatch = 1;
     bool ForwProp(set<vect> &setInputVec, set<feature> &setInputFt, bool bDeduce = false) {return true;}
     bool BackProp(set<vect> &setOrigin){return true;}
-    // Call this function after back propagation
-    virtual bool IterateFlag(set<vect> &setInputVec, set<feature> &setInputFt, set<vect> &setOrigin) {return true;}
     void ValueAssign(Basnet &netSrc)
     {
         dNetAcc = netSrc.dNetAcc;
@@ -28,9 +26,45 @@ protected:
         dNetLearnRate = netSrc.dNetLearnRate;
         iNetMiniBatch = netSrc.iNetMiniBatch;
     }
+    bool bShowIteration = false;
+    set<vect> setPreOutputVec;
+    set<feature> setPreOutputFt;
+    virtual void ShowIter(set<vect> &setOrigin)
+    {
+        if(!setPreOutputVec.size()) setPreOutputVec = set<vect>(setOrigin.size());
+        for(auto i=0; i<setOrigin.size(); i++)
+        {
+            if(!setPreOutputVec[i].is_matrix()) setPreOutputVec[i] = vect(setOutputVec[i].LN_CNT, setOutputVec[i].COL_CNT);
+            for(auto j=0; j<setOutputVec[i].LN_CNT; ++j)
+            {
+                if(origin[i].pos_idx(j)) std::cout << '>';
+                else std::cout << ' ';
+                std::cout << setOutputVec[i].pos_idx(j) << '\t';
+                std::cout << j << '\t';
+                double dif = setOutputVec[i].pos_idx(j) - setPreOutputVec[i].pos_idx(j);
+                setPreOutputVec[i].pos_idx(j) = setOutputVec[i].pos_idx(j);
+                if(dif < 0) std::cout << dif;
+                else std::cout << '+' << dif;
+                std::cout << '\t';
+                std::cout << origin[i].pos_idx(j) << std::endl;
+            }
+            std::cout << std::endl;
+        }
+    }
+    // Call this function after back propagation
+    virtual bool IterateFlag(set<vect> &setInputVec, set<feature> &setInputFt, set<vect> &setOrigin)
+    {
+        if(ForwProp(setInputVec, setInputFt, true))
+        {
+            for(auto i=0; i<setOrigin.size(); ++i)
+                for(auto j=0; j<setOrigin[i].LN_CNT; ++j)
+                    if(std::abs(setOrigin[i][j][IDX_ZERO] - setOutputVec[i][j][IDX_ZERO]) > dNetAcc) return true;
+        }
+        return false;
+    }
 public:
     uint64_t Depth() {return lsLayer.size();}
-    Basnet(double dAcc = 1e-5, double dLearnRate = 1e-10, uint64_t iMiniBatch = 0) : dNetAcc(dAcc), dNetLearnRate(dLearnRate), iNetMiniBatch(iMiniBatch) {}
+    Basnet(bool bShowItern = false, double dAcc = 1e-5, double dLearnRate = 1e-10, uint64_t iMiniBatch = 0) : bShowIteration(bShowItern), dNetAcc(dAcc), dNetLearnRate(dLearnRate), iNetMiniBatch(iMiniBatch){}
     void SetInput(set<vect> setInput) {}
     Basnet(Basnet &netSrc)
     {

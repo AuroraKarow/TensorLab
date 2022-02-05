@@ -22,14 +22,15 @@ vect Conv(vect &vecInput, vect &vecKernel, uint64_t iLnStride, uint64_t iColStri
 
 feature Conv(feature &vecInput, tensor &tenKernel, uint64_t iLnStride, uint64_t iColStride, uint64_t iLnDilation = 0, uint64_t iColDilation = 0, uint64_t iInputPadTop = 0, uint64_t iInputPadRight = 0, uint64_t iInputPadBottom = 0, uint64_t iInputPadLeft = 0, uint64_t iLnDistance = 0, uint64_t iColDistance = 0)
 {
-    feature tenOutput(tenKernel.size());
+    feature vecOutput(tenKernel.size());
     for(auto i=0; i<tenKernel.size(); ++i) for(auto j=0; j<vecInput.size(); ++j) 
     {
-        if(tenOutput[i].is_matrix()) tenOutput[i] += Conv(vecInput[j], tenKernel[i][j], iLnStride, iColStride, iLnDilation, iColDilation, iInputPadTop, iInputPadRight, iInputPadBottom, iInputPadLeft, iLnDistance, iColDistance);
-        else tenOutput[i] = Conv(vecInput[j], tenKernel[i][j], iLnStride, iColStride, iLnDilation, iColDilation, iInputPadTop, iInputPadRight, iInputPadBottom, iInputPadLeft, iLnDistance, iColDistance);
-        if(!tenOutput[i].is_matrix()) return blank_feature;
+        auto vecSglMap = Conv(vecInput[j], tenKernel[i][j], iLnStride, iColStride, iLnDilation, iColDilation, iInputPadTop, iInputPadRight, iInputPadBottom, iInputPadLeft, iLnDistance, iColDistance);
+        if(vecOutput[i].is_matrix()) vecOutput[i] += vecSglMap;
+        else vecOutput[i] = std::move(vecSglMap);
+        if(!vecOutput[i].is_matrix()) return blank_feature;
     }
-    return tenOutput;
+    return vecOutput;
 }
 
 vect GradLossToKernel(vect &vecGradLossToOutput, vect &vecInput, uint64_t iLnStride, uint64_t iColStride, uint64_t iLnDilation = 0, uint64_t iColDilation = 0, uint64_t iInputPadTop = 0, uint64_t iInputPadRight = 0, uint64_t iInputPadBottom = 0, uint64_t iInputPadLeft = 0, uint64_t iLnDistance = 0, uint64_t iColDistance = 0)
@@ -80,7 +81,7 @@ feature GradLossToInput(feature &vecGradLossToOutput, tensor &tenKernel, uint64_
             auto vecSglGrad = GradLossToInput(vecGradLossToOutput[i], tenKernel[i][j], iLnStride, iColStride, iLnDilation, iColDilation, iInputPadTop, iInputPadRight, iInputPadBottom, iInputPadLeft, iLnDistance, iColDistance);
             if(vecSglGrad.is_matrix())
                 if(vecGrad[j].is_matrix()) vecGrad[j] += vecSglGrad;
-                else vecGrad[j] = vecSglGrad;
+                else vecGrad[j] = std::move(vecSglGrad);
             else return blank_feature;
         }
     }
@@ -105,7 +106,6 @@ vect PoolDownMaxAvg(vect &vecInput, uint64_t iFilterLnCnt, uint64_t iFilterColCn
                 else return blank_vect;
                 vecOutput[i][j] = dPoolElem;
             }
-        return vecOutput;
     }
     return vecOutput;
 }
@@ -151,24 +151,36 @@ vect PoolUpMaxAvg(vect &vecInput, uint64_t iFilterLnCnt, uint64_t iFilterColCnt,
     }
     vect vecOutput(iOutputLnCnt, iOutputColnCnt);
     for(auto i=0; i<vecInput.LN_CNT; ++i) for(auto j=0; j<vecInput.COL_CNT; ++j) 
-            for(auto k=0; k<iFilterLnCnt; ++k) for(auto l=0; l<iFilterColCnt; ++l)
+    {
+        MATRIX_POS posMax;
+        auto iTraceLn = SAMP_TRACE_POS(i, 0, iLnStride, iLnDilation),
+            iTraceCol = SAMP_TRACE_POS(j, 0, iColStride, iColDilation);
+        posMax.ln = iTraceLn;
+        posMax.col = iTraceCol;
+        for(auto k=0; k<iFilterLnCnt; ++k) for(auto l=0; l<iFilterColCnt; ++l)
+        {
+            iTraceLn = SAMP_TRACE_POS(i, k, iLnStride, iLnDilation);
+            iTraceCol = SAMP_TRACE_POS(j, l, iColStride, iColDilation);
+            switch (iPoolType)
             {
-                auto iTraceLn = SAMP_TRACE_POS(i, k, iLnStride, iLnDilation),
-                    iTraceCol = SAMP_TRACE_POS(j, l, iColStride, iColDilation);
-                switch (iPoolType)
+            case POOL_UP_AVG:
+                vecOutput[iTraceLn][iTraceCol] += vecInput[i][j] / (iFilterLnCnt * iFilterColCnt);
+                break;
+            case POOL_UP_MAX:
+                if(vecTraceInput[iTraceLn][iTraceCol] > vecTraceInput[posMax.ln][posMax.col])
                 {
-                case POOL_UP_AVG:
-                    vecOutput[iTraceLn][iTraceCol] += vecInput[i][j] / (iFilterLnCnt * iFilterColCnt);
-                    break;
-                case POOL_UP_MAX:
-                    if(vecTraceInput[iTraceLn][iTraceCol] == vecInput[i][j]) vecOutput[iTraceLn][iTraceCol] += vecInput[i][j];
-                    break;
-                case POOL_UP_FIL:
-                    vecOutput[iTraceLn][iTraceCol] += vecInput[i][j];
-                    break;
-                default: return blank_vect;
+                    posMax.ln = iTraceLn;
+                    posMax.col = iTraceCol;
                 }
+                if(k+1==iFilterLnCnt && l+1==iFilterColCnt) vecOutput[posMax.ln][posMax.col] += vecInput[i][j];
+                break;
+            case POOL_UP_FIL:
+                vecOutput[iTraceLn][iTraceCol] += vecInput[i][j];
+                break;
+            default: return blank_vect;
             }
+        }
+    }
     return vecOutput;
 }
 

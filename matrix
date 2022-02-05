@@ -8,37 +8,6 @@
 
 #define MATRIX              std::unique_ptr<double[]>
 #define MATRIX_NULL         nullptr
-#define MATRIX_BLANK        matrix();
-
-MATRIX_BEGIN
-
-std::default_random_engine  rand_e;
-
-struct mtx_pos
-{
-    uint64_t ln = 0;
-    uint64_t col = 0;
-    friend std::ostream& operator<<(std::ostream &input, mtx_pos &val)
-    {
-        input << '(' << val.ln << ", " << val.col << ')';
-        return input;
-    }
-};
-
-struct mtx_info
-{
-    MATRIX mtx_val = nullptr;
-    uint64_t ln_cnt = 0;
-    uint64_t col_cnt = 0;
-};
-
-struct mtx_extm
-{
-    double val = 0;
-    bagrt::net_list<mtx_pos> pos_list;
-};
-
-MATRIX_END
 
 #define MATRIX_ELEM_MULT    0
 #define MATRIX_ELEM_DIV     1

@@ -19,7 +19,7 @@ struct
                         CLK_NOTE.dur = (double)((CLK_NOTE.end - CLK_NOTE.begin) * 1000 / CLOCKS_PER_SEC);}
 #define CLOCK_DURATION  (std::to_string(CLK_NOTE.dur) + std::string("ms"))
 
-#define ZERO_IDX        0
-#define SGL_IDX         1
+#define IDX_ZERO        0
+#define IDX_SGL         1
 
 #include "bagrt.hpp"

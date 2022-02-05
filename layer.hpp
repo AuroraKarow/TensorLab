@@ -450,8 +450,8 @@ protected:
 public:
     set<vect> ForwProp(set<feature> &setInput)
     {
-        iLayerInputLnCnt = setInput[ZERO_IDX][ZERO_IDX].LN_CNT;
-        iLayerInputColCnt = setInput[ZERO_IDX][ZERO_IDX].COL_CNT;
+        iLayerInputLnCnt = setInput[IDX_ZERO][IDX_ZERO].LN_CNT;
+        iLayerInputColCnt = setInput[IDX_ZERO][IDX_ZERO].COL_CNT;
         return _FC FeatureTransform(setInput);
     }
     set<feature> BackProp(set<vect> &setGrad) {return _FC FeatureTransform(setGrad, iLayerInputLnCnt, iLayerInputColCnt);}

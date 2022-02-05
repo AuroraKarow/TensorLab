@@ -35,7 +35,7 @@ vect GradLossToWeight(set<vect> &setGradLossToOutput, set<vect> &setInput)
     {
         if(vecGradLossToWeight.is_matrix()) vecGradLossToWeight += GradLossToWeight(setGradLossToOutput[i], setInput[i]);
         else vecGradLossToWeight = GradLossToWeight(setGradLossToOutput[i], setInput[i]);
-        if(!vecGradLossToWeight.is_matrix()) return blank_vect;
+        if(!vecGradLossToWeight.is_matrix()) break;
     }
     return vecGradLossToWeight;
 }
@@ -69,22 +69,22 @@ struct FCBN
     set<vect> setBarX;
     set<vect> setY;
     FCBN(){}
-    FCBN(FCBN &FCBNVal) {*this = FCBNVal;}
-    FCBN(FCBN &&FCBNVal) {*this = std::move(FCBNVal);}
-    void operator=(FCBN &FCBNVal)
+    FCBN(FCBN &FCBNVal) 
     {
         vecMiuBeta = FCBNVal.vecMiuBeta;
         vecSigmaSqr = FCBNVal.vecSigmaSqr;
         setBarX = FCBNVal.setBarX;
         setY = FCBNVal.setY;
     }
-    void operator=(FCBN &&FCBNVal)
+    FCBN(FCBN &&FCBNVal)
     {
         vecMiuBeta = std::move(FCBNVal.vecMiuBeta);
         vecSigmaSqr = std::move(FCBNVal.vecSigmaSqr);
         setBarX = std::move(FCBNVal.setBarX);
         setY = std::move(FCBNVal.setY);
     }
+    void operator=(FCBN &FCBNVal) {new(this)FCBN(FCBNVal);}
+    void operator=(FCBN &&FCBNVal) {new(this)FCBN(std::move(FCBNVal));}
     // ~FCBN() {}
 };
 
@@ -116,30 +116,26 @@ FCBN BNTrain(set<vect> &setInput, double dBeta = 0, double dGamma = 1, bool bGet
     return BNOutput;
 }
 
-set<vect> BNGradLossToInput(FCBN &FCBNOutput, set<vect> &setInput, set<vect> &setGradLossToScaleShift, double dGamma, double dEpsilon = 1e-10)
+set<vect> BNGradLossToInput(FCBN &FCBNOutput, set<vect> &setInput, set<vect> &setGradLossToOutput, double dGamma, double dEpsilon = 1e-10)
 {
-    set<vect> setGradLossToInput;
     // Operation value
     auto vecDmtSigmaSqr = DIV_DOM(FCBNOutput.vecSigmaSqr, dEpsilon);
     auto vecDmtSigma = vecDmtSigmaSqr.elem_cal_opt(0.5, MATRIX_ELEM_POW);
     // Gradient loss to normalized output, bar x
     set<vect> setGradLossToBarX(setInput.size());
-    for(auto i=0; i<setInput.size(); ++i) setGradLossToBarX[i] = setGradLossToScaleShift[i] * dGamma;
+    for(auto i=0; i<setInput.size(); ++i) setGradLossToBarX[i] = setGradLossToOutput[i] * dGamma;
     // Gradient loss to variance, square-powered sigma
     vect vecGradLossToSigmaSqr(FCBNOutput.vecSigmaSqr.get_ln_cnt(), FCBNOutput.vecSigmaSqr.get_col_cnt());
-    for(auto i=0; i<setInput.size(); ++i)
-        vecGradLossToSigmaSqr += (-1) * setGradLossToBarX[i].elem_cal_opt((setInput[i] - FCBNOutput.vecMiuBeta),  MATRIX_ELEM_MULT).elem_cal_opt((2 * vecDmtSigmaSqr.elem_cal_opt(1.5,  MATRIX_ELEM_POW)),  MATRIX_ELEM_DIV);
+    for(auto i=0; i<setInput.size(); ++i) vecGradLossToSigmaSqr += (-1) * setGradLossToBarX[i].elem_cal_opt((setInput[i] - FCBNOutput.vecMiuBeta),  MATRIX_ELEM_MULT).elem_cal_opt((2 * vecDmtSigmaSqr.elem_cal_opt(1.5,  MATRIX_ELEM_POW)),  MATRIX_ELEM_DIV);
     // Gradient loss to average, miubeta
-    auto iMiuBetaLnCnt = FCBNOutput.vecMiuBeta.get_ln_cnt(),
-        iMiuBetaColCnt = FCBNOutput.vecMiuBeta.get_col_cnt();
-    vect vecGradLossToMiuBeta(iMiuBetaLnCnt, iMiuBetaColCnt);
+    vect vecGradLossToMiuBeta(FCBNOutput.vecMiuBeta.get_ln_cnt(), FCBNOutput.vecMiuBeta.get_col_cnt());
     for(auto i=0; i<setInput.size(); ++i) vecGradLossToMiuBeta += (-1) * setGradLossToBarX[i].elem_cal_opt(vecDmtSigma,  MATRIX_ELEM_DIV);
-    vect vecAvgMidDist(iMiuBetaLnCnt, iMiuBetaColCnt);
+    vect vecAvgMidDist(FCBNOutput.vecMiuBeta.get_ln_cnt(), FCBNOutput.vecMiuBeta.get_col_cnt());
     for(auto i=0; i<setInput.size(); ++i) vecAvgMidDist += (-2) * (setInput[i] - FCBNOutput.vecMiuBeta);
     vecAvgMidDist = vecAvgMidDist.elem_cal_opt(setInput.size(),  MATRIX_ELEM_DIV);
     vecGradLossToMiuBeta += vecGradLossToSigmaSqr.elem_cal_opt(vecAvgMidDist,  MATRIX_ELEM_MULT);
     // Gradient loss to input, x
-    setGradLossToInput.init(setInput.size());
+    set<vect> setGradLossToInput(setInput.size());
     for(auto i=0; i<setInput.size(); ++i)
         setGradLossToInput[i] = setGradLossToBarX[i].elem_cal_opt(vecDmtSigma,  MATRIX_ELEM_DIV) + vecGradLossToSigmaSqr.elem_cal_opt((2.0 / setInput.size()) * (setInput[i] - FCBNOutput.vecMiuBeta),  MATRIX_ELEM_MULT) + vecGradLossToMiuBeta.elem_cal_opt(setInput.size(),  MATRIX_ELEM_DIV);
     return setGradLossToInput;
@@ -147,50 +143,49 @@ set<vect> BNGradLossToInput(FCBN &FCBNOutput, set<vect> &setInput, set<vect> &se
 
 double BNGradLossToScale(set<vect> &setGradLossToOutput, FCBN &FCBNOutput)
 {
-    vect vecGradGamma(setGradLossToOutput[ZERO_IDX].get_ln_cnt(), setGradLossToOutput[ZERO_IDX].get_col_cnt());
-    for(auto i=0; i<setGradLossToOutput.size(); ++i) vecGradGamma += setGradLossToOutput[i].elem_cal_opt(FCBNOutput.setBarX[i], MATRIX_ELEM_MULT);
-    return vecGradGamma.elem_sum();
+    double dGrad = 0;
+    for(auto i=0; i<setGradLossToOutput.size(); ++i)
+        for(auto j=0; j<setGradLossToOutput[i].ELEM_CNT; ++j) dGrad += setGradLossToOutput[i].pos_idx(j) * FCBNOutput.setBarX[i].pos_idx(j);
+    return dGrad;
 }
 
 double BNGradLossToShift(set<vect> &setGradLossToOutput)
 {
-    vect vecGradBeta(setGradLossToOutput[ZERO_IDX].get_ln_cnt(), setGradLossToOutput[ZERO_IDX].get_col_cnt());
-    for(auto i=0; i<setGradLossToOutput.size(); ++i) vecGradBeta += setGradLossToOutput[i];
-    return vecGradBeta.elem_sum();
+    double dGrad = 0;
+    for(auto i=0; i<setGradLossToOutput.size(); ++i)
+        for(auto j=0; j<setGradLossToOutput[i].ELEM_CNT; ++j) dGrad += setGradLossToOutput[i].pos_idx(j);
+    return dGrad;
 }
 
 double BNUpdateScaleShift(double dScaleShift, double dGradLossToScaleShift, double dLearnRate) {return dScaleShift - dLearnRate * dGradLossToScaleShift;}
 
 bagrt::net_queue<vect> BNDeduce(bagrt::net_queue<vect> &setNetInput, double dBeta, double dGamma, uint64_t iMiniBatchSize = 0, double dEpsilon = 1e-10)
 {
-    auto iLnCnt = setNetInput[ZERO_IDX].get_ln_cnt(),
-        iColCnt = setNetInput[ZERO_IDX].get_col_cnt(),
-        iBatCnt = 0Ui64;
+    auto iBatCnt = 0;
     if(iMiniBatchSize) iBatCnt = setNetInput.size() / iMiniBatchSize;
     else iBatCnt = 1;
     /**
      * Expectation Average, Expectation MiuBeta
      * Variance mini-batch variance, Variance SigmaSqr
      */
-    vect vecEX(iLnCnt, iColCnt), vecVarX(iLnCnt, iColCnt);
+    vect vecEX(setNetInput[IDX_ZERO].get_ln_cnt(), setNetInput[IDX_ZERO].get_col_cnt()),
+        vecEVarX(setNetInput[IDX_ZERO].get_ln_cnt(), setNetInput[IDX_ZERO].get_col_cnt());
     for(auto i=0; i<iBatCnt; ++i)
     {
         FCBN FCBNMiniBatOutput;
         if(iMiniBatchSize) FCBNMiniBatOutput = BNTrain(setNetInput.sub_queue(i*iMiniBatchSize, (i+1)*iMiniBatchSize-1), dBeta, dGamma, false);
         else FCBNMiniBatOutput = BNTrain(setNetInput, dBeta, dGamma, false);
         vecEX += FCBNMiniBatOutput.vecMiuBeta;
-        vecVarX += FCBNMiniBatOutput.vecSigmaSqr;
+        vecEVarX += FCBNMiniBatOutput.vecSigmaSqr;
     }
     vecEX = vecEX.elem_cal_opt(iBatCnt, MATRIX_ELEM_DIV);
-    auto iVarDistbt = 0;
-    if(iMiniBatchSize > 1) iVarDistbt = iMiniBatchSize / (iMiniBatchSize - 1);
-    else iVarDistbt = 1;
-    vecVarX = iVarDistbt * vecVarX.elem_cal_opt(iBatCnt, MATRIX_ELEM_DIV);
+    if(iMiniBatchSize) vecEVarX = (iMiniBatchSize / (iMiniBatchSize - 1)) * vecEVarX.elem_cal_opt(iBatCnt, MATRIX_ELEM_DIV);
+    else vecEVarX = (setNetInput.size() / (setNetInput.size() - 1)) * vecEVarX.elem_cal_opt(iBatCnt, MATRIX_ELEM_DIV);
     // Normalize
     set<vect> setBNDeduceOutput(setNetInput.size());
     for(auto i=0; i<setNetInput.size(); ++i)
     {
-        auto vecBarX = (setNetInput[i] - vecEX).elem_cal_opt(DIV_DOM(vecVarX, dEpsilon).elem_cal_opt(0.5, MATRIX_ELEM_POW), MATRIX_ELEM_DIV);
+        auto vecBarX = (setNetInput[i] - vecEX).elem_cal_opt(DIV_DOM(vecEVarX, dEpsilon).elem_cal_opt(0.5, MATRIX_ELEM_POW), MATRIX_ELEM_DIV);
         setBNDeduceOutput[i] = (dGamma * vecBarX).broadcast_add(dBeta);
     }
     return setBNDeduceOutput;

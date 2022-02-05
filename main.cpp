@@ -130,21 +130,15 @@ protected:
         }
         return true;
     }
-    // Call this function after back propagation
-    bool IterateFlag(set<vect> &setInputVec, set<feature> &setInputFt, set<vect> &setOrigin)
-    {
-        if(ForwProp(setInputVec, setInputFt, true))
-        {
-            for(auto i=0; i<setOrigin.size(); ++i)
-                for(auto j=0; j<setOrigin[i].LN_CNT; ++j)
-                    if(std::abs(setOrigin[i][j][ZERO_IDX] - setOutputVec[i][j][ZERO_IDX]) > dNetAcc) return true;
-        }
-        return false;
-    }
 public:
+    TestNet(bool bShowItern = false, double dAcc = 1e-5, double dLearnRate = 1e-10, uint64_t iMiniBatch = 0) : Basnet(bShowItern, dAcc, dLearnRate, iMiniBatch) {}
     bool Run(set<vect> &setInputVec, set<feature> &setInputFt, set<vect> &setOrigin)
     {
-        do if(!ForwProp(setInputVec, setInputFt) || !BackProp(setOrigin)) return false;
+        do
+        {
+            if(!ForwProp(setInputVec, setInputFt) || !BackProp(setOrigin)) return false;
+            if(bShowIteration) ShowIter(setOrigin);
+        }
         while (IterateFlag(setInputVec, setInputFt, setOrigin));
         return true;
     }
@@ -155,7 +149,7 @@ int main(int argc, char *argv[], char *envp[])
     cout << "hello, world." << endl;
     string root_dir = "E:\\VS Code project data\\MNIST\\";
     MNIST dataset(root_dir + "train-images.idx3-ubyte", root_dir + "train-labels.idx1-ubyte", 20, true, true, 2);
-    TestNet net;
+    TestNet net(true);
     /* Need to appoint the first layer
      * It needn't appoint current layer's activate function if next one is BN layer
      */
@@ -169,7 +163,7 @@ int main(int argc, char *argv[], char *envp[])
     net.AddLayer<LAYER_CONV_ADA>(120, 16, 5, 5, 1, 1, NULL_FUNC);
     net.AddLayer<LAYER_BN_CONV_ADA>(120, RELU);
     net.AddLayer<LAYER_TRAN_TO_VECT>();
-    net.AddLayer<LAYER_FC_ADA>(120, 80, NULL_FUNC);
+    net.AddLayer<LAYER_FC_ADA>(120, 84, NULL_FUNC);
     net.AddLayer<LAYER_BN_FC_ADA>(SIGMOID);
     net.AddLayer<LAYER_FC>(84, 10, SOFTMAX);
     net.Run(set<vect>(), dataset.elem, dataset.orgn());

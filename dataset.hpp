@@ -97,7 +97,6 @@ private:
         }
         delete []dat_ptr;
         dat_ptr = nullptr;
-        vec_dat = vec_dat.mirror_flip().counter_clockwise_rotate_rect();
         if(padding) vec_dat = vec_dat.pad(padding, padding, padding, padding);
         return vec_dat;
     }
@@ -154,7 +153,7 @@ public:
         if(lbl_val < 10)
         {
             vect _orgn(ORGN_SIZE, 1);
-            _orgn[lbl_val][ZERO_IDX] = 1;
+            _orgn[lbl_val][IDX_ZERO] = 1;
             return _orgn;
         }
         else return vect::blank_matrix();
@@ -197,7 +196,7 @@ public:
                     if(qnty_list[curr_lbl] < load_qnty)
                     {
                         elem[elem_cnt].init();
-                        elem[elem_cnt][ZERO_IDX] = read_curr_dat(true, padding);
+                        elem[elem_cnt][IDX_ZERO] = read_curr_dat(true, padding);
                         elem_lbl[elem_cnt ++] = curr_lbl;
                         ++ qnty_list[curr_lbl];
                     }
@@ -218,7 +217,7 @@ public:
                     if(i==lbl_data_stat[j])
                     {
                         elem[j].init();
-                        elem[j][ZERO_IDX] = read_curr_dat(true, padding);
+                        elem[j][IDX_ZERO] = read_curr_dat(true, padding);
                         elem_lbl[j ++] = read_curr_lbl();
                     }
                     else
@@ -235,7 +234,7 @@ public:
                 for(auto i=0; i<load_qnty; ++i)
                 {   
                     elem[i].init();
-                    elem[i][ZERO_IDX] = read_curr_dat(true, padding);
+                    elem[i][IDX_ZERO] = read_curr_dat(true, padding);
                     elem_lbl[i] = read_curr_lbl();
                 }
             }
@@ -265,7 +264,7 @@ public:
                 if(qnty_list[curr_lbl])
                 {
                     elem[elem_cnt].init();
-                    elem[elem_cnt][ZERO_IDX] = read_curr_dat();
+                    elem[elem_cnt][IDX_ZERO] = read_curr_dat();
                     elem_lbl[elem_cnt ++] = curr_lbl;
                     -- qnty_list[curr_lbl];
                 }
@@ -315,7 +314,7 @@ public:
             {
                 auto name = '[' + std::to_string(cnt++) + ']' + std::to_string(elem_lbl[i]);
                 bmio::bitmap img;
-                img.set_raw(elem[i][BMIO_R], elem[i][BMIO_G], elem[i][BMIO_B]);
+                img.set_raw(elem[i][IDX_ZERO], elem[i][IDX_ZERO], elem[i][IDX_ZERO], elem[i][IDX_ZERO]);
                 if(!img.save_img(dir_root, name, format)) return false;
             }
             return true;

@@ -8,7 +8,7 @@ vect GradLossToWeight(vect &vecGradLossToOutput, vect &vecInput) {return vecGrad
 
 vect FeatureTransform(feature &vecInput)
 {
-    auto iElemCnt = vecInput[ZERO_IDX].ELEM_CNT,
+    auto iElemCnt = vecInput[IDX_ZERO].ELEM_CNT,
         iChannCnt = vecInput.size(),
         iLnCnt = iChannCnt * iElemCnt,
         iCpyCnt = 0Ui64;
