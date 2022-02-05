@@ -230,14 +230,14 @@ public:
     // ~net_queue() {len = 0;}
 };
 
-template<typename T> class net_seq
+template<typename _Ty> class net_list
 {
 protected:
     struct node {node *prev = nullptr; std::unique_ptr<node> next = nullptr /* node *next */; T elem;};
     std::unique_ptr<node> head;
     node *tail = nullptr, *itr = nullptr;
     uint64_t len = 0, itr_idx = 0;
-    T temp;
+    _Ty temp;
     std::unique_ptr<node> create_node() { return std::make_unique<node>(); }
     node *idx_node(uint64_t idx)
     {
@@ -279,8 +279,15 @@ protected:
     }
 public:
     uint64_t size() { return len; }
-    net_seq() {}
-    net_seq(net_seq &src) : len(src.len)
+    void reset()
+    {
+        head.reset();
+        head = nullptr;
+        len = 0;
+    }
+    net_list() {}
+    bool empty() {return !len;}
+    net_list(net_list &src) : len(src.len)
     {
         if(len)
         {
@@ -300,7 +307,7 @@ public:
             }
         }
     }
-    net_seq(net_seq &&src) : head(std::move(src.head)), len(src.len), tail(src.tail)
+    net_list(net_list &&src) : head(std::move(src.head)), len(src.len), tail(src.tail)
     {
         src.tail = nullptr;
         src.len = 0;
@@ -312,7 +319,7 @@ public:
         {
             auto temp_ptr = create_node();
             auto temp_node = temp_ptr.get();
-            temp_node -> elem = std::move(T(std::forward<args>(src)...));
+            temp_node -> elem = std::move(_Ty(std::forward<args>(src)...));
             if(idx)
                 if(idx == len)
                 {
@@ -351,7 +358,7 @@ public:
             return true;
         }
     }
-    T &erase(uint64_t idx)
+    _Ty &erase(uint64_t idx)
     {
         if(idx < len)
         {
@@ -382,12 +389,12 @@ public:
         }
         return temp;
     }
-    net_seq unit(net_seq &src)
+    net_list unit(net_list &src)
     {
-        net_seq tool_cpy = *this;
+        net_list tool_cpy = *this;
         if(src.len)
         {
-            net_seq src_cpy = src;
+            net_list src_cpy = src;
             tool_cpy.len += src_cpy.len;
             src_cpy.head.get() -> prev = tool_cpy.tail;
             tool_cpy.tail -> next = std::move(src_cpy.head);
@@ -395,9 +402,9 @@ public:
         }
         return tool_cpy;
     }
-    net_seq colabo_unit(net_seq &src)
+    net_list unit_union(net_list &src)
     {
-        net_seq src_cpy = src, tool_cpy = *this;
+        net_list src_cpy = src, tool_cpy = *this;
         for(auto i=0; i<len; ++i) for(auto j=0; j<src_cpy.len; ++j) if(src_cpy[j] == tool_cpy[i])
         {
             src_cpy.erase(j);
@@ -405,9 +412,9 @@ public:
         }
         return tool_cpy.unit(src_cpy);
     }
-    net_seq inters_unit(net_seq &src)
+    net_list unit_intersect(net_list &src)
     {
-        net_seq src_cpy = src, ls_temp;
+        net_list src_cpy = src, ls_temp;
         for(auto i=0; i<len; ++i) for(auto j=0; j<src_cpy.len; ++j) if(src_cpy[j] == (*this)[i])
         {
             ls_temp.insert(ls_temp.len, src_cpy.erase(j));
@@ -415,14 +422,14 @@ public:
         }
         return ls_temp;
     }
-    T &operator[](uint64_t idx)
+    _Ty &operator[](uint64_t idx)
     {
         if(idx < len) return idx_node(idx) -> elem;
         else return temp;
     }
-    void operator=(net_seq &src) {new (this)net_seq(src);}
-    void operator=(net_seq &&src) {new (this)net_seq(std::move(src));}
-    bool operator==(net_seq &src)
+    void operator=(net_list &src) {new (this)net_list(src);}
+    void operator=(net_list &&src) {new (this)net_list(std::move(src));}
+    bool operator==(net_list &src)
     {
         if(len == src.len)
         {
@@ -439,8 +446,8 @@ public:
         }
         else return false;
     }
-    bool operator!=(net_seq &src) {return !(*this == src);}
-    friend std::ostream &operator<<(std::ostream &output, net_seq &src)
+    bool operator!=(net_list &src) {return !(*this == src);}
+    friend std::ostream &operator<<(std::ostream &output, net_list &src)
     {
         auto tool_ptr = src.head.get();
         for(auto i=0; i<src.len; ++i)
@@ -451,193 +458,7 @@ public:
         }
         return output;
     }
-    // ~net_seq() {}
-};
-
-template<typename _Ty> class net_list
-{
-public:
-    struct _node
-    {
-        _Ty data;
-        _node *prev_node = nullptr;
-        std::unique_ptr<_node> next_node = nullptr;
-        _node *next() {return next_node.get();}
-        _node *prev() {return prev_node;}
-    };
-protected:
-    std::unique_ptr<_node> head = nullptr;
-    _node *tail = nullptr;
-    uint64_t len = 0;
-    _Ty temp;
-    std::unique_ptr<_node> create_node() {return std::make_unique<_node>();}
-    _node *idx_node = head.get();
-    uint64_t pre_idx = 0;
-public:
-    net_list() {}
-    void reset()
-    {
-        head.reset();
-        head = nullptr;
-        len = 0;
-    }
-    uint64_t size() {return len;}
-    bool empty() {return !len;}
-    net_list(net_list &cpy_val)
-    {
-        if(cpy_val.len)
-        {
-            if(!len)
-            {
-                head = create_node();
-                ++ len;
-            }
-            auto p_tool = head.get(),
-                src_tool = cpy_val.head.get();
-            p_tool -> data = src_tool -> data;
-            auto cpy_len = 0;
-            if(len < cpy_val.len) cpy_len = len;
-            else cpy_len = cpy_val.len;
-            len = cpy_val.len;
-            for(auto i=1; i<cpy_len; ++i)
-            {
-                p_tool = p_tool -> next_node.get();
-                src_tool = src_tool -> next_node.get();
-                p_tool -> data = src_tool -> data;
-            }
-            if(cpy_val.len == cpy_len) p_tool -> next_node = nullptr;
-            else for(auto i=cpy_len; i<cpy_val.len; ++i)
-            {
-                p_tool -> next_node = create_node();
-                p_tool -> next_node.get() -> prev_node = p_tool;
-                p_tool = p_tool -> next_node.get();
-                src_tool = src_tool->next_node.get();
-                p_tool->data = src_tool->data;
-            }
-        }
-    }
-    net_list(net_list &&cpy_val)
-    {
-        len = cpy_val.len;
-        head = std::move(cpy_val.head);
-        cpy_val.len = 0;
-    }
-    template<typename ... Args> bool insert(uint64_t idx, Args &&...args)
-    {
-        if(idx > len) return false;
-        else
-        {
-            auto _temp = create_node();
-            _temp.get() -> data = std::move(_Ty(std::move(std::forward<Args>(args)...)));
-            if(idx)
-            {
-                auto p_tool = head.get();
-                for(auto i=1; i<idx; ++i) p_tool = (p_tool -> next_node).get();
-                _temp.get() -> next_node = std::move(p_tool -> next_node);
-                if(_temp.get() -> next_node) (_temp.get() -> next_node).get() -> prev_node = _temp.get();
-                else tail = _temp.get();
-                p_tool -> next_node = std::move(_temp);
-                (p_tool -> next_node).get() -> prev_node = p_tool;
-            }
-            else
-            {
-                _temp.get() -> next_node = std::move(head);
-                head = std::move(_temp);
-                if(len) (head.get() -> next_node).get() -> prev_node = head.get();
-            }
-            if(idx < pre_idx) ++ pre_idx;
-            ++ len;
-            return true;
-        }
-    }
-    _node *head_node()
-    {
-        auto p_tool = head.get();
-        return p_tool;
-    }
-    _node *tail_node() {return tail;}
-    _Ty &erase(uint64_t idx)
-    {
-        if(idx < len)
-        {
-            if(idx)
-            {
-                auto p_tool = head.get();
-                for(auto i=1; i<idx; ++i) p_tool = (p_tool -> next_node).get();
-                temp = std::move(p_tool -> next_node -> data);
-                p_tool -> next_node = std::move(p_tool->next_node->next_node);
-                if(p_tool -> next_node) (p_tool -> next_node).get() -> prev_node = p_tool;
-                else tail = p_tool;
-            }
-            else
-            {
-                temp = std::move(head.get() -> data);
-                head = std::move(head.get() -> next_node);
-                if(head) head.get() -> prev_node = nullptr;
-                else tail = head.get();
-            }
-            if(idx < pre_idx) -- pre_idx;
-            -- len;
-        }
-        return temp;
-    }
-    template<typename ... Args> bool emplace_back(Args &&...args) {return insert(len, args ...);}
-    bool push_back(_Ty val) {return insert(len, val);}
-    friend std::ostream &operator<<(std::ostream &output, net_list &out_val)
-    {
-        auto p_tool = out_val.head.get();
-        for(auto i=0; i<out_val.len; ++i)
-        {
-            output << '[' << i << "][" << std::endl;
-            output << p_tool -> data << std::endl << ']' << std::endl;
-            if(p_tool -> next_node) p_tool = (p_tool -> next_node).get();
-        }
-        return output;
-    }
-    void operator=(net_list &&val) {new (this)net_list(std::move(val));}
-    _Ty &operator[](uint64_t idx)
-    {
-        if(idx < len)
-        {
-            _node *p_tool;
-            int mov_cnt = idx - pre_idx;
-            mov_cnt = std::abs(mov_cnt);
-            if(pre_idx && mov_cnt<idx && pre_idx<len)
-            {
-                p_tool = idx_node;
-                for(auto i=0; i<mov_cnt; ++i)
-                    if(idx > pre_idx) p_tool = (p_tool -> next_node).get();
-                    else p_tool = p_tool -> prev_node;
-            }
-            else
-            {
-                p_tool = head.get();
-                for(auto i=0; i<idx; ++i) p_tool = (p_tool -> next_node).get();
-            }
-            idx_node = p_tool;
-            pre_idx = idx;
-            return p_tool -> data;
-        }
-        else return temp;
-    }
-    void operator=(net_list &val) {new(this)net_list(val);}
-    bool operator==(net_list &src_val)
-    {
-        if(len == src_val.len)
-        {
-            auto p_tool = head.get(),
-                p_src = src_val.head.get();
-            for(auto i=0; i<len; ++i) if(p_tool->data == p_src->data)
-            {
-                p_tool = (p_tool -> next_node).get();
-                p_src = (p_src -> next_node).get();
-            }
-            else return false;
-            return true;
-        }
-        else return false;
-    }
-    bool operator!=(net_list &src_val) {return !(*this == src_val);}
+    // ~net_list() {}
 };
 
 template<typename _K, typename _V>class net_map
