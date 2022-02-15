@@ -1,5 +1,6 @@
 #include "dataset"
 #include "neunet"
+#include "thread_pool"
 
 using namespace std;
 using namespace dataset;
