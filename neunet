@@ -1,31 +1,28 @@
 #pragma once
 #include "layer"
 
-#define NEUNET_BEGIN                    namespace neunet {
-#define NEUNET_END                      }
+// namespace
 
-#define LAYER_PTR                       std::shared_ptr<layer::Layer>
-#define LAYER_LIST                      bagrt::net_list<LAYER_PTR>
-#define LAYER_NODE                      bagrt::net_list<LAYER_PTR>::_node
+#define NEUNET_BEGIN    namespace neunet {
+#define NEUNET_END      }
 
-#define LAYER                           layer::Layer
+#define NET_LIST        bagrt::net_list
 
-#define LAYER_FC                        layer::LayerFC
-#define LAYER_FC_ADA                    layer::LayerFCAda
-#define LAYER_CONV                      layer::LayerConv
-#define LAYER_CONV_ADA                  layer::LayerConvAda
+// Layer
 
-#define LAYER_POOL                      layer::LayerPool
+#define LAYER_PTR       std::shared_ptr<layer::Layer>
 
-#define LAYER_BN_FC                     layer::LayerBNFC
-#define LAYER_BN_FC_ADA                 layer::LayerBNFCAda
-#define LAYER_BN_CONV                   layer::LayerBNConv
-#define LAYER_BN_CONV_ADA               layer::LayerBNConvAda
+#define LAYER_FC        layer::LayerFC
+#define LAYER_CONV      layer::LayerConv
 
-#define LAYER_TRAN_TO_VECT              layer::LayerTransToVect
-#define LAYER_TRAN_TO_FEAT              layer::LayerTransToFeat
+#define LAYER_POOL      layer::LayerPool
 
-#define _LAYER                          layer::
-#define LAYER_INSTANCE                  bagrt::derive_instance_ptr 
+#define LAYER_BN_FC     layer::LayerBNFC
+#define LAYER_BN_CONV   layer::LayerBNConv
+
+#define LAYER_TRANS     layer::LayerTrans
+
+#define LAYER_INSTANCE  bagrt::derive_instance_ptr
+#define _LAYER          layer:: 
 
 #include "neunet.hpp"

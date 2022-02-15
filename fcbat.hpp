@@ -88,7 +88,7 @@ struct FCBN
     // ~FCBN() {}
 };
 
-FCBN BNTrain(set<vect> &setInput, double dBeta = 0, double dGamma = 1, bool bGetOutput = true, double dEpsilon = 1e-10)
+FCBN BNTrain(set<vect> &setInput, double dBeta = 0, double dGamma = 1, double dEpsilon = 1e-10)
 {
     FCBN BNOutput;
     // Average, miu
@@ -103,16 +103,13 @@ FCBN BNTrain(set<vect> &setInput, double dBeta = 0, double dGamma = 1, bool bGet
         else BNOutput.vecSigmaSqr = vecSglVarc;
     }
     BNOutput.vecSigmaSqr = BNOutput.vecSigmaSqr.elem_cal_opt(setInput.size(), MATRIX_ELEM_DIV);
-    if(bGetOutput)
-    {
-        // Normalize, bar x
-        BNOutput.setBarX.init(setInput.size());
-        for(auto i=0; i<setInput.size(); ++i)
-            BNOutput.setBarX[i] = (setInput[i] - BNOutput.vecMiuBeta).elem_cal_opt(DIV_DOM(BNOutput.vecSigmaSqr, dEpsilon).elem_cal_opt(0.5, MATRIX_ELEM_POW), MATRIX_ELEM_DIV);
-        // Scale shift, y
-        BNOutput.setY.init(setInput.size());
-        for(auto i=0; i<setInput.size(); ++i) BNOutput.setY[i] = (dGamma * BNOutput.setBarX[i]).broadcast_add(dBeta);
-    }
+    // Normalize, bar x
+    BNOutput.setBarX.init(setInput.size());
+    for(auto i=0; i<setInput.size(); ++i)
+        BNOutput.setBarX[i] = (setInput[i] - BNOutput.vecMiuBeta).elem_cal_opt(DIV_DOM(BNOutput.vecSigmaSqr, dEpsilon).elem_cal_opt(0.5, MATRIX_ELEM_POW), MATRIX_ELEM_DIV);
+    // Scale shift, y
+    BNOutput.setY.init(setInput.size());
+    for(auto i=0; i<setInput.size(); ++i) BNOutput.setY[i] = (dGamma * BNOutput.setBarX[i]).broadcast_add(dBeta);
     return BNOutput;
 }
 
@@ -159,28 +156,24 @@ double BNGradLossToShift(set<vect> &setGradLossToOutput)
 
 double BNUpdateScaleShift(double dScaleShift, double dGradLossToScaleShift, double dLearnRate) {return dScaleShift - dLearnRate * dGradLossToScaleShift;}
 
-bagrt::net_queue<vect> BNDeduce(bagrt::net_queue<vect> &setNetInput, double dBeta, double dGamma, uint64_t iMiniBatchSize = 0, double dEpsilon = 1e-10)
+bagrt::net_queue<vect> BNDeduce(bagrt::net_queue<vect> &setNetInput, double dBeta, double dGamma, seq<FCBN> &setbnData, uint64_t iMiniBatchSize = 0, double dEpsilon = 1e-10)
 {
-    auto iBatCnt = 0;
-    if(iMiniBatchSize) iBatCnt = setNetInput.size() / iMiniBatchSize;
-    else iBatCnt = 1;
     /**
      * Expectation Average, Expectation MiuBeta
      * Variance mini-batch variance, Variance SigmaSqr
      */
-    vect vecEX(setNetInput[IDX_ZERO].get_ln_cnt(), setNetInput[IDX_ZERO].get_col_cnt()),
-        vecEVarX(setNetInput[IDX_ZERO].get_ln_cnt(), setNetInput[IDX_ZERO].get_col_cnt());
-    for(auto i=0; i<iBatCnt; ++i)
+    vect vecEX = setbnData[0].vecMiuBeta,
+        vecEVarX = setbnData[0].vecSigmaSqr;
+    for(auto i=1; i<setbnData.size(); ++i)
     {
-        FCBN FCBNMiniBatOutput;
-        if(iMiniBatchSize) FCBNMiniBatOutput = BNTrain(setNetInput.sub_queue(i*iMiniBatchSize, (i+1)*iMiniBatchSize-1), dBeta, dGamma, false);
-        else FCBNMiniBatOutput = BNTrain(setNetInput, dBeta, dGamma, false);
-        vecEX += FCBNMiniBatOutput.vecMiuBeta;
-        vecEVarX += FCBNMiniBatOutput.vecSigmaSqr;
+        vecEX += setbnData[i].vecMiuBeta;
+        vecEVarX += setbnData[i].vecSigmaSqr;
     }
-    vecEX = vecEX.elem_cal_opt(iBatCnt, MATRIX_ELEM_DIV);
-    if(iMiniBatchSize) vecEVarX = (iMiniBatchSize / (iMiniBatchSize - 1)) * vecEVarX.elem_cal_opt(iBatCnt, MATRIX_ELEM_DIV);
-    else vecEVarX = (setNetInput.size() / (setNetInput.size() - 1)) * vecEVarX.elem_cal_opt(iBatCnt, MATRIX_ELEM_DIV);
+    if(setbnData.size() > 1)
+    {
+        vecEX = vecEX.elem_cal_opt(setbnData.size(), MATRIX_ELEM_DIV);
+        vecEVarX = (iMiniBatchSize / (iMiniBatchSize - 1)) * vecEVarX.elem_cal_opt(setbnData.size(), MATRIX_ELEM_DIV);
+    }
     // Normalize
     set<vect> setBNDeduceOutput(setNetInput.size());
     for(auto i=0; i<setNetInput.size(); ++i)

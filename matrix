@@ -1,10 +1,11 @@
 #pragma once
 #include <random>
 #include "bagrt"
+
 // namespace
+
 #define MATRIX_BEGIN        namespace mtx {
 #define MATRIX_END          }
-
 
 #define MATRIX              std::unique_ptr<double[]>
 #define MATRIX_NULL         nullptr
@@ -21,9 +22,6 @@
 #define MATRIX_EXTREME      mtx::mtx_extm
 
 #include "matrix.hpp"
-
-template<typename _Ty> using set = bagrt::net_queue<_Ty>;
-template<typename _Ty> using vect_t = bagrt::net_queue<bagrt::net_queue<_Ty>>;
 
 #define vect                mtx::matrix
 #define feature             bagrt::net_queue<vect>

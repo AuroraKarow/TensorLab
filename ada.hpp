@@ -98,7 +98,7 @@ FC_END
 
 CONV_BEGIN
 
-tensor AdaDeltaUpdateKernel(tensor &tenKernel, tensor &tenGradLossToKernel, ada::ten_ada<ada::AdaDeltaVect> &advCurrDelta)
+tensor AdaDeltaUpdateKernel(tensor &tenKernel, tensor &tenGradLossToKernel, ada::ada_tensor<ada::AdaDeltaVect> &advCurrDelta)
 {
     if(tenKernel.size() == tenGradLossToKernel.size())
     {

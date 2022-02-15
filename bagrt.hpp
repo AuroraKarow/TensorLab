@@ -233,7 +233,7 @@ public:
 template<typename _Ty> class net_list
 {
 protected:
-    struct node {node *prev = nullptr; std::unique_ptr<node> next = nullptr /* node *next */; T elem;};
+    struct node {node *prev = nullptr; std::unique_ptr<node> next = nullptr /* node *next */; _Ty elem;};
     std::unique_ptr<node> head;
     node *tail = nullptr, *itr = nullptr;
     uint64_t len = 0, itr_idx = 0;
@@ -358,6 +358,7 @@ public:
             return true;
         }
     }
+    template<typename...Args> bool emplace_back(Args &&...args) {return insert(len, args...);}
     _Ty &erase(uint64_t idx)
     {
         if(idx < len)

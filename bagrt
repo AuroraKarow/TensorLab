@@ -23,3 +23,7 @@ struct
 #define IDX_SGL         1
 
 #include "bagrt.hpp"
+
+template<typename _Ty> using set    =   bagrt::net_queue<_Ty>;
+template<typename _Ty> using seq    =   bagrt::net_list<_Ty>;
+template<typename _Ty> using vect_t =   bagrt::net_queue<bagrt::net_queue<_Ty>>;
