@@ -8,6 +8,8 @@ protected:
 
     void ShowIter() {}
     bool IterateFlag() { return true; }
+    void ForwProp() {}
+    void BackProp() {}
 public:
     NetBase(double dNetAcc = 1e-2) : dAcc(dNetAcc) {}
     NetBase(NetBase &netSrc) : dAcc(netSrc.dAcc), lsLayer(netSrc.lsLayer) {}
