@@ -10,7 +10,12 @@ template<typename _Ty> using ada_feature    =   set<_Ty>;
 
 ADA_END
 
+struct  BN              { virtual void _Deriv() {} };
+#define BN_PTR          std::shared_ptr<BN>
+
 #include "ada.hpp"
 #include "fcbat.hpp"
 #include "convbat.hpp"
 
+#define BN_FC           fc::FCBN
+#define BN_CONV         conv::ConvBN

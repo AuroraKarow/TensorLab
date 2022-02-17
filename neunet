@@ -7,6 +7,7 @@
 #define NEUNET_END      }
 
 #define NET_LIST        bagrt::net_list
+#define NET_MAP         bagrt::net_map
 
 // Layer
 
@@ -21,8 +22,6 @@
 #define LAYER_BN_CONV   layer::LayerBNConv
 
 #define LAYER_TRANS     layer::LayerTrans
-
-#define LAYER_INSTANCE  bagrt::derive_instance_ptr
 #define _LAYER          layer:: 
 
 #include "neunet.hpp"

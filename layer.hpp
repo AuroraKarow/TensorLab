@@ -2,14 +2,19 @@ LAYER_BEGIN
 
 struct Layer
 {
-    bool bFirstLayer = false;
     uint64_t iActFuncType = NULL, iLayerType = FC;
     double dLayerLearnRate = 0;
 
-    Layer(Layer &lyrSrc) : iLayerType(lyrSrc.iLayerType), iActFuncType(lyrSrc.iActFuncType), dLayerLearnRate(lyrSrc.dLayerLearnRate), bFirstLayer(lyrSrc.bFirstLayer) {}
+    virtual void ValueAssign(Layer &lyrSrc)
+    {
+        iLayerType = lyrSrc.iLayerType;
+        iActFuncType = lyrSrc.iActFuncType;
+        dLayerLearnRate = lyrSrc.dLayerLearnRate;
+    }
+    Layer(Layer &lyrSrc) { ValueAssign(lyrSrc); }
     void operator=(Layer &lyrSrc) { new (this)Layer(lyrSrc); }
     
-    Layer(uint64_t iLayerTypeVal = FC, uint64_t iActFuncTypeVal = NULL, double dLearnRate = 0, bool bIsFirstLayer = false) : iLayerType(iLayerTypeVal), iActFuncType(iActFuncTypeVal), dLayerLearnRate(dLearnRate), bFirstLayer(bIsFirstLayer) {}
+    Layer(uint64_t iLayerTypeVal = FC, uint64_t iActFuncTypeVal = NULL, double dLearnRate = 0) : iLayerType(iLayerTypeVal), iActFuncType(iActFuncTypeVal), dLayerLearnRate(dLearnRate) {}
     template<typename T, typename = std::enable_if_t<true, vect>, typename = std::enable_if_t<true, feature>> set<T> Activate(set<T> &setInput)
     {
         switch (iActFuncType)
@@ -29,8 +34,8 @@ struct Layer
         default: return setGrad;
         }
     }
-    void ForwProp() {}
-    void BackProp() {}
+    virtual void ForwProp() {}
+    virtual void BackProp() {}
 };
 
 struct LayerFC : Layer
@@ -40,14 +45,15 @@ struct LayerFC : Layer
     // Default
     _ADA AdaDeltaVect advLayerDelta;
 
+    void ValueAssign(LayerFC &lyrSrc) {}
     LayerFC() : Layer(FC) {}
     LayerFC(LayerFC &lyrSrc) : Layer(lyrSrc), vecLayerWeight(lyrSrc.vecLayerWeight), setLayerInput(lyrSrc.setLayerInput), setLayerOutput(lyrSrc.setLayerOutput) {}
     LayerFC(LayerFC &&lyrSrc) : Layer(lyrSrc), vecLayerWeight(std::move(lyrSrc.vecLayerWeight)), setLayerInput(std::move(lyrSrc.setLayerInput)), setLayerOutput(std::move(lyrSrc.setLayerOutput)) {}
     void operator=(LayerFC &lyrSrc) { new(this)LayerFC(lyrSrc); }
     void operator=(LayerFC &&lyrSrc) { new(this)LayerFC(std::move(lyrSrc)); }
     
-    LayerFC(uint64_t iInputLnCnt, uint64_t iOutputLnCnt, uint64_t iActFuncTypeVal = SIGMOID, double dLearnRate = 0, bool bIsFirstLayer = false, double dRandBoundryFirst = 0.0, double dRandBoundrySecond = 0.0, double dAcc = 1e-05) : Layer(FC, iActFuncTypeVal, dLearnRate, bIsFirstLayer) { _FC InitWeight(iInputLnCnt, iOutputLnCnt, dRandBoundryFirst, dRandBoundrySecond, dAcc); }
-    set<vect> ForwProp(set<vect> &setInput)
+    LayerFC(uint64_t iInputLnCnt, uint64_t iOutputLnCnt, uint64_t iActFuncTypeVal = SIGMOID, double dLearnRate = 0, double dRandBoundryFirst = 0, double dRandBoundrySecond = 0, double dAcc = 1e-05) : Layer(FC, iActFuncTypeVal, dLearnRate) { _FC InitWeight(iInputLnCnt, iOutputLnCnt, dRandBoundryFirst, dRandBoundrySecond, dAcc); }
+    set<vect> ForwProp(set<vect> &setInput, bool bFirstLayer = false)
     {
         if(bFirstLayer) setLayerInput = setInput;
         else setLayerInput = std::move(setInput);
@@ -65,45 +71,39 @@ struct LayerFC : Layer
     }
 };
 
-struct LayerBNFC : Layer
+struct LayerFCBN : Layer
 {
     // Shift, Scale, Dominant
     double dBeta = 0, dGamma = 1, dEpsilon = 1e-10;
     set<vect> setLayerInput;
-    seq<_FC FCBN> seqBNData;
+    BN_FC BNData;
     _ADA AdaDeltaVal advBeta, advGamma;
 
-    void ValueAssign(LayerBNFC &lyrSrc)
+    void ValueAssign(LayerFCBN &lyrSrc)
     {
         dBeta = lyrSrc.dBeta;
         dGamma = lyrSrc.dGamma;
         dEpsilon = lyrSrc.dEpsilon;
     }
-    LayerBNFC() : Layer(BN_FC) {}    
-    LayerBNFC(LayerBNFC &lyrSrc) : Layer(lyrSrc), setLayerInput(lyrSrc.setLayerInput), seqBNData(lyrSrc.seqBNData), advBeta(lyrSrc.advBeta), advGamma(lyrSrc.advGamma) { ValueAssign(lyrSrc); }
-    LayerBNFC(LayerBNFC &&lyrSrc) : Layer(lyrSrc), setLayerInput(std::move(lyrSrc.setLayerInput)), seqBNData(std::move(lyrSrc.seqBNData)), advBeta(std::move(lyrSrc.advBeta)), advGamma(std::move(lyrSrc.advGamma)) { ValueAssign(lyrSrc); }
-    void operator=(LayerBNFC &lyrSrc) { new(this)LayerBNFC(lyrSrc); }
-    void operator=(LayerBNFC &&lyrSrc){ new(this)LayerBNFC(std::move(lyrSrc)); }
+    LayerFCBN() : Layer(FC_BN) {}    
+    LayerFCBN(LayerFCBN &lyrSrc) : Layer(lyrSrc), setLayerInput(lyrSrc.setLayerInput), BNData(lyrSrc.BNData), advBeta(lyrSrc.advBeta), advGamma(lyrSrc.advGamma) { ValueAssign(lyrSrc); }
+    LayerFCBN(LayerFCBN &&lyrSrc) : Layer(lyrSrc), setLayerInput(std::move(lyrSrc.setLayerInput)), BNData(std::move(lyrSrc.BNData)), advBeta(std::move(lyrSrc.advBeta)), advGamma(std::move(lyrSrc.advGamma)) { ValueAssign(lyrSrc); }
+    void operator=(LayerFCBN &lyrSrc) { new(this)LayerFCBN(lyrSrc); }
+    void operator=(LayerFCBN &&lyrSrc){ new(this)LayerFCBN(std::move(lyrSrc)); }
 
-    LayerBNFC(double dShift = 0, double dScale = 1, uint64_t iActFuncTypeVal = SIGMOID, double dLearnRate = 0, double dDmt = 1e-10) : Layer(BN_FC, iActFuncTypeVal, dLearnRate, false), dBeta(dShift), dGamma(dScale), dEpsilon(dDmt) {}
-    set<vect> ForwProp(set<vect> &setInput, uint64_t iMiniBatchIdx = 0, bool bTrain = true, uint64_t iMiniBatchSize = 0)
+    LayerFCBN(double dShift = 0, double dScale = 1, uint64_t iActFuncTypeVal = SIGMOID, double dLearnRate = 0, double dDmt = 1e-10) : Layer(FC_BN, iActFuncTypeVal, dLearnRate), dBeta(dShift), dGamma(dScale), dEpsilon(dDmt) {}
+    set<vect> ForwProp(set<vect> &setInput, bool bFirstLayer = false)
     {
         if(bFirstLayer) setLayerInput = setInput;
         else setLayerInput = std::move(setInput);
-        if(bTrain)
-        {
-            auto bnData = _FC BNTrain(setLayerInput, dBeta, dGamma, dEpsilon);
-            if(seqBNData.size()) seqBNData[iMiniBatchIdx] = bnData;
-            else seqBNData.insert(0, bnData);
-            return Activate(seqBNData[iMiniBatchIdx].setY);
-        }
-        else return _FC BNDeduce(setInput, dBeta, dGamma, seqBNData, iMiniBatchSize, dEpsilon);
+        BNData = _FC BNTrain(setLayerInput, dBeta, dGamma, dEpsilon);
+        return Activate(BNData.setY);
     }
-    set<vect> BackProp(set<vect> &setGrad, uint64_t iMiniBatchIdx = 0)
+    set<vect> BackProp(set<vect> &setGrad)
     { 
-        setGrad = Derivative(seqBNData[iMiniBatchIdx].setY, setGrad);
-        auto setGradBack = _FC BNGradLossToInput(seqBNData[iMiniBatchIdx], setLayerInput, setGrad, dGamma, dEpsilon);
-        auto dGradScale = _FC BNGradLossToScale(setGrad, seqBNData[iMiniBatchIdx]),
+        setGrad = Derivative(BNData.setY, setGrad);
+        auto setGradBack = _FC BNGradLossToInput(BNData, setLayerInput, setGrad, dGamma, dEpsilon);
+        auto dGradScale = _FC BNGradLossToScale(setGrad, BNData),
             dGradShift = _FC BNGradLossToShift(setGrad);
         if(dLayerLearnRate)
         {
@@ -145,8 +145,8 @@ struct LayerConv : Layer
     void operator=(LayerConv &lyrSrc) { new(this)LayerConv(lyrSrc); }
     void operator=(LayerConv &&lyrSrc) { new(this)LayerConv(std::move(lyrSrc)); }
 
-    LayerConv(uint64_t iKernelAmt, uint64_t iKernelChannCnt, uint64_t iKernelLnCnt, uint64_t iKernelColCnt, uint64_t iLnStride, uint64_t iColStride, uint64_t iActFuncTypeVal = RELU, double dLearnRate = 0, bool bIsFirstLayer = false, double dRandBoundryFirst = 0, double dRandBoundrySecond = 0, double dAcc = 1e-5, uint64_t iLnDilation = 0, uint64_t iColDilation = 0, uint64_t iInputPadTop = 0, uint64_t iInputPadRight = 0, uint64_t iInputPadBottom = 0, uint64_t iInputPadLeft = 0, uint64_t iLnDistance = 0, uint64_t iColDistance = 0) : Layer(CONV, iActFuncTypeVal, dLearnRate, bIsFirstLayer), iLayerLnStride(iLnStride), iLayerColStride(iColStride), iLayerLnDilation(iLnDilation), iLayerColDilation(iColDilation), iLayerInputPadTop(iInputPadTop), iLayerInputPadRight(iInputPadRight), iLayerInputPadBottom( iInputPadBottom), iLayerInputPadLeft(iInputPadLeft), iLayerLnDistance(iLnDistance), iLayerColDistance(iColDistance) { tenKernel = _CONV InitKernel(iKernelAmt, iKernelChannCnt, iKernelLnCnt, iKernelColCnt, dRandBoundryFirst, dRandBoundrySecond, dAcc); }
-    set<feature> ForwProp(set<feature> &setInput)
+    LayerConv(uint64_t iKernelAmt, uint64_t iKernelChannCnt, uint64_t iKernelLnCnt, uint64_t iKernelColCnt, uint64_t iLnStride, uint64_t iColStride, uint64_t iActFuncTypeVal = RELU, double dLearnRate = 0, double dRandBoundryFirst = 0, double dRandBoundrySecond = 0, double dAcc = 1e-5, uint64_t iLnDilation = 0, uint64_t iColDilation = 0, uint64_t iInputPadTop = 0, uint64_t iInputPadRight = 0, uint64_t iInputPadBottom = 0, uint64_t iInputPadLeft = 0, uint64_t iLnDistance = 0, uint64_t iColDistance = 0) : Layer(CONV, iActFuncTypeVal, dLearnRate), iLayerLnStride(iLnStride), iLayerColStride(iColStride), iLayerLnDilation(iLnDilation), iLayerColDilation(iColDilation), iLayerInputPadTop(iInputPadTop), iLayerInputPadRight(iInputPadRight), iLayerInputPadBottom( iInputPadBottom), iLayerInputPadLeft(iInputPadLeft), iLayerLnDistance(iLnDistance), iLayerColDistance(iColDistance) { tenKernel = _CONV InitKernel(iKernelAmt, iKernelChannCnt, iKernelLnCnt, iKernelColCnt, dRandBoundryFirst, dRandBoundrySecond, dAcc); }
+    set<feature> ForwProp(set<feature> &setInput, bool bFirstLayer = false)
     {
         if(bFirstLayer) setLayerInput = setInput;
         else setLayerInput = std::move(setInput);
@@ -164,45 +164,40 @@ struct LayerConv : Layer
     }
 };
 
-struct LayerBNConv : Layer
+struct LayerConvBN : Layer
 {
     // Dominant
     double dEpsilon = 1e-5;
     // Shift, Scale
     vect vecBeta, vecGamma;
-    seq<_CONV ConvBN> seqBNData;
+    BN_CONV BNData;
     set<feature> setLayerInput;
     _ADA AdaDeltaVect advBeta, advGamma;
 
-    LayerBNConv() : Layer(BN_CONV) {}
-    LayerBNConv(LayerBNConv &lyrSrc) : Layer(lyrSrc), dEpsilon(lyrSrc.dEpsilon), vecBeta(lyrSrc.vecBeta), vecGamma(lyrSrc.vecGamma), seqBNData(lyrSrc.seqBNData), setLayerInput(lyrSrc.setLayerInput), advBeta(lyrSrc.advBeta), advGamma(lyrSrc.advGamma) {}
-    LayerBNConv(LayerBNConv &&lyrSrc) : Layer(lyrSrc), dEpsilon(lyrSrc.dEpsilon), vecBeta(std::move(lyrSrc.vecBeta)), vecGamma(std::move(lyrSrc.vecGamma)), seqBNData(std::move(lyrSrc.seqBNData)), setLayerInput(std::move(lyrSrc.setLayerInput)), advBeta(std::move(lyrSrc.advBeta)), advGamma(std::move(lyrSrc.advGamma)) {}
-    void operator=(LayerBNConv &lyrSrc) { new(this)LayerBNConv(lyrSrc); }
-    void operator=(LayerBNConv &&lyrSrc) { new(this)LayerBNConv(std::move(lyrSrc)); }
+    void ValueAssign(LayerConvBN &lyrSrc) { dEpsilon = lyrSrc.dEpsilon;}
+    LayerConvBN() : Layer(CONV_BN) {}
+    LayerConvBN(LayerConvBN &lyrSrc) : Layer(lyrSrc), vecBeta(lyrSrc.vecBeta), vecGamma(lyrSrc.vecGamma), BNData(lyrSrc.BNData), setLayerInput(lyrSrc.setLayerInput), advBeta(lyrSrc.advBeta), advGamma(lyrSrc.advGamma) { ValueAssign(lyrSrc); }
+    LayerConvBN(LayerConvBN &&lyrSrc) : Layer(lyrSrc), vecBeta(std::move(lyrSrc.vecBeta)), vecGamma(std::move(lyrSrc.vecGamma)), BNData(std::move(lyrSrc.BNData)), setLayerInput(std::move(lyrSrc.setLayerInput)), advBeta(std::move(lyrSrc.advBeta)), advGamma(std::move(lyrSrc.advGamma)) { ValueAssign(lyrSrc); }
+    void operator=(LayerConvBN &lyrSrc) { new(this)LayerConvBN(lyrSrc); }
+    void operator=(LayerConvBN &&lyrSrc) { new(this)LayerConvBN(std::move(lyrSrc)); }
 
-    LayerBNConv(uint64_t iChannCnt = 1, double dShift = 0, double dScale = 1, uint64_t iActFuncTypeVal = RELU, double dLearnRate = 0, double dDmt = 1e-10) : Layer(BN_CONV, iActFuncTypeVal, dLearnRate, false)
+    LayerConvBN(uint64_t iChannCnt = 1, double dShift = 0, double dScale = 1, uint64_t iActFuncTypeVal = RELU, double dLearnRate = 0, double dDmt = 1e-10) : Layer(CONV_BN, iActFuncTypeVal, dLearnRate)
     {
         vecBeta = _CONV BNInitScaleShift(iChannCnt, dShift);
         vecGamma = _CONV BNInitScaleShift(iChannCnt, dScale);
     }
-    set<feature> ForwProp(set<feature> &setInput, uint64_t iMiniBatchIdx = 0, bool bTrain = true, uint64_t iMiniBatchSize = 0)
+    set<feature> ForwProp(set<feature> &setInput, bool bFirstLayer = false)
     {
         if(bFirstLayer) setLayerInput = setInput;
         else setLayerInput = std::move(setInput);
-        if(bTrain)
-        {
-            auto bnData = _CONV BNTrain(setLayerInput, vecBeta, vecGamma, dEpsilon);
-            if(seqBNData.size()) seqBNData[iMiniBatchIdx] = bnData;
-            else seqBNData.insert(0, bnData);
-            return Activate(seqBNData[iMiniBatchIdx].setY);
-        }
-        else return _CONV BNDeduce(setInput, vecBeta, vecGamma, seqBNData, iMiniBatchSize, dEpsilon);
+        BNData = _CONV BNTrain(setLayerInput, vecBeta, vecGamma, dEpsilon);
+        return Activate(BNData.setY);
     }
     set<feature> BackProp(set<feature> &setGrad, uint64_t iMiniBatchIdx = 0)
     {
-        setGrad = Derivative(seqBNData[iMiniBatchIdx].setY, setGrad);
-        auto setGradBack = _CONV BNGradLossToInput(seqBNData[iMiniBatchIdx], setLayerInput, setGrad, vecGamma, dEpsilon);
-        auto dGradScale = _CONV BNGradLossToScale(setGrad, seqBNData[iMiniBatchIdx]),
+        setGrad = Derivative(BNData.setY, setGrad);
+        auto setGradBack = _CONV BNGradLossToInput(BNData, setLayerInput, setGrad, vecGamma, dEpsilon);
+        auto dGradScale = _CONV BNGradLossToScale(setGrad, BNData),
             dGradShift = _CONV BNGradLossToShift(setGrad);
         if(dLayerLearnRate)
         {
@@ -248,8 +243,8 @@ struct LayerPool : Layer
         default: return (uint64_t)NAN;
         }
     }
-    LayerPool(uint64_t iPoolTypeVal = POOL_MAX, uint64_t iFilterLnCnt = 0, uint64_t iFilterColCnt = 0, uint64_t iLnStride = 0, uint64_t iColStride = 0, uint64_t iLnDilation = 0, uint64_t iColDilation = 0, uint64_t iActFuncTypeVal = NULL) : Layer(POOL, iActFuncTypeVal, 0, false), iPoolType(iPoolTypeVal) {}
-    set<feature> ForwProp(set<feature> &setInput)
+    LayerPool(uint64_t iPoolTypeVal = POOL_MAX, uint64_t iFilterLnCnt = 0, uint64_t iFilterColCnt = 0, uint64_t iLnStride = 0, uint64_t iColStride = 0, uint64_t iLnDilation = 0, uint64_t iColDilation = 0, uint64_t iActFuncTypeVal = NULL) : Layer(POOL, iActFuncTypeVal, 0), iPoolType(iPoolTypeVal) {}
+    set<feature> ForwProp(set<feature> &setInput, bool bFirstLayer = false)
     {
         if(bFirstLayer) setLayerInput = setInput;
         else setLayerInput = std::move(setInput);
@@ -264,11 +259,17 @@ struct LayerTrans : Layer
     uint64_t iLnCnt = 0, iColCnt = 0;
     bool bFeatToVec = true;
 
+    void ValueAssign(LayerTrans &lyrSrc)
+    {
+        iLnCnt = lyrSrc.iLnCnt;
+        iColCnt = lyrSrc.iColCnt;
+        bFeatToVec = lyrSrc.bFeatToVec;
+    }
     LayerTrans() : Layer(TRANS) {}
-    LayerTrans(LayerTrans &lyrSrc) : Layer(lyrSrc), iLnCnt(lyrSrc.iLnCnt), iColCnt(lyrSrc.iColCnt), bFeatToVec(lyrSrc.bFeatToVec) {}
+    LayerTrans(LayerTrans &lyrSrc) : Layer(lyrSrc) { ValueAssign(lyrSrc); }
     void operator=(LayerTrans &lyrSrc) { new (this)LayerTrans(lyrSrc); }
 
-    LayerTrans(uint64_t iActFuncTypeVal = NULL, bool bIsFirstLayer = false) : Layer(TRANS, iActFuncTypeVal, 0, bIsFirstLayer) {}
+    LayerTrans(uint64_t iActFuncTypeVal = NULL) : Layer(TRANS, iActFuncTypeVal, 0) {}
     set<vect> ForwProp(set<feature> &setInput)
     {
         iLnCnt = setInput[IDX_ZERO][IDX_ZERO].LN_CNT;
@@ -276,7 +277,7 @@ struct LayerTrans : Layer
         return _FC FeatureTransform(setInput);
     }
     set<feature> BackProp(set<vect> &setGrad) {return _FC FeatureTransform(setGrad, iLnCnt, iColCnt);}
-    LayerTrans(uint64_t iChannLnCnt, uint64_t iChannColCnt, uint64_t iActFuncIdx = NULL, bool bIsFirstLayer = false) : Layer(TRANS, iActFuncIdx, 0, bIsFirstLayer), iLnCnt(iChannLnCnt), iColCnt(iChannColCnt), bFeatToVec(false) {}
+    LayerTrans(uint64_t iChannLnCnt, uint64_t iChannColCnt, uint64_t iActFuncIdx = NULL) : Layer(TRANS, iActFuncIdx, 0), iLnCnt(iChannLnCnt), iColCnt(iChannColCnt), bFeatToVec(false) {}
     set<feature> ForwProp(set<vect> &setInput) {return _FC FeatureTransform(setInput, iLnCnt, iColCnt);}
     set<vect> BackProp(set<feature> &setGrad) {return _FC FeatureTransform(setGrad);}
 };

@@ -700,12 +700,7 @@ public:
         {
             auto _elem_cnt = elem_temp.size();
             if(_elem_cnt != elem_cnt || _col_cnt != info.col_cnt)  _init(_elem_cnt/_col_cnt, _col_cnt, true);
-            auto head = elem_temp.head_node();
-            for(auto i=0; i<elem_cnt; ++i)
-            {
-                info.mtx_val[i] = head->data;
-                head = head->next_node.get();
-            }
+            for(auto i=0; i<elem_cnt; ++i) info.mtx_val[i] = elem_temp[i];
         }
     }
     bool value_copy(matrix &val)

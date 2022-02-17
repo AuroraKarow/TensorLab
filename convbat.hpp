@@ -79,7 +79,7 @@ set<feature> Pool(set<feature> &vecInput, uint64_t iPoolType = POOL_DOWN_MAX, bo
     return setOutput;
 }
 
-struct ConvBN
+struct ConvBN : BN
 {
     feature vecMiuBeta;
     feature vecSigmaSqr;
@@ -222,14 +222,14 @@ vect BNUpdateScaleShift(vect &vecGammaBeta, vect &vecGrad, double dLearnRate = 1
     else return blank_vect;
 }
 
-set<feature> BNDeduce(set<feature> &setNetInput, vect &vecBeta, vect &vecGamma, seq<ConvBN> &setbnData, uint64_t iMiniBatchSize = 0, double dEpsilon = 1e-10)
+set<feature> BNDeduce(set<feature> &setNetInput, vect &vecBeta, vect &vecGamma, set<BN_PTR> &setbnData, uint64_t iMiniBatchSize = 0, double dEpsilon = 1e-10)
 {
-    auto vecEX = setbnData[0].vecMiuBeta,
-        vecVarX = setbnData[0].vecSigmaSqr;
-    for(auto i=1; i<setbnData.size(); ++i) for(auto j=0; j<setbnData[i].vecMiuBeta.size(); ++j)
+    auto vecEX = DERIVE_INSTANCE<ConvBN>(setbnData[0]) -> vecMiuBeta,
+        vecVarX = DERIVE_INSTANCE<ConvBN>(setbnData[0]) -> vecSigmaSqr;
+    for(auto i=1; i<setbnData.size(); ++i) for(auto j=0; j<DERIVE_INSTANCE<ConvBN>(setbnData[i])->vecMiuBeta.size(); ++j)
     {
-        vecEX[j] += setbnData[i].vecMiuBeta[j];
-        vecVarX[j] += setbnData[i].vecSigmaSqr[j];
+        vecEX[j] += DERIVE_INSTANCE<ConvBN>(setbnData[i]) -> vecMiuBeta[j];
+        vecVarX[j] += DERIVE_INSTANCE<ConvBN>(setbnData[i]) -> vecSigmaSqr[j];
     }
     if(iMiniBatchSize) for(auto i=0; i<vecEX.size(); ++i)
     {

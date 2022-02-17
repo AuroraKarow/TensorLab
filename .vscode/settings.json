@@ -84,6 +84,15 @@
         "layer": "cpp",
         "netbaslib": "cpp",
         "netbatlib": "cpp",
-        "thread_pool": "cpp"
+        "thread_pool": "cpp",
+        "deque": "cpp",
+        "queue": "cpp",
+        "condition_variable": "cpp",
+        "coroutine": "cpp",
+        "resumable": "cpp",
+        "future": "cpp",
+        "mutex": "cpp",
+        "stop_token": "cpp",
+        "thread": "cpp"
     }
 }

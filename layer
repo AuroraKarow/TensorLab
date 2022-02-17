@@ -4,6 +4,10 @@
 #define LAYER_BEGIN namespace layer {
 #define LAYER_END   }
 
+#define _CONV       conv::
+#define _FC         fc::
+#define _ADA        ada::
+
 // NULL = no activation function
 #define SIGMOID     1
 #define RELU        2
@@ -13,15 +17,11 @@
 #define POOL_MAX    1
 #define POOL_GAG    2
 
-#define _CONV       conv::
-#define _FC         fc::
-#define _ADA        ada::
-
 #define FC          0
 #define CONV        1
 #define POOL        2
-#define BN_FC       3
-#define BN_CONV     4
+#define FC_BN       3
+#define CONV_BN     4
 #define TRANS       5
 
 #include "layer.hpp"

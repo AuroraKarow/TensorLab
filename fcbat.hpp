@@ -31,7 +31,7 @@ set<vect> GradLossToInput(set<vect> &setGradLossToOutput, vect &vecWeight)
 vect GradLossToWeight(set<vect> &setGradLossToOutput, set<vect> &setInput)
 {
     vect vecGradLossToWeight;
-    if(setGradLossToOutput.size() == setInput.size()) for(auto i=0; i<setInput.size(); ++i)
+    if(setGradLossToOutput.size()==setInput.size()) for(auto i=0; i<setInput.size(); ++i)
     {
         if(vecGradLossToWeight.is_matrix()) vecGradLossToWeight += GradLossToWeight(setGradLossToOutput[i], setInput[i]);
         else vecGradLossToWeight = GradLossToWeight(setGradLossToOutput[i], setInput[i]);
@@ -62,7 +62,7 @@ set<feature> FeatureTransform(set<vect> &setInput, uint64_t iLnCnt, uint64_t iCo
     return setOuput;
 }
 
-struct FCBN
+struct FCBN : BN
 {
     vect vecMiuBeta;
     vect vecSigmaSqr;
@@ -156,18 +156,18 @@ double BNGradLossToShift(set<vect> &setGradLossToOutput)
 
 double BNUpdateScaleShift(double dScaleShift, double dGradLossToScaleShift, double dLearnRate) {return dScaleShift - dLearnRate * dGradLossToScaleShift;}
 
-bagrt::net_queue<vect> BNDeduce(bagrt::net_queue<vect> &setNetInput, double dBeta, double dGamma, seq<FCBN> &setbnData, uint64_t iMiniBatchSize = 0, double dEpsilon = 1e-10)
+bagrt::net_queue<vect> BNDeduce(bagrt::net_queue<vect> &setNetInput, double dBeta, double dGamma, set<BN_PTR> &setbnData, uint64_t iMiniBatchSize = 0, double dEpsilon = 1e-10)
 {
     /**
      * Expectation Average, Expectation MiuBeta
      * Variance mini-batch variance, Variance SigmaSqr
      */
-    vect vecEX = setbnData[0].vecMiuBeta,
-        vecEVarX = setbnData[0].vecSigmaSqr;
+    vect vecEX = DERIVE_INSTANCE<FCBN>(setbnData[0]) -> vecMiuBeta,
+        vecEVarX = DERIVE_INSTANCE<FCBN>(setbnData[0]) -> vecSigmaSqr;
     for(auto i=1; i<setbnData.size(); ++i)
     {
-        vecEX += setbnData[i].vecMiuBeta;
-        vecEVarX += setbnData[i].vecSigmaSqr;
+        vecEX += DERIVE_INSTANCE<FCBN>(setbnData[i]) -> vecMiuBeta;
+        vecEVarX += DERIVE_INSTANCE<FCBN>(setbnData[i]) -> vecSigmaSqr;
     }
     if(setbnData.size() > 1)
     {

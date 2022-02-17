@@ -10,16 +10,16 @@
 #define MATRIX              std::unique_ptr<double[]>
 #define MATRIX_NULL         nullptr
 
-#define MATRIX_ELEM_MULT    0
-#define MATRIX_ELEM_DIV     1
-#define MATRIX_ELEM_POW     2
-
 #define MATRIX_EQ_LU        true
 #define MATRIX_EQ_JACOBI    false
 
 #define MATRIX_POS          mtx::mtx_pos
 #define MATRIX_INFO         mtx::mtx_info
 #define MATRIX_EXTREME      mtx::mtx_extm
+
+#define MATRIX_ELEM_MULT    0
+#define MATRIX_ELEM_DIV     1
+#define MATRIX_ELEM_POW     2
 
 #include "matrix.hpp"
 
