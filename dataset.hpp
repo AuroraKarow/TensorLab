@@ -5,9 +5,9 @@ class MNIST
 public:
     /* Data sequence */
     // Element list of data
-    bagrt::net_queue<feature> elem;
+    vect_t<feature> elem;
     // Element index list of data, number sequence -> label value
-    bagrt::net_queue<uint64_t> elem_lbl;
+    vect_t<uint64_t> elem_lbl;
 private:
     /* Magic number */
     // Data
@@ -122,27 +122,65 @@ private:
         }
         return false;
     }
+    uint64_t initialize_load_qnty(std::initializer_list<uint64_t> &qnty_list)
+    {
+        auto ans = 0;
+        for(auto elem : qnty_list) ans += elem;
+        return ans;
+    }
+    void init_minibatch(uint64_t load_qnty, uint64_t minibatch)
+    {
+        minibatch_size = minibatch;
+        auto minibatch_cnt = data_size / minibatch_size;
+        auto last_minibatch_size = data_size % minibatch_size;
+        if(last_minibatch_size) ++ minibatch_cnt;
+        elem.init(minibatch_cnt);
+        elem_lbl.init(minibatch_cnt);
+        for(auto i=0; i<minibatch_cnt; ++i)
+        {
+            auto alloc_minibatch_size = minibatch_size;
+            if(i+1==minibatch_cnt && last_minibatch_size) alloc_minibatch_size = last_minibatch_size;
+            elem[i].init(alloc_minibatch_size);
+            elem_lbl[i].init(alloc_minibatch_size);
+        }
+    }
+    void init(uint64_t load_qnty, uint64_t minibatch = 0)
+    {
+        data_size = load_qnty;
+        if(minibatch) init_minibatch(load_qnty, minibatch);
+        else
+        {
+            elem.init();
+            elem[IDX_ZERO].init(load_qnty);
+            elem_lbl.init();
+            elem_lbl[IDX_ZERO].init(load_qnty);
+        }
+    }
     // Origin vector dimension
     static const uint64_t ORGN_SIZE = 10;
     // Bool element flag
     const bool is_bool;
     // Check collection
     bool check = true;
+    // Data size
+    uint64_t data_size = 0;
+    // Minibatch
+    uint64_t minibatch_size = 0;
 public:
     /* Function */
     /**
      * @brief   Default constructor
-     * @param   elem_bool   [Input] Data unit's element bool signal
+     * @param   bool_preprocess [Input] Data unit's element bool signal
      */
-    MNIST(bool elem_bool) : is_bool(elem_bool) {}
-    uint64_t size() {return elem.size();}
+    MNIST(bool bool_preprocess) : is_bool(bool_preprocess) {}
+    uint64_t size() {return data_size;}
+    uint64_t mini_batch() {return minibatch_size;}
     // Column line per-data
     uint64_t ln_cnt() {return LN_CNT;}
     // Column count per-data
     uint64_t col_cnt() {return COL_CNT;}
     // Single data length
     uint64_t dat_len() {return ln_cnt() * col_cnt();}
-    bool valid() {return elem.size() == elem_lbl.size();}
     /**
      * @brief   Get orignal vector of counterpart label
      * @param	lbl_val	[Input]	Label value
@@ -159,85 +197,65 @@ public:
         else return vect::blank_matrix();
     }
     // Get origin vector sequence
-    bagrt::net_queue<vect> orgn()
+    vect_t<vect> orgn()
     {
         if(size())
         {
-            bagrt::net_queue<vect> elem_orgn(size());
-            for(auto i=0; i<size(); ++i) elem_orgn[i] = orgn(elem_lbl[i]);
+            vect_t<vect> elem_orgn(elem_lbl.size());
+            for(auto i=0; i<elem_lbl.size(); ++i)
+            {
+                elem_orgn[i].init(elem_lbl[i].size());
+                for(auto j=0; j<elem_lbl[i].size(); ++j) elem_orgn[i][j] = orgn(elem_lbl[i][j]);
+            }
             return elem_orgn;
         }
-        else return bagrt::net_queue<vect>::blank_queue();
+        else return blank_tensor;
     }
     /**
      * @brief   Load data
      * @param	dat_dir	    [Quote]	Data set directory
      * @param	lbl_dir	    [Quote]	Label set directory
      * @param	load_qnty	[Input]	Loading count
-     * @param	by_lbl	    [Input]	Quantity for each label
+     * @param   padding     [Input] Padding operation
      * @return	Data load validation
      * @retval  true    Load successfully
      * @retval  false   Load filed
      */
-    bool load_data(std::string &dat_dir, std::string &lbl_dir, uint64_t load_qnty = 0, bool by_lbl = false, uint64_t padding = 0)
+    bool load_data(std::string &dat_dir, std::string &lbl_dir, uint64_t load_qnty = 0, uint64_t minibatch = 0, uint64_t padding = 0)
     {
         bool pcdr_flag = true;
         if(preprocess(dat_dir, lbl_dir))
         {
-            if(by_lbl && load_qnty)
+            set<uint64_t> lbl_data_stat;
+            if(load_qnty)
             {
-                bagrt::net_queue<uint64_t> qnty_list(ORGN_SIZE);
-                auto elem_cnt = 0;
-                elem.init(load_qnty * ORGN_SIZE);
-                elem_lbl.init(load_qnty * ORGN_SIZE);
-                while(check)
-                {
-                    auto curr_lbl = read_curr_lbl();
-                    if(qnty_list[curr_lbl] < load_qnty)
-                    {
-                        elem[elem_cnt].init();
-                        elem[elem_cnt][IDX_ZERO] = read_curr_dat(true, padding);
-                        elem_lbl[elem_cnt ++] = curr_lbl;
-                        ++ qnty_list[curr_lbl];
-                    }
-                    else read_curr_dat(false);
-                    auto check_cnt = 0;
-                    for(check_cnt=0; check_cnt<ORGN_SIZE; ++check_cnt) if(qnty_list[check_cnt] < load_qnty) break;
-                    check = check_cnt != ORGN_SIZE;
-                }
-            }
-            else if(load_qnty)
-            {
-                bagrt::net_queue<uint64_t> lbl_data_stat(load_qnty);
+                lbl_data_stat.init(load_qnty);
                 for(auto i=0; i<load_qnty; ++i) lbl_data_stat[i] = bagrt::random_number(0, QNTY_STAT, true);
                 lbl_data_stat.sort();
-                elem.init(load_qnty);
-                elem_lbl.init(load_qnty);
-                for(auto i=0,j=0; j<load_qnty; ++i)
-                    if(i==lbl_data_stat[j])
-                    {
-                        elem[j].init();
-                        elem[j][IDX_ZERO] = read_curr_dat(true, padding);
-                        elem_lbl[j ++] = read_curr_lbl();
-                    }
-                    else
-                    {
-                        read_curr_dat(false);
-                        read_curr_lbl();
-                    }
             }
-            else
-            {
-                load_qnty = QNTY_STAT;
-                elem.init(load_qnty);
-                elem_lbl.init(load_qnty);
-                for(auto i=0; i<load_qnty; ++i)
-                {   
-                    elem[i].init();
-                    elem[i][IDX_ZERO] = read_curr_dat(true, padding);
-                    elem_lbl[i] = read_curr_lbl();
+            else load_qnty = QNTY_STAT;
+            init(load_qnty, minibatch);
+            auto minibatch_idx = 0;
+            for(auto i=0,j=0; j<load_qnty; ++i)
+                if((lbl_data_stat.size()&&(i==lbl_data_stat[j]||(j&&i==lbl_data_stat[j-1]))) || !lbl_data_stat.size())
+                {
+                    auto sub_idx = 0;
+                    if(minibatch)
+                    {
+                        sub_idx = j % minibatch;
+                        if(j && !sub_idx) ++ minibatch_idx;
+                    }
+                    else sub_idx = j;
+                    elem[minibatch_idx][sub_idx].init();
+                    elem[minibatch_idx][sub_idx][IDX_ZERO] = read_curr_dat(true, padding);
+                    elem_lbl[minibatch_idx][sub_idx] = read_curr_lbl();
+                    ++ j;
                 }
-            }
+                else
+                {
+                    read_curr_dat(false);
+                    read_curr_lbl();
+                }
         }
         else pcdr_flag = false;
         close_stream();
@@ -248,53 +266,64 @@ public:
      * @param	dat_dir	    [Quote]	Data set directory
      * @param	lbl_dir	    [Quote]	Label set directory
      * @param	qnty_list	[Input]	Data loading quantity note list for each label
+     * @param   padding     [Input] Padding operation
      * @return	Data load validation
      * @retval  true    Load successfully
      * @retval  false   Load filed
      */
-    bool load_data(std::string &dat_dir, std::string &lbl_dir, bagrt::net_queue<uint64_t> qnty_list, uint64_t padding = 0)
+    bool load_data(std::string &dat_dir, std::string &lbl_dir, std::initializer_list<uint64_t> &qnty_list, uint64_t minibatch = 0, uint64_t padding = 0)
     {
         auto pcdr_flag = true;
-        if(preprocess(dat_dir, lbl_dir) && qnty_list.size()==ORGN_SIZE)
+        if(preprocess(dat_dir, lbl_dir))
         {
-            auto elem_cnt = 0;
-            while(check)
+            set<uint64_t> qnty_list_cnt;
+            auto elem_cnt = 0, load_qnty = 0, minibatch_idx = 0;
+            if(qnty_list.size() == 1)
             {
-                auto curr_lbl = read_curr_lbl();
-                if(qnty_list[curr_lbl])
+                qnty_list_cnt.init(ORGN_SIZE);
+                load_qnty = (*qnty_list.begin()) * ORGN_SIZE;
+            }
+            else if(qnty_list.size() == ORGN_SIZE)
+            {
+                qnty_list_cnt = bagrt::initilaize_net_queue(qnty_list);
+                load_qnty = qnty_list_cnt.sum();
+            }
+            else pcdr_flag = false;
+            if(pcdr_flag)
+            {
+                init(load_qnty, minibatch);
+                while(check)
                 {
-                    elem[elem_cnt].init();
-                    elem[elem_cnt][IDX_ZERO] = read_curr_dat();
-                    elem_lbl[elem_cnt ++] = curr_lbl;
-                    -- qnty_list[curr_lbl];
+                    auto curr_lbl = read_curr_lbl();
+                    if(((qnty_list_cnt[curr_lbl]<load_qnty)&&(qnty_list.size()==1)) || ((qnty_list_cnt[curr_lbl])&&(qnty_list.size()==ORGN_SIZE)))
+                    {
+                        auto sub_idx = 0;
+                        if(minibatch)
+                        {
+                            sub_idx = elem_cnt % minibatch;
+                            if(elem_cnt && !sub_idx) ++ minibatch_idx;
+                        }
+                        else sub_idx = elem_cnt;
+                        elem[minibatch_idx][sub_idx].init();
+                        elem[minibatch_idx][sub_idx][IDX_ZERO] = read_curr_dat(true, padding);
+                        elem_lbl[minibatch_idx][sub_idx] = curr_lbl;
+                        ++ elem_cnt;
+                        if(qnty_list.size() == 1) ++ qnty_list_cnt[curr_lbl];
+                        else if(qnty_list.size()==ORGN_SIZE) -- qnty_list_cnt[curr_lbl];
+                    }
+                    else read_curr_dat(false);
+                    auto check_cnt = 0;
+                    for(check_cnt=0; check_cnt<ORGN_SIZE; ++check_cnt) if((qnty_list_cnt[check_cnt]<load_qnty)&&(qnty_list.size()==1) || ((qnty_list_cnt[check_cnt]>0)&&(qnty_list.size()==ORGN_SIZE))) break;
+                    check = check_cnt != ORGN_SIZE;
                 }
-                else read_curr_dat(false);
-                auto check_cnt = 0;
-                for(check_cnt=0; check_cnt<ORGN_SIZE; ++check_cnt) if(qnty_list[check_cnt] > 0) break;
-                check = check_cnt != ORGN_SIZE;
             }
         }
         else pcdr_flag = false;
         close_stream();
         return pcdr_flag;
     }
-    /**
-     * @brief   Initialization constructor
-     * @param	dat_dir	    [Quote]	Data set directory
-     * @param	lbl_dir	    [Quote]	Label set directory
-     * @param   elem_bool   [Input] Data unit's element bool signal
-     * @param	load_qnty	[Input]	Loading count
-     * @param	by_lbl	    [Input]	Quantity for each label
-     */
-    MNIST(std::string dat_dir, std::string lbl_dir, uint64_t load_qnty = 0, bool elem_bool = false, bool by_lbl = false, uint64_t padding = 0) : is_bool(elem_bool) {load_data(dat_dir, lbl_dir, load_qnty, by_lbl, padding);}
-    /**
-     * @brief   Initialization constructor
-     * @param	dat_dir	    [Quote]	Data set directory
-     * @param	lbl_dir	    [Quote]	Label set directory
-     * @param   elem_bool   [Input] Data unit's element bool signal
-     * @param	qnty_list	[Input]	Data loading quantity note list for each label
-     */
-    MNIST(std::string dat_dir, std::string lbl_dir, bool elem_bool, bagrt::net_queue<uint64_t> &qnty_list, uint64_t padding = 0) : is_bool(elem_bool){load_data(dat_dir, lbl_dir, qnty_list, padding);}
+    MNIST(std::string dat_dir, std::string lbl_dir, uint64_t qnty = 0, uint64_t minibatch = 0, bool bool_preprocess = false, uint64_t padding = 0) : is_bool(bool_preprocess) { load_data(dat_dir, lbl_dir, qnty, minibatch, padding); }
+    MNIST(std::string dat_dir, std::string lbl_dir, std::initializer_list<uint64_t> qnty_list, uint64_t minibatch = 0, bool bool_preprocess = false, uint64_t padding = 0) : is_bool(bool_preprocess) { load_data(dat_dir, lbl_dir, qnty_list, minibatch, padding); }
     /**
      * @brief   Save data as bitmap
      * @param	dir_root	[Quote]	Saving root directory, '\\' is used to seperate sub directory path
@@ -311,12 +340,13 @@ public:
         {
             auto cnt = 0;
             for(auto i=0; i<elem.size(); ++i)
-            {
-                auto name = '[' + std::to_string(cnt++) + ']' + std::to_string(elem_lbl[i]);
-                bmio::bitmap img;
-                img.set_raw(elem[i][IDX_ZERO], elem[i][IDX_ZERO], elem[i][IDX_ZERO], elem[i][IDX_ZERO]);
-                if(!img.save_img(dir_root, name, format)) return false;
-            }
+                for(auto j=0; j<elem[i].size(); ++j)
+                {
+                    auto name = '[' + std::to_string(cnt++) + ']' + std::to_string(elem_lbl[i][j]);
+                    bmio::bitmap img;
+                    img.set_raw(elem[i][j][IDX_ZERO], elem[i][j][IDX_ZERO], elem[i][j][IDX_ZERO], elem[i][j][IDX_ZERO]);
+                    if(!img.save_img(dir_root, name, format)) return false;
+                }
             return true;
         }
     }
