@@ -16,4 +16,5 @@
 #define DV                  derivative
 #define MRG_CHANN           merge_channel
 
-#define DERIVE_INSTANCE     bagrt::derive_instance_ptr
+#define INSTANCE_DERIVE     bagrt::derive_instance_ptr
+#define INSTANCE_TO_PTR(_V) bagrt::instance_to_ptr(_V)

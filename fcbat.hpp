@@ -162,12 +162,12 @@ bagrt::net_queue<vect> BNDeduce(bagrt::net_queue<vect> &setNetInput, double dBet
      * Expectation Average, Expectation MiuBeta
      * Variance mini-batch variance, Variance SigmaSqr
      */
-    vect vecEX = DERIVE_INSTANCE<FCBN>(setbnData[0]) -> vecMiuBeta,
-        vecEVarX = DERIVE_INSTANCE<FCBN>(setbnData[0]) -> vecSigmaSqr;
+    vect vecEX = INSTANCE_DERIVE<FCBN>(setbnData[0]) -> vecMiuBeta,
+        vecEVarX = INSTANCE_DERIVE<FCBN>(setbnData[0]) -> vecSigmaSqr;
     for(auto i=1; i<setbnData.size(); ++i)
     {
-        vecEX += DERIVE_INSTANCE<FCBN>(setbnData[i]) -> vecMiuBeta;
-        vecEVarX += DERIVE_INSTANCE<FCBN>(setbnData[i]) -> vecSigmaSqr;
+        vecEX += INSTANCE_DERIVE<FCBN>(setbnData[i]) -> vecMiuBeta;
+        vecEVarX += INSTANCE_DERIVE<FCBN>(setbnData[i]) -> vecSigmaSqr;
     }
     if(setbnData.size() > 1)
     {

@@ -38,21 +38,14 @@ std::ostream &operator<<(std::ostream &output, const mtx_pos &pos)
     return output;
 }
 
-mtx_pos mtx_elem_pos(uint64_t idx, uint64_t ln_cnt, uint64_t col_cnt)
+mtx_pos mtx_elem_pos(uint64_t idx, uint64_t col_cnt)
 {
     mtx_pos pos;
-    if(ln_cnt && col_cnt)
-    {
-        pos.ln = idx / ln_cnt;
-        pos.col = idx % col_cnt;
-    }
+    pos.ln = idx / col_cnt;
+    pos.col = idx % col_cnt;
     return pos;
 }
-uint64_t mtx_elem_pos(uint64_t ln, uint64_t col, uint64_t ln_cnt, uint64_t col_cnt)
-{
-    if (mtx_pos_valid(ln, col, ln_cnt, col_cnt)) return ln * col_cnt + col;
-    else return 0;
-}
+uint64_t mtx_elem_pos(uint64_t ln, uint64_t col, uint64_t col_cnt) {return ln * col_cnt + col;}
 
 MATRIX mtx_init(uint64_t elem_cnt)
 {
@@ -96,7 +89,7 @@ mtx_info mtx_child_vec(MATRIX &mtx_src, uint64_t from_ln, uint64_t to_ln, uint64
             {
                 auto curr_orgn_ln = from_ln + i * (1 + ln_dilation);
                 auto curr_orgn_col = from_col + j * (1 + col_dilation);
-                mtx_info.mtx_val[mtx_elem_pos(i, j, mtx_info.ln_cnt, mtx_info.col_cnt)] = mtx_src[mtx_elem_pos(curr_orgn_ln, curr_orgn_col, ln_cnt, col_cnt)];
+                mtx_info.mtx_val[mtx_elem_pos(i, j, mtx_info.col_cnt)] = mtx_src[mtx_elem_pos(curr_orgn_ln, curr_orgn_col, col_cnt)];
             }
     }
     return mtx_info;
@@ -162,11 +155,11 @@ mtx_extm mtx_extm_val(MATRIX &mtx_val, uint64_t from_ln, uint64_t to_ln, uint64_
         from_ln>=0 && to_ln>=from_ln && ln_cnt>to_ln &&
         from_col>=0 && to_col>=from_col && col_cnt>to_col)
     {
-        mtx_info.val = mtx_val[mtx_elem_pos(from_ln, from_col, ln_cnt, col_cnt)];
+        mtx_info.val = mtx_val[mtx_elem_pos(from_ln, from_col, col_cnt)];
         for(auto i=from_ln; i<=to_ln; ++(i+=ln_dilation))
             for(auto j=from_col; j<=to_col; ++(j+=col_dilation))
             {
-                auto curr_no = mtx_elem_pos(i, j, ln_cnt, col_cnt);
+                auto curr_no = mtx_elem_pos(i, j, col_cnt);
                 mtx_pos curr_pos;
                 curr_pos.ln = i;
                 curr_pos.col = j;
@@ -231,7 +224,7 @@ MATRIX mtx_transposition(MATRIX &mtx_src, uint64_t ln_cnt, uint64_t col_cnt)
         auto mtx_trans = mtx_init(elem_cnt);
         for (auto i = 0; i < ln_cnt; ++i)
             for (auto j = 0; j < col_cnt; ++j)
-                mtx_trans[mtx_elem_pos(j, i, col_cnt, ln_cnt)] = mtx_src[mtx_elem_pos(i, j, ln_cnt, col_cnt)];
+                mtx_trans[mtx_elem_pos(j, i, ln_cnt)] = mtx_src[mtx_elem_pos(i, j, col_cnt)];
         return mtx_trans;
     }
     else return MATRIX_NULL;
@@ -247,7 +240,7 @@ MATRIX mtx_swap_elem(MATRIX &mtx_val, uint64_t l_pos, uint64_t r_pos, uint64_t l
         if(i == l_pos) curr_ln = r_pos;
         else if(i==r_pos) curr_ln = l_pos;
         else curr_ln = i;
-        ans[mtx_elem_pos(i, j, ln_cnt, col_cnt)] = mtx_val[mtx_elem_pos(curr_ln, j, ln_cnt, col_cnt)];
+        ans[mtx_elem_pos(i, j, col_cnt)] = mtx_val[mtx_elem_pos(curr_ln, j, col_cnt)];
     }
     else for(auto i=0; i<ln_cnt; ++i) for(auto j=0; j<col_cnt; ++j)
     {
@@ -255,7 +248,7 @@ MATRIX mtx_swap_elem(MATRIX &mtx_val, uint64_t l_pos, uint64_t r_pos, uint64_t l
         if(j == l_pos) curr_col = r_pos;
         else if(j==r_pos) curr_col = l_pos;
         else curr_col = j;
-        ans[mtx_elem_pos(i, j, ln_cnt, col_cnt)] = mtx_val[mtx_elem_pos(i, curr_col, ln_cnt, col_cnt)];
+        ans[mtx_elem_pos(i, j, col_cnt)] = mtx_val[mtx_elem_pos(i, curr_col, col_cnt)];
     }
     return ans;
 }
@@ -286,8 +279,8 @@ MATRIX mtx_mult(MATRIX &l_mtx, MATRIX &r_mtx, uint64_t l_ln_cnt, uint64_t l_col_
             {
                 double sum = 0.0;
                 for (int k = 0; k < l_col_cnt; ++k)
-                    sum += l_mtx[mtx_elem_pos(i, k, l_ln_cnt, l_col_cnt)] * r_mtx[mtx_elem_pos(k, j, r_ln_cnt, r_col_cnt)];
-                res_mtx[mtx_elem_pos(i, j, l_ln_cnt, r_col_cnt)] = sum;
+                    sum += l_mtx[mtx_elem_pos(i, k, l_col_cnt)] * r_mtx[mtx_elem_pos(k, j, r_col_cnt)];
+                res_mtx[mtx_elem_pos(i, j, r_col_cnt)] = sum;
             }
         return res_mtx;
     }
@@ -394,15 +387,15 @@ MATRIX mtx_LU(MATRIX &mtx_val, int dms)
         for (int i = 0; i < dms - 1; ++i)
         {
             auto tool = mtx_copy(e, dms, dms);
-            for (int j = dms - 1; j > i; --j) tool[mtx_elem_pos(j, i, dms, dms)] = (-1.0) * lu[mtx_elem_pos(j, i, dms, dms)] / lu[mtx_elem_pos(i, i, dms, dms)];
-            for (int j = dms - 1; j > i; --j) l[mtx_elem_pos(j, i, dms, dms)] = (-1.0) * tool[mtx_elem_pos(j, i, dms, dms)];
-            for (int j = dms - 1; j > i; --j) lu[mtx_elem_pos(j, i, dms, dms)] = (-1.0) * tool[mtx_elem_pos(j, i, dms, dms)];
+            for (int j = dms - 1; j > i; --j) tool[mtx_elem_pos(j, i, dms)] = (-1.0) * lu[mtx_elem_pos(j, i, dms)] / lu[mtx_elem_pos(i, i, dms)];
+            for (int j = dms - 1; j > i; --j) l[mtx_elem_pos(j, i, dms)] = (-1.0) * tool[mtx_elem_pos(j, i, dms)];
+            for (int j = dms - 1; j > i; --j) lu[mtx_elem_pos(j, i, dms)] = (-1.0) * tool[mtx_elem_pos(j, i, dms)];
             lu = mtx_mult(tool, lu, dms, dms, dms, dms);
         }
         // get the inversion matrix
         for (int i = 0; i < dms; ++i)
             for (int j = 0; j < i; ++j)
-                lu[mtx_elem_pos(i, j, dms, dms)] = l[mtx_elem_pos(i, j, dms, dms)];
+                lu[mtx_elem_pos(i, j, dms)] = l[mtx_elem_pos(i, j, dms)];
         return lu;
     }
     else return MATRIX_NULL;
@@ -418,23 +411,23 @@ MATRIX mtx_equation(MATRIX &coefficient, MATRIX &b, int dms)
         auto u = mtx_copy(e, dms, dms);
         for (int i = 0; i < dms; ++i)
             for (int j = 0; j < dms; ++j)
-                if (i <= j) u[mtx_elem_pos(i, j, dms, dms)] = lu[mtx_elem_pos(i, j, dms, dms)];
-                else l[mtx_elem_pos(i, j, dms, dms)] = lu[mtx_elem_pos(i, j, dms, dms)];
+                if (i <= j) u[mtx_elem_pos(i, j, dms)] = lu[mtx_elem_pos(i, j, dms)];
+                else l[mtx_elem_pos(i, j, dms)] = lu[mtx_elem_pos(i, j, dms)];
         auto y = mtx_init(dms), x = mtx_init(dms);
         for (int i = 0; i < dms; ++i) if (i)
         {
             double temp = 0.0;
-            for (int j=0; j < i; ++j) temp += y[j] * l[mtx_elem_pos(i, j, dms, dms)] * 1.0;
+            for (int j=0; j < i; ++j) temp += y[j] * l[mtx_elem_pos(i, j, dms)] * 1.0;
             y[i] = b[i] - temp;
         }
         else y[i] = b[i];
         for (int i=dms; i>0; --i) if (i - dms)
         {
             double temp = 0.0;
-            for (int n=i-1; n<dms-1; ++n) temp += u[mtx_elem_pos(i-1, n+1, dms, dms)] * x[n+1];
-            x[i-1] = (y[i-1] - temp) / u[mtx_elem_pos(i-1, i-1, dms, dms)];
+            for (int n=i-1; n<dms-1; ++n) temp += u[mtx_elem_pos(i-1, n+1, dms)] * x[n+1];
+            x[i-1] = (y[i-1] - temp) / u[mtx_elem_pos(i-1, i-1, dms)];
         }
-        else x[dms-1] = y[dms-1] / u[mtx_elem_pos(dms-1, dms-1, dms, dms)];
+        else x[dms-1] = y[dms-1] / u[mtx_elem_pos(dms-1, dms-1, dms)];
         return x;
     }
     else return MATRIX_NULL;
@@ -450,7 +443,7 @@ MATRIX mtx_adjugate(MATRIX &mat_val, int ln, int col, int dms)
         auto col_cnt = 0;
         for(auto j=0; j<dms; ++j) if(j != col)
         {
-            ans[mtx_elem_pos(ln_cnt, col_cnt, ans_dms, ans_dms)] = mat_val[mtx_elem_pos(i, j, dms, dms)];
+            ans[mtx_elem_pos(ln_cnt, col_cnt, ans_dms)] = mat_val[mtx_elem_pos(i, j, dms)];
             ++ col_cnt;
         }
         ++ col_cnt;
@@ -466,7 +459,7 @@ MATRIX mtx_inverser(MATRIX &mat_val, int dms)
         auto val_det = mtx_det(mat_val, dms);
         for(auto i=0; i<dms; ++i)
             for(auto j=0; j<dms; ++j)
-                ans[mtx_elem_pos(i, j, dms, dms)] = mtx_det(mtx_adjugate(mat_val, i, j, dms), dms-1) / val_det;
+                ans[mtx_elem_pos(i, j, dms)] = mtx_det(mtx_adjugate(mat_val, i, j, dms), dms-1) / val_det;
         return ans;
     } return MATRIX_NULL;
 }
@@ -512,8 +505,8 @@ MATRIX mtx_jacobi_iterate(MATRIX &coefficient, MATRIX &b, int dms, double error 
         for (int i=0; i<dms; ++i)
         {
             double sum = 0.0;
-            for (int j=0; j<dms; ++j) if (i != j) sum += coefficient[mtx_elem_pos(i, j, dms, dms)] * x[j];
-            temp[i] = (b[i] - sum) / coefficient[mtx_elem_pos(i, i, dms, dms)];
+            for (int j=0; j<dms; ++j) if (i != j) sum += coefficient[mtx_elem_pos(i, j, dms)] * x[j];
+            temp[i] = (b[i] - sum) / coefficient[mtx_elem_pos(i, i, dms)];
         }
         for (int i=0; i<dms; ++i) if (std::abs(x[i] - temp[i]) >= error)
         {
@@ -528,8 +521,8 @@ MATRIX mtx_rotate_rect(MATRIX &mtx_val, int ln_cnt, int col_cnt, bool clock_wise
 {
     auto rot_rec_mtx = mtx_init(col_cnt, ln_cnt);
     for(auto i=0; i<ln_cnt; ++i) for(auto j=0; j<col_cnt; ++j)
-        if(clock_wise)  rot_rec_mtx[mtx_elem_pos(j, ln_cnt-i-1, col_cnt, ln_cnt)] = mtx_val[mtx_elem_pos(i, j, ln_cnt, col_cnt)];
-        else rot_rec_mtx[mtx_elem_pos(col_cnt-j-1, i, col_cnt, ln_cnt)] = mtx_val[mtx_elem_pos(i, j, ln_cnt, col_cnt)];
+        if(clock_wise)  rot_rec_mtx[mtx_elem_pos(j, ln_cnt-i-1, ln_cnt)] = mtx_val[mtx_elem_pos(i, j, col_cnt)];
+        else rot_rec_mtx[mtx_elem_pos(col_cnt-j-1, i, ln_cnt)] = mtx_val[mtx_elem_pos(i, j, col_cnt)];
     return rot_rec_mtx;
 }
 
@@ -540,12 +533,12 @@ MATRIX mtx_mirror_flip(MATRIX &mtx_src, uint64_t ln_cnt, uint64_t col_cnt, bool 
         for(int j=0; j<col_cnt; ++j) if(symmetry_vertical)
         {
             auto src_pos = col_cnt-1-j;
-            if(src_pos != j)mtx_val[mtx_elem_pos(i, j, ln_cnt, col_cnt)] = mtx_src[mtx_elem_pos(i, src_pos, ln_cnt, col_cnt)];
+            if(src_pos != j)mtx_val[mtx_elem_pos(i, j, col_cnt)] = mtx_src[mtx_elem_pos(i, src_pos, col_cnt)];
         }
         else
         {
             auto src_pos = ln_cnt-1-i;
-            if(src_pos != i)mtx_val[mtx_elem_pos(i, j, ln_cnt, col_cnt)] = mtx_src[mtx_elem_pos(src_pos, j, ln_cnt, col_cnt)];
+            if(src_pos != i)mtx_val[mtx_elem_pos(i, j, col_cnt)] = mtx_src[mtx_elem_pos(src_pos, j, col_cnt)];
         }
     return mtx_val;
 }
@@ -567,17 +560,17 @@ uint64_t mtx_rank(MATRIX &mtx_val, uint64_t ln_cnt, uint64_t col_cnt)
             bool elim_flag = true;
             for(auto j=rank_val; j<ln_cnt; ++j)
             {
-                auto elim_val = ans[mtx_elem_pos(j, i, ln_cnt, col_cnt)];
+                auto elim_val = ans[mtx_elem_pos(j, i, col_cnt)];
                 if(elim_val)
                 {
                     if(elim_flag)
                     {
-                        if(elim_val != 1) for(auto k=i; k<col_cnt; k++) ans[mtx_elem_pos(j, k, ln_cnt, col_cnt)] /= elim_val;
+                        if(elim_val != 1) for(auto k=i; k<col_cnt; k++) ans[mtx_elem_pos(j, k, col_cnt)] /= elim_val;
                         if(j!=i) ans = mtx_swap_elem(ans, i, j, ln_cnt, col_cnt);
                         ++ rank_val;
                         elim_flag = false;
                     }
-                    else for(auto k=i; k<col_cnt; ++k) ans[mtx_elem_pos(j, k, ln_cnt, col_cnt)] -= ans[mtx_elem_pos(i, k, ln_cnt, col_cnt)] * elim_val;
+                    else for(auto k=i; k<col_cnt; ++k) ans[mtx_elem_pos(j, k, col_cnt)] -= ans[mtx_elem_pos(i, k, col_cnt)] * elim_val;
                 }
             }
         }
@@ -598,8 +591,8 @@ mtx_info mtx_pad(MATRIX &mtx_val, uint64_t ln_cnt, uint64_t col_cnt, uint64_t ln
         for(auto i=0; i<ln_cnt; ++i)
             for(auto j=0; j<col_cnt; ++j)
             {
-                auto curr_pad_no =  mtx_elem_pos(ln_t+i*(ln_dist+1), col_l+j*(col_dist+1), mtx_res.ln_cnt, mtx_res.col_cnt),
-                    curr_origin_no = mtx_elem_pos(i, j, ln_cnt, col_cnt);
+                auto curr_pad_no =  mtx_elem_pos(ln_t+i*(ln_dist+1), col_l+j*(col_dist+1), mtx_res.col_cnt),
+                    curr_origin_no = mtx_elem_pos(i, j, col_cnt);
                 mtx_res.mtx_val[curr_pad_no] = mtx_val[curr_origin_no];
             }
     }
@@ -618,8 +611,8 @@ mtx_info mtx_crop(MATRIX &mtx_val, uint64_t ln_cnt, uint64_t col_cnt, uint64_t l
         for(auto i=0; i<mtx_res.ln_cnt; ++i)
             for(auto j=0; j<mtx_res.col_cnt; ++j)
             {
-                auto curr_res_no = mtx_elem_pos(i, j, mtx_res.ln_cnt, mtx_res.col_cnt),
-                    curr_origin_no = mtx_elem_pos(ln_t+i*(ln_dist+1), col_l+j*(col_dist+1), ln_cnt, col_cnt);
+                auto curr_res_no = mtx_elem_pos(i, j, mtx_res.col_cnt),
+                    curr_origin_no = mtx_elem_pos(ln_t+i*(ln_dist+1), col_l+j*(col_dist+1), col_cnt);
                 mtx_res.mtx_val[curr_res_no] = mtx_val[curr_origin_no];
             }
     }

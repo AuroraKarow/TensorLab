@@ -235,20 +235,13 @@ public:
             }
             else load_qnty = QNTY_STAT;
             init(load_qnty, minibatch);
-            auto minibatch_idx = 0;
             for(auto i=0,j=0; j<load_qnty; ++i)
                 if((lbl_data_stat.size()&&(i==lbl_data_stat[j]||(j&&i==lbl_data_stat[j-1]))) || !lbl_data_stat.size())
                 {
-                    auto sub_idx = 0;
-                    if(minibatch)
-                    {
-                        sub_idx = j % minibatch;
-                        if(j && !sub_idx) ++ minibatch_idx;
-                    }
-                    else sub_idx = j;
-                    elem[minibatch_idx][sub_idx].init();
-                    elem[minibatch_idx][sub_idx][IDX_ZERO] = read_curr_dat(true, padding);
-                    elem_lbl[minibatch_idx][sub_idx] = read_curr_lbl();
+                    auto idx_pos = minibatch_pos(j, minibatch);
+                    elem[idx_pos.ln][idx_pos.col].init();
+                    elem[idx_pos.ln][idx_pos.col][IDX_ZERO] = read_curr_dat(true, padding);
+                    elem_lbl[idx_pos.ln][idx_pos.col] = read_curr_lbl();
                     ++ j;
                 }
                 else
@@ -277,7 +270,7 @@ public:
         if(preprocess(dat_dir, lbl_dir))
         {
             set<uint64_t> qnty_list_cnt;
-            auto elem_cnt = 0, load_qnty = 0, minibatch_idx = 0;
+            auto elem_cnt = 0, load_qnty = 0;
             if(qnty_list.size() == 1)
             {
                 qnty_list_cnt.init(ORGN_SIZE);
@@ -297,16 +290,10 @@ public:
                     auto curr_lbl = read_curr_lbl();
                     if(((qnty_list_cnt[curr_lbl]<load_qnty)&&(qnty_list.size()==1)) || ((qnty_list_cnt[curr_lbl])&&(qnty_list.size()==ORGN_SIZE)))
                     {
-                        auto sub_idx = 0;
-                        if(minibatch)
-                        {
-                            sub_idx = elem_cnt % minibatch;
-                            if(elem_cnt && !sub_idx) ++ minibatch_idx;
-                        }
-                        else sub_idx = elem_cnt;
-                        elem[minibatch_idx][sub_idx].init();
-                        elem[minibatch_idx][sub_idx][IDX_ZERO] = read_curr_dat(true, padding);
-                        elem_lbl[minibatch_idx][sub_idx] = curr_lbl;
+                        auto idx_pos = minibatch_pos(elem_cnt, minibatch);
+                        elem[idx_pos.ln][idx_pos.col].init();
+                        elem[idx_pos.ln][idx_pos.col][IDX_ZERO] = read_curr_dat(true, padding);
+                        elem_lbl[idx_pos.ln][idx_pos.col] = curr_lbl;
                         ++ elem_cnt;
                         if(qnty_list.size() == 1) ++ qnty_list_cnt[curr_lbl];
                         else if(qnty_list.size()==ORGN_SIZE) -- qnty_list_cnt[curr_lbl];

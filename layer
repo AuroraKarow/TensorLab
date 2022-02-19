@@ -1,27 +1,30 @@
 #pragma once
 #include "netbatlib"
 
-#define LAYER_BEGIN namespace layer {
-#define LAYER_END   }
+#define LAYER_BEGIN         namespace layer {
+#define LAYER_END           }
 
-#define _CONV       conv::
-#define _FC         fc::
-#define _ADA        ada::
+#define _CONV               conv::
+#define _FC                 fc::
+#define _ADA                ada::
 
 // NULL = no activation function
-#define SIGMOID     1
-#define RELU        2
-#define SOFTMAX     3
+#define SIGMOID             1
+#define RELU                2
+#define SOFTMAX             3
 
-#define POOL_AVG    0
-#define POOL_MAX    1
-#define POOL_GAG    2
+#define POOL_AVG            0
+#define POOL_MAX            1
+#define POOL_GAG            2
 
-#define FC          0
-#define CONV        1
-#define POOL        2
-#define FC_BN       3
-#define CONV_BN     4
-#define TRANS       5
+#define FC                  0
+#define CONV                1
+#define POOL                2
+#define FC_BN               3
+#define CONV_BN             4
+#define TRANS               5
+
+#define GD_BGD              0
+#define BD_MINIBATCH_SGD    1
 
 #include "layer.hpp"

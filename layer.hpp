@@ -21,16 +21,17 @@ struct Layer
         {
         case SIGMOID:   return activate(setInput, sigmoid);
         case RELU:      return activate(setInput, ReLU);
-        case SOFTMAX:   return activate(setInput, softmax);  
         default: return setInput;
         }
     }
+    // In case softmax - setActInput -> Softmax output; setGrad -> Label origin
     template<typename T, typename = std::enable_if_t<true, vect>, typename = std::enable_if_t<true, feature>> set<T> Derivative(set<T> &setActInput, set<T> &setGrad)
     {
         switch (iActFuncType)
         {
         case SIGMOID:   return derivative(setActInput, setGrad, sigmoid_dv);
         case RELU:      return derivative(setActInput, setGrad, ReLU_dv);
+        case SOFTMAX:   return softmax_cec_grad(setActInput, setGrad);
         default: return setGrad;
         }
     }
@@ -60,11 +61,12 @@ struct LayerFC : Layer
         setLayerOutput = _FC Output(setLayerInput, vecLayerWeight);
         return Activate(setLayerOutput);
     }
-    set<vect> BackProp(set<vect> &setGrad)
+    set<vect> BackProp(set<vect> &setGradOrOutput, bool bLastLayer = false, set<vect> &setOrigin = blank_vect_seq)
     {
-        setGrad = Derivative(setLayerOutput, setGrad);
-        auto setGradBack = _FC GradLossToInput(setGrad, vecLayerWeight);
-        auto vecGradWeight = _FC GradLossToWeight(setGrad, setLayerInput);
+        if(bLastLayer) setGradOrOutput = Derivative(setGradOrOutput, setOrigin);
+        else setGradOrOutput = Derivative(setLayerOutput, setGradOrOutput);
+        auto setGradBack = _FC GradLossToInput(setGradOrOutput, vecLayerWeight);
+        auto vecGradWeight = _FC GradLossToWeight(setGradOrOutput, setLayerInput);
         if(dLayerLearnRate) vecLayerWeight -= dLayerLearnRate * vecGradWeight;
         else vecLayerWeight = _FC AdaDeltaUpdateWeight(vecLayerWeight, vecGradWeight, advLayerDelta);
         return setGradBack;
@@ -85,7 +87,6 @@ struct LayerFCBN : Layer
         dGamma = lyrSrc.dGamma;
         dEpsilon = lyrSrc.dEpsilon;
     }
-    LayerFCBN() : Layer(FC_BN) {}    
     LayerFCBN(LayerFCBN &lyrSrc) : Layer(lyrSrc), setLayerInput(lyrSrc.setLayerInput), BNData(lyrSrc.BNData), advBeta(lyrSrc.advBeta), advGamma(lyrSrc.advGamma) { ValueAssign(lyrSrc); }
     LayerFCBN(LayerFCBN &&lyrSrc) : Layer(lyrSrc), setLayerInput(std::move(lyrSrc.setLayerInput)), BNData(std::move(lyrSrc.BNData)), advBeta(std::move(lyrSrc.advBeta)), advGamma(std::move(lyrSrc.advGamma)) { ValueAssign(lyrSrc); }
     void operator=(LayerFCBN &lyrSrc) { new(this)LayerFCBN(lyrSrc); }
@@ -99,12 +100,13 @@ struct LayerFCBN : Layer
         BNData = _FC BNTrain(setLayerInput, dBeta, dGamma, dEpsilon);
         return Activate(BNData.setY);
     }
-    set<vect> BackProp(set<vect> &setGrad)
-    { 
-        setGrad = Derivative(BNData.setY, setGrad);
-        auto setGradBack = _FC BNGradLossToInput(BNData, setLayerInput, setGrad, dGamma, dEpsilon);
-        auto dGradScale = _FC BNGradLossToScale(setGrad, BNData),
-            dGradShift = _FC BNGradLossToShift(setGrad);
+    set<vect> BackProp(set<vect> &setGradOrOutput, bool bLastLayer = false, set<vect> &setOrigin = blank_vect_seq)
+    {
+        if(bLastLayer) setGradOrOutput = Derivative(setGradOrOutput, setOrigin); 
+        else setGradOrOutput = Derivative(BNData.setY, setGradOrOutput);
+        auto setGradBack = _FC BNGradLossToInput(BNData, setLayerInput, setGradOrOutput, dGamma, dEpsilon);
+        auto dGradScale = _FC BNGradLossToScale(setGradOrOutput, BNData),
+            dGradShift = _FC BNGradLossToShift(setGradOrOutput);
         if(dLayerLearnRate)
         {
             dGamma = _FC BNUpdateScaleShift(dGamma, dGradScale, dLayerLearnRate);
@@ -175,7 +177,6 @@ struct LayerConvBN : Layer
     _ADA AdaDeltaVect advBeta, advGamma;
 
     void ValueAssign(LayerConvBN &lyrSrc) { dEpsilon = lyrSrc.dEpsilon;}
-    LayerConvBN() : Layer(CONV_BN) {}
     LayerConvBN(LayerConvBN &lyrSrc) : Layer(lyrSrc), vecBeta(lyrSrc.vecBeta), vecGamma(lyrSrc.vecGamma), BNData(lyrSrc.BNData), setLayerInput(lyrSrc.setLayerInput), advBeta(lyrSrc.advBeta), advGamma(lyrSrc.advGamma) { ValueAssign(lyrSrc); }
     LayerConvBN(LayerConvBN &&lyrSrc) : Layer(lyrSrc), vecBeta(std::move(lyrSrc.vecBeta)), vecGamma(std::move(lyrSrc.vecGamma)), BNData(std::move(lyrSrc.BNData)), setLayerInput(std::move(lyrSrc.setLayerInput)), advBeta(std::move(lyrSrc.advBeta)), advGamma(std::move(lyrSrc.advGamma)) { ValueAssign(lyrSrc); }
     void operator=(LayerConvBN &lyrSrc) { new(this)LayerConvBN(lyrSrc); }
@@ -218,7 +219,6 @@ struct LayerPool : Layer
     uint64_t iPoolType = POOL_MAX, iLayerFilterLnCnt = 0, iLayerFilterColCnt = 0, iLayerLnStride = 0, iLayerColStride = 0, iLayerLnDilation = 0, iLayerColDilation = 0;
     set<feature> setLayerInput, setLayerOutput;
 
-    LayerPool() : Layer(POOL) {}
     void ValueAssign(LayerPool &lyrSrc)
     {
         iLayerLnStride = lyrSrc.iLayerLnStride;
@@ -265,7 +265,6 @@ struct LayerTrans : Layer
         iColCnt = lyrSrc.iColCnt;
         bFeatToVec = lyrSrc.bFeatToVec;
     }
-    LayerTrans() : Layer(TRANS) {}
     LayerTrans(LayerTrans &lyrSrc) : Layer(lyrSrc) { ValueAssign(lyrSrc); }
     void operator=(LayerTrans &lyrSrc) { new (this)LayerTrans(lyrSrc); }
 

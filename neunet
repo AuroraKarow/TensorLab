@@ -18,10 +18,10 @@
 
 #define LAYER_POOL      layer::LayerPool
 
-#define LAYER_BN_FC     layer::LayerBNFC
-#define LAYER_BN_CONV   layer::LayerBNConv
+#define LAYER_FC_BN     layer::LayerFCBN
+#define LAYER_CONV_BN   layer::LayerConvBN
 
 #define LAYER_TRANS     layer::LayerTrans
-#define _LAYER          layer:: 
+#define _LAYER          layer::
 
 #include "neunet.hpp"

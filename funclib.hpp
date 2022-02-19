@@ -157,6 +157,17 @@ uint64_t samp_input_dir_cnt(uint64_t output_dir_cnt, uint64_t filter_dir_cnt, ui
 
 bool samp_valid(uint64_t input_dir_cnt, uint64_t filter_dir_cnt, uint64_t dir_stride, uint64_t dir_dilation) {return (input_dir_cnt - samp_block_cnt(filter_dir_cnt, dir_dilation)) % dir_stride == 0;}
 
+MATRIX_POS minibatch_pos(uint64_t idx, uint64_t minibatch)
+{
+    if(minibatch) return mtx::mtx_elem_pos(idx, minibatch);
+    else
+    {
+        MATRIX_POS pos;
+        pos.col = idx;
+        return pos;
+    }
+}
+
 feature merge_channel(tensor &input)
 {
     feature ft_map(input.size());
