@@ -43,36 +43,27 @@ struct LayerFC : Layer
 {
     vect vecLayerWeight;
     set<vect> setLayerInput, setLayerOutput;
-    uint64_t iLayerOutputLnCnt = 0;
-    double dWeightRandBoundryFirst = 0, dWeightRandBoundrySecond, dWeightRandBoundryAcc = 1e-5;
     // Default
     _ADA AdaDeltaVect advLayerDelta;
 
-    void ValueAssign(LayerFC &lyrSrc)
-    {
-        iLayerOutputLnCnt = lyrSrc.iLayerOutputLnCnt;
-        dWeightRandBoundryFirst = lyrSrc.dWeightRandBoundryFirst;
-        dWeightRandBoundrySecond = lyrSrc.dWeightRandBoundrySecond;
-        dWeightRandBoundryAcc = lyrSrc.dWeightRandBoundryAcc;
-    }
+    void ValueAssign(LayerFC &lyrSrc) {}
     LayerFC() : Layer(FC) {}
-    LayerFC(LayerFC &lyrSrc) : Layer(lyrSrc), vecLayerWeight(lyrSrc.vecLayerWeight), setLayerInput(lyrSrc.setLayerInput), setLayerOutput(lyrSrc.setLayerOutput) { ValueAssign(lyrSrc); }
-    LayerFC(LayerFC &&lyrSrc) : Layer(lyrSrc), vecLayerWeight(std::move(lyrSrc.vecLayerWeight)), setLayerInput(std::move(lyrSrc.setLayerInput)), setLayerOutput(std::move(lyrSrc.setLayerOutput)) { ValueAssign(lyrSrc); }
+    LayerFC(LayerFC &lyrSrc) : Layer(lyrSrc), vecLayerWeight(lyrSrc.vecLayerWeight), setLayerInput(lyrSrc.setLayerInput), setLayerOutput(lyrSrc.setLayerOutput) {}
+    LayerFC(LayerFC &&lyrSrc) : Layer(lyrSrc), vecLayerWeight(std::move(lyrSrc.vecLayerWeight)), setLayerInput(std::move(lyrSrc.setLayerInput)), setLayerOutput(std::move(lyrSrc.setLayerOutput)) {}
     void operator=(LayerFC &lyrSrc) { new(this)LayerFC(lyrSrc); }
     void operator=(LayerFC &&lyrSrc) { new(this)LayerFC(std::move(lyrSrc)); }
     
-    LayerFC(uint64_t iOutputLnCnt, uint64_t iActFuncTypeVal = SIGMOID, double dLearnRate = 0, double dRandBoundryFirst = 0, double dRandBoundrySecond = 0, double dRandBoundryAcc = 1e-5) : Layer(FC, iActFuncTypeVal, dLearnRate), iLayerOutputLnCnt(iOutputLnCnt), dWeightRandBoundryFirst(dRandBoundryFirst), dWeightRandBoundrySecond(dRandBoundrySecond), dWeightRandBoundryAcc(dRandBoundryAcc) {}
+    LayerFC(uint64_t iInputLnCnt, uint64_t iOutputLnCnt, uint64_t iActFuncTypeVal = SIGMOID, double dLearnRate = 0, double dRandBoundryFirst = 0, double dRandBoundrySecond = 0, double dAcc = 1e-05) : Layer(FC, iActFuncTypeVal, dLearnRate) { _FC InitWeight(iInputLnCnt, iOutputLnCnt, dRandBoundryFirst, dRandBoundrySecond, dAcc); }
     set<vect> ForwProp(set<vect> &setInput, bool bFirstLayer = false)
     {
         if(bFirstLayer) setLayerInput = setInput;
         else setLayerInput = std::move(setInput);
-        if(!vecLayerWeight.is_matrix()) vecLayerWeight = _FC InitWeight(setInput[IDX_ZERO].LN_CNT, iLayerOutputLnCnt, dWeightRandBoundryFirst, dWeightRandBoundrySecond, dWeightRandBoundryAcc);
         setLayerOutput = _FC Output(setLayerInput, vecLayerWeight);
         return Activate(setLayerOutput);
     }
-    set<vect> BackProp(set<vect> &setGradOrOutput, bool bLastLayer = false, set<vect> &setOrigin = blank_vect_seq)
+    set<vect> BackProp(set<vect> &setGradOrOutput, set<vect> &setOrigin = blank_vect_seq)
     {
-        if(bLastLayer) setGradOrOutput = Derivative(setGradOrOutput, setOrigin);
+        if(setOrigin.size()) setGradOrOutput = Derivative(setGradOrOutput, setOrigin);
         else setGradOrOutput = Derivative(setLayerOutput, setGradOrOutput);
         auto setGradBack = _FC GradLossToInput(setGradOrOutput, vecLayerWeight);
         auto vecGradWeight = _FC GradLossToWeight(setGradOrOutput, setLayerInput);
@@ -109,9 +100,9 @@ struct LayerFCBN : Layer
         BNData = _FC BNTrain(setLayerInput, dBeta, dGamma, dEpsilon);
         return Activate(BNData.setY);
     }
-    set<vect> BackProp(set<vect> &setGradOrOutput, bool bLastLayer = false, set<vect> &setOrigin = blank_vect_seq)
+    set<vect> BackProp(set<vect> &setGradOrOutput, set<vect> &setOrigin = blank_vect_seq)
     {
-        if(bLastLayer) setGradOrOutput = Derivative(setGradOrOutput, setOrigin); 
+        if(setOrigin.size()) setGradOrOutput = Derivative(setGradOrOutput, setOrigin); 
         else setGradOrOutput = Derivative(BNData.setY, setGradOrOutput);
         auto setGradBack = _FC BNGradLossToInput(BNData, setLayerInput, setGradOrOutput, dGamma, dEpsilon);
         auto dGradScale = _FC BNGradLossToScale(setGradOrOutput, BNData),
