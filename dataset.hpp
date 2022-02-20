@@ -141,15 +141,14 @@ private:
     }
     void init_minibatch(uint64_t load_qnty, uint64_t minibatch)
     {
-        minibatch_size = minibatch;
-        auto minibatch_cnt = data_size / minibatch_size;
-        auto last_minibatch_size = data_size % minibatch_size;
+        auto minibatch_cnt = load_qnty / minibatch;
+        auto last_minibatch_size = load_qnty % minibatch;
         if(last_minibatch_size) ++ minibatch_cnt;
         elem.init(minibatch_cnt);
         elem_lbl.init(minibatch_cnt);
         for(auto i=0; i<minibatch_cnt; ++i)
         {
-            auto alloc_minibatch_size = minibatch_size;
+            auto alloc_minibatch_size = minibatch;
             if(i+1==minibatch_cnt && last_minibatch_size) alloc_minibatch_size = last_minibatch_size;
             elem[i].init(alloc_minibatch_size);
             elem_lbl[i].init(alloc_minibatch_size);
@@ -157,7 +156,6 @@ private:
     }
     void init(uint64_t load_qnty, uint64_t minibatch = 0)
     {
-        data_size = load_qnty;
         if(minibatch) init_minibatch(load_qnty, minibatch);
         else
         {
@@ -173,10 +171,6 @@ private:
     const bool is_bool;
     // Check collection
     bool check = true;
-    // Data size
-    uint64_t data_size = 0;
-    // Minibatch
-    uint64_t minibatch_size = 0;
 public:
     /* Function */
     /**
@@ -184,8 +178,12 @@ public:
      * @param   bool_preprocess [Input] Data unit's element bool signal
      */
     MNIST(bool bool_preprocess) : is_bool(bool_preprocess) {}
-    uint64_t size() {return data_size;}
-    uint64_t mini_batch() {return minibatch_size;}
+    uint64_t size()
+    {
+        if(elem[elem.size()-1].size() == elem[IDX_ZERO].size()) return elem[IDX_ZERO].size() * elem.size();
+        else return elem[IDX_ZERO].size() * (elem.size() - 1) + elem[elem.size()-1].size();
+    }
+    uint64_t mini_batch() {return elem[IDX_ZERO].size();}
     // Column line per-data
     uint64_t ln_cnt() {return LN_CNT;}
     // Column count per-data

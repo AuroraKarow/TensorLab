@@ -78,7 +78,6 @@ struct LayerFCBN : Layer
     // Shift, Scale, Dominant
     double dBeta = 0, dGamma = 1, dEpsilon = 1e-10;
     set<vect> setLayerInput;
-    BN_FC BNData;
     _ADA AdaDeltaVal advBeta, advGamma;
 
     void ValueAssign(LayerFCBN &lyrSrc)
@@ -87,20 +86,20 @@ struct LayerFCBN : Layer
         dGamma = lyrSrc.dGamma;
         dEpsilon = lyrSrc.dEpsilon;
     }
-    LayerFCBN(LayerFCBN &lyrSrc) : Layer(lyrSrc), setLayerInput(lyrSrc.setLayerInput), BNData(lyrSrc.BNData), advBeta(lyrSrc.advBeta), advGamma(lyrSrc.advGamma) { ValueAssign(lyrSrc); }
-    LayerFCBN(LayerFCBN &&lyrSrc) : Layer(lyrSrc), setLayerInput(std::move(lyrSrc.setLayerInput)), BNData(std::move(lyrSrc.BNData)), advBeta(std::move(lyrSrc.advBeta)), advGamma(std::move(lyrSrc.advGamma)) { ValueAssign(lyrSrc); }
+    LayerFCBN(LayerFCBN &lyrSrc) : Layer(lyrSrc), setLayerInput(lyrSrc.setLayerInput), advBeta(lyrSrc.advBeta), advGamma(lyrSrc.advGamma) { ValueAssign(lyrSrc); }
+    LayerFCBN(LayerFCBN &&lyrSrc) : Layer(lyrSrc), setLayerInput(std::move(lyrSrc.setLayerInput)), advBeta(std::move(lyrSrc.advBeta)), advGamma(std::move(lyrSrc.advGamma)) { ValueAssign(lyrSrc); }
     void operator=(LayerFCBN &lyrSrc) { new(this)LayerFCBN(lyrSrc); }
     void operator=(LayerFCBN &&lyrSrc){ new(this)LayerFCBN(std::move(lyrSrc)); }
 
     LayerFCBN(double dShift = 0, double dScale = 1, uint64_t iActFuncTypeVal = SIGMOID, double dLearnRate = 0, double dDmt = 1e-10) : Layer(FC_BN, iActFuncTypeVal, dLearnRate), dBeta(dShift), dGamma(dScale), dEpsilon(dDmt) {}
-    set<vect> ForwProp(set<vect> &setInput, bool bFirstLayer = false)
+    set<vect> ForwProp(set<vect> &setInput, BN_FC &BNData, bool bFirstLayer = false)
     {
         if(bFirstLayer) setLayerInput = setInput;
         else setLayerInput = std::move(setInput);
         BNData = _FC BNTrain(setLayerInput, dBeta, dGamma, dEpsilon);
         return Activate(BNData.setY);
     }
-    set<vect> BackProp(set<vect> &setGradOrOutput, set<vect> &setOrigin = blank_vect_seq)
+    set<vect> BackProp(set<vect> &setGradOrOutput, BN_FC &BNData, set<vect> &setOrigin = blank_vect_seq)
     {
         if(setOrigin.size()) setGradOrOutput = Derivative(setGradOrOutput, setOrigin); 
         else setGradOrOutput = Derivative(BNData.setY, setGradOrOutput);
@@ -172,13 +171,12 @@ struct LayerConvBN : Layer
     double dEpsilon = 1e-5;
     // Shift, Scale
     vect vecBeta, vecGamma;
-    BN_CONV BNData;
     set<feature> setLayerInput;
     _ADA AdaDeltaVect advBeta, advGamma;
 
     void ValueAssign(LayerConvBN &lyrSrc) { dEpsilon = lyrSrc.dEpsilon;}
-    LayerConvBN(LayerConvBN &lyrSrc) : Layer(lyrSrc), vecBeta(lyrSrc.vecBeta), vecGamma(lyrSrc.vecGamma), BNData(lyrSrc.BNData), setLayerInput(lyrSrc.setLayerInput), advBeta(lyrSrc.advBeta), advGamma(lyrSrc.advGamma) { ValueAssign(lyrSrc); }
-    LayerConvBN(LayerConvBN &&lyrSrc) : Layer(lyrSrc), vecBeta(std::move(lyrSrc.vecBeta)), vecGamma(std::move(lyrSrc.vecGamma)), BNData(std::move(lyrSrc.BNData)), setLayerInput(std::move(lyrSrc.setLayerInput)), advBeta(std::move(lyrSrc.advBeta)), advGamma(std::move(lyrSrc.advGamma)) { ValueAssign(lyrSrc); }
+    LayerConvBN(LayerConvBN &lyrSrc) : Layer(lyrSrc), vecBeta(lyrSrc.vecBeta), vecGamma(lyrSrc.vecGamma), setLayerInput(lyrSrc.setLayerInput), advBeta(lyrSrc.advBeta), advGamma(lyrSrc.advGamma) { ValueAssign(lyrSrc); }
+    LayerConvBN(LayerConvBN &&lyrSrc) : Layer(lyrSrc), vecBeta(std::move(lyrSrc.vecBeta)), vecGamma(std::move(lyrSrc.vecGamma)), setLayerInput(std::move(lyrSrc.setLayerInput)), advBeta(std::move(lyrSrc.advBeta)), advGamma(std::move(lyrSrc.advGamma)) { ValueAssign(lyrSrc); }
     void operator=(LayerConvBN &lyrSrc) { new(this)LayerConvBN(lyrSrc); }
     void operator=(LayerConvBN &&lyrSrc) { new(this)LayerConvBN(std::move(lyrSrc)); }
 
@@ -187,14 +185,14 @@ struct LayerConvBN : Layer
         vecBeta = _CONV BNInitScaleShift(iChannCnt, dShift);
         vecGamma = _CONV BNInitScaleShift(iChannCnt, dScale);
     }
-    set<feature> ForwProp(set<feature> &setInput, bool bFirstLayer = false)
+    set<feature> ForwProp(set<feature> &setInput, BN_CONV &BNData, bool bFirstLayer = false)
     {
         if(bFirstLayer) setLayerInput = setInput;
         else setLayerInput = std::move(setInput);
         BNData = _CONV BNTrain(setLayerInput, vecBeta, vecGamma, dEpsilon);
         return Activate(BNData.setY);
     }
-    set<feature> BackProp(set<feature> &setGrad, uint64_t iMiniBatchIdx = 0)
+    set<feature> BackProp(set<feature> &setGrad, BN_CONV &BNData, uint64_t iMiniBatchIdx = 0)
     {
         setGrad = Derivative(BNData.setY, setGrad);
         auto setGradBack = _CONV BNGradLossToInput(BNData, setLayerInput, setGrad, vecGamma, dEpsilon);
