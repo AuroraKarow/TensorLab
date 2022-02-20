@@ -1,3 +1,5 @@
+#pragma once
+
 #include "dataset"
 #include "neunet"
 #include "thread_pool"
@@ -115,10 +117,22 @@ public:
     void operator=(NetBNMNIST &netSrc) { new (this)NetBNMNIST(netSrc); }
     void operator=(NetBNMNIST &&netSrc) { new (this)NetBNMNIST(move(netSrc)); }
 
-    NetBNMNIST(uint64_t iDscType = GD_BGD, double dNetAcc = 1e-2, double dLearnRate = 0, uint64_t iMiniBatch = 0, bool bShowIter = false) : NetClassify(iDscType, dNetAcc, dLearnRate, iMiniBatch, bShowIter) {}
+    NetBNMNIST(uint64_t iDscType = GD_BGD, double dNetAcc = 1e-2, double dLearnRate = 0, uint64_t iMiniBatch = 0, bool bShowIter = true) : NetClassify(iDscType, dNetAcc, dLearnRate, iMiniBatch, bShowIter) {}
     void Run(MNIST &mnistDataset)
     {
+        auto bTrainFlag = false;
+        auto setOrigin = mnistDataset.orgn();
         
+        set<vect> setPreOutput;
+        vect_t<vect> batPreOutput;
+        do for(auto i=0; i<mnistDataset.elem.size(); ++i)
+        {
+            auto setOutput = ForwProp(mnistDataset.elem[i]);
+            if(bShowIterFlag) IterShow(setPreOutput, setOutput, setOrigin[i]);
+            if(IterFlag(setOutput, setOrigin[i])) bTrainFlag = true;
+            if(bTrainFlag) bTrainFlag = BackProp(setOutput, setOrigin[IDX_ZERO]);
+        }
+        while (bTrainFlag);
     }
 };
 
@@ -126,6 +140,19 @@ int main(int argc, char *argv[], char *envp[])
 {
     cout << "hello, world." << endl;
     string root_dir = "E:\\VS Code project data\\MNIST\\";
-    MNIST dataset(root_dir + "train-images.idx3-ubyte", root_dir + "train-labels.idx1-ubyte", {20}, 0, true, 2);
+    MNIST dataset(root_dir + "train-images.idx3-ubyte", root_dir + "train-labels.idx1-ubyte", {20});
+    NetBNMNIST LeNet;
+    LeNet.AddLayer<LAYER_CONV>(20, 3, 5, 5, 1, 1, NULL);
+    LeNet.AddLayer<LAYER_CONV_BN>(20);
+    LeNet.AddLayer<LAYER_POOL>(POOL_MAX, 2, 2, 1, 1);
+    LeNet.AddLayer<LAYER_CONV>(50, 20, 5, 5, 1, 1, NULL);
+    LeNet.AddLayer<LAYER_CONV_BN>(50);
+    LeNet.AddLayer<LAYER_POOL>(POOL_MAX, 2, 2, 1, 1);
+    LeNet.AddLayer<LAYER_TRANS>();
+    LeNet.AddLayer<LAYER_FC>(500, NULL);
+    LeNet.AddLayer<LAYER_FC_BN>();
+    LeNet.AddLayer<LAYER_FC>(10, SOFTMAX);
+    cout << "[LeNet depth][" << LeNet.Depth() << ']' << endl;
+    LeNet.Run(dataset);
     return EXIT_SUCCESS;
 }

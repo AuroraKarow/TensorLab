@@ -103,6 +103,17 @@ set<vect> softmax_cec_grad(set<vect> &setSoftmaxOutput, set<vect> &setOrigin)
     else return blank_vect_seq;
 }
 
+set<feature> softmax_cec_grad(set<feature> &setSoftmaxOutput, set<feature> &setOrigin)
+{
+    if(setSoftmaxOutput.size() == setOrigin.size())
+    {
+        set<feature> setGradOutput(setOrigin.size());
+        for(auto i=0; i<setOrigin.size(); ++i) setGradOutput[i] = softmax_cec_grad(setSoftmaxOutput[i], setOrigin[i]);
+        return setGradOutput;
+    }
+    else return blank_ft_seq;
+}
+
 vect divisor_dominate(vect &divisor, double epsilon)
 {
     auto cpy_val = divisor;
@@ -156,17 +167,6 @@ uint64_t samp_output_dir_cnt(uint64_t input_dir_cnt, uint64_t filter_dir_cnt, ui
 uint64_t samp_input_dir_cnt(uint64_t output_dir_cnt, uint64_t filter_dir_cnt, uint64_t dir_stride, uint64_t dir_dilation) {return (output_dir_cnt - 1) * dir_stride + samp_block_cnt(filter_dir_cnt, dir_dilation);}
 
 bool samp_valid(uint64_t input_dir_cnt, uint64_t filter_dir_cnt, uint64_t dir_stride, uint64_t dir_dilation) {return (input_dir_cnt - samp_block_cnt(filter_dir_cnt, dir_dilation)) % dir_stride == 0;}
-
-MATRIX_POS minibatch_pos(uint64_t idx, uint64_t minibatch)
-{
-    if(minibatch) return mtx::mtx_elem_pos(idx, minibatch);
-    else
-    {
-        MATRIX_POS pos;
-        pos.col = idx;
-        return pos;
-    }
-}
 
 feature merge_channel(tensor &input)
 {

@@ -1,5 +1,16 @@
 DATASET_BEGIN
 
+MATRIX_POS minibatch_pos(uint64_t idx, uint64_t mini_batch)
+{
+    if(mini_batch) return mtx::mtx_elem_pos(idx, mini_batch);
+    else
+    {
+        MATRIX_POS pos;
+        pos.col = idx;
+        return pos;
+    }
+}
+
 class MNIST
 {
 public:
@@ -234,21 +245,25 @@ public:
                 lbl_data_stat.sort();
             }
             else load_qnty = QNTY_STAT;
-            init(load_qnty, minibatch);
-            for(auto i=0,j=0; j<load_qnty; ++i)
-                if((lbl_data_stat.size()&&(i==lbl_data_stat[j]||(j&&i==lbl_data_stat[j-1]))) || !lbl_data_stat.size())
-                {
-                    auto idx_pos = minibatch_pos(j, minibatch);
-                    elem[idx_pos.ln][idx_pos.col].init();
-                    elem[idx_pos.ln][idx_pos.col][IDX_ZERO] = read_curr_dat(true, padding);
-                    elem_lbl[idx_pos.ln][idx_pos.col] = read_curr_lbl();
-                    ++ j;
-                }
-                else
-                {
-                    read_curr_dat(false);
-                    read_curr_lbl();
-                }
+            if(minibatch && load_qnty<minibatch) pcdr_flag = false;
+            if(pcdr_flag)
+            {
+                init(load_qnty, minibatch);
+                for(auto i=0,j=0; j<load_qnty; ++i)
+                    if((lbl_data_stat.size()&&(i==lbl_data_stat[j]||(j&&i==lbl_data_stat[j-1]))) || !lbl_data_stat.size())
+                    {
+                        auto idx_pos = minibatch_pos(j, minibatch);
+                        elem[idx_pos.ln][idx_pos.col].init();
+                        elem[idx_pos.ln][idx_pos.col][IDX_ZERO] = read_curr_dat(true, padding);
+                        elem_lbl[idx_pos.ln][idx_pos.col] = read_curr_lbl();
+                        ++ j;
+                    }
+                    else
+                    {
+                        read_curr_dat(false);
+                        read_curr_lbl();
+                    }
+            }
         }
         else pcdr_flag = false;
         close_stream();
@@ -282,6 +297,7 @@ public:
                 load_qnty = qnty_list_cnt.sum();
             }
             else pcdr_flag = false;
+            if(minibatch && load_qnty<minibatch) pcdr_flag = false;
             if(pcdr_flag)
             {
                 init(load_qnty, minibatch);
@@ -304,6 +320,7 @@ public:
                     check = check_cnt != ORGN_SIZE;
                 }
             }
+            else pcdr_flag = false;
         }
         else pcdr_flag = false;
         close_stream();
