@@ -46,6 +46,19 @@ template<typename _T> void quick_sort(std::unique_ptr<_T[]> &seq_val, uint64_t b
     }
 }
 
+void reset_ptr() {}
+template<typename T> void reset_ptr(T& val)
+{
+    val.reset();
+    val.release();
+    val = nullptr;
+}
+template<typename T, typename arg, typename...args> void reset_ptr(arg& first, args&...others)
+{
+    reset_ptr(first);
+    reset_ptr(others);
+}
+
 template<typename _Ty> class net_queue
 {
 protected:
@@ -229,9 +242,7 @@ public:
     void reset()
     {
         len = 0;
-        _ptr.reset();
-        _ptr.release();
-        _ptr = nullptr;
+        reset_ptr(_ptr);
     }
     // ~net_queue() {len = 0;}
 };
@@ -287,8 +298,7 @@ public:
     uint64_t size() { return len; }
     void reset()
     {
-        head.reset();
-        head = nullptr;
+        reset_ptr(head);
         len = 0;
     }
     net_list() {}
@@ -495,6 +505,7 @@ public:
     net_map() {}
     net_map(net_map &src) {val = src.val;}
     net_map(net_map &&src) {val = std::move(src.val);}
+    void reset() { val.reset(); }
     uint64_t size() {return val.size();}
     uint64_t find_idx(_K &&key)
     {

@@ -26,16 +26,12 @@ struct mtx_extm
     bagrt::net_list<mtx_pos> pos_list;
 };
 
+template<typename...args> void mtx_reset(args&...mtx_vals) { bagrt::reset_ptr(mtx_vals...); }
+
 bool mtx_pos_valid(uint64_t ln, uint64_t col, uint64_t ln_cnt, uint64_t col_cnt)
 {
     if (ln<ln_cnt && col<col_cnt) return true;
     else return false;
-}
-
-std::ostream &operator<<(std::ostream &output, const mtx_pos &pos)
-{
-    output << '(' << pos.ln << ", " << pos.col << ')';
-    return output;
 }
 
 mtx_pos mtx_elem_pos(uint64_t idx, uint64_t col_cnt)
@@ -874,6 +870,12 @@ public:
             else output << '\t'; 
         }
         return output;
+    }
+    void reset()
+    {
+        info.ln_cnt = 0;
+        info.col_cnt = 0;
+        mtx_reset(info.mtx_val);
     }
     // ~matrix() {_para_reset();}
 };
