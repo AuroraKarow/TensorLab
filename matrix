@@ -33,4 +33,4 @@
 
 #define blank_vect_seq      blank_feature
 #define blank_ft_seq        blank_tensor
-#define blank_ten_seq       set<tensor>::blank_queue()
+#define blank_ten_seq       bagrt::net_queue<tensor>::blank_queue()

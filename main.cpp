@@ -45,8 +45,8 @@ private:
         case TRANS:
             if(INSTANCE_DERIVE<LAYER_TRANS>(lsLayer[i]).get()->bFeatToVec)
             {
-                if(i) setOutput = INSTANCE_DERIVE<LAYER_TRANS>(lsLayer[i]).get() -> ForwProp(setInput);
-                else setOutput = INSTANCE_DERIVE<LAYER_TRANS>(lsLayer[i]).get() -> ForwProp(setTemp);
+                if(i) setOutput = INSTANCE_DERIVE<LAYER_TRANS>(lsLayer[i]).get() -> ForwProp(setTemp);
+                else setOutput = INSTANCE_DERIVE<LAYER_TRANS>(lsLayer[i]).get() -> ForwProp(setInput);
                 if(setOutput.size()) break;
                 else return blank_vect_seq;
             }
@@ -69,12 +69,12 @@ private:
         case FC:
             if(i==lsLayer.size()-1) setGradVec = INSTANCE_DERIVE<LAYER_FC>(lsLayer[i]).get() -> BackProp(setOutput, Origin);
             else setGradVec = INSTANCE_DERIVE<LAYER_FC>(lsLayer[i]).get() -> BackProp(setGradVec);
-            if(setOutput.size()) break;
+            if(setGradVec.size()) break;
             else return false;
         case FC_BN:
             if(i==lsLayer.size()-1) setGradVec = INSTANCE_DERIVE<LAYER_FC_BN>(lsLayer[i]).get() -> BackProp(setOutput, INSTANCE_QUOTE(INSTANCE_DERIVE<BN_FC>(mapBNData[i][iMiniBatchIdx])), Origin);
             else setGradVec = INSTANCE_DERIVE<LAYER_FC_BN>(lsLayer[i]).get() -> BackProp(setGradVec, INSTANCE_QUOTE(INSTANCE_DERIVE<BN_FC>(mapBNData[i][iMiniBatchIdx])));
-            if(setOutput.size()) break;
+            if(setGradVec.size()) break;
             else return false;
         case CONV:
             setGradFt = INSTANCE_DERIVE<LAYER_CONV>(lsLayer[i]).get() -> BackProp(setGradFt);
@@ -111,7 +111,7 @@ public:
     void operator=(NetBNMNIST &netSrc) { new (this)NetBNMNIST(netSrc); }
     void operator=(NetBNMNIST &&netSrc) { new (this)NetBNMNIST(move(netSrc)); }
 
-    NetBNMNIST(uint64_t iDscType = GD_BGD, double dNetAcc = 1e-2, double dLearnRate = 0, uint64_t iMiniBatch = 0, bool bShowIter = true) : NetClassify(iDscType, dNetAcc, dLearnRate, iMiniBatch, bShowIter) {}
+    NetBNMNIST(uint64_t iDscType = GD_BGD, double dNetAcc = 1e-2, bool bShowIter = true) : NetClassify(iDscType, dNetAcc, bShowIter) {}
     /* FC
     uint64_t iInputLnCnt, uint64_t iOutputLnCnt, uint64_t iActFuncTypeVal = SIGMOID, double dLearnRate = 0, double dRandBoundryFirst = 0, double dRandBoundrySecond = 0, double dAcc = 1e-5
     * FC_BN
@@ -155,21 +155,21 @@ public:
             while (bTrainFlag);
         }
 };
-
+// std::cout << "[]" << std::endl <<  << std::endl << std::endl;
 int main(int argc, char *argv[], char *envp[])
 {
     cout << "hello, world." << endl;
     string root_dir = "E:\\VS Code project data\\MNIST\\";
-    MNIST dataset(root_dir + "train-images.idx3-ubyte", root_dir + "train-labels.idx1-ubyte", {20});
+    MNIST dataset(root_dir + "train-images.idx3-ubyte", root_dir + "train-labels.idx1-ubyte", {5});
     NetBNMNIST LeNet;
     LeNet.AddLayer<LAYER_CONV>(20, 3, 5, 5, 1, 1, NULL);
     LeNet.AddLayer<LAYER_CONV_BN>(20, 0, 1, RELU);
-    LeNet.AddLayer<LAYER_POOL>(POOL_MAX, 2, 2, 1, 1);
+    LeNet.AddLayer<LAYER_POOL>(POOL_MAX, 2, 2, 2, 2);
     LeNet.AddLayer<LAYER_CONV>(50, 20, 5, 5, 1, 1, NULL);
     LeNet.AddLayer<LAYER_CONV_BN>(50, 0, 1, RELU);
-    LeNet.AddLayer<LAYER_POOL>(POOL_MAX, 2, 2, 1, 1);
+    LeNet.AddLayer<LAYER_POOL>(POOL_MAX, 2, 2, 2, 2);
     LeNet.AddLayer<LAYER_TRANS>();
-    LeNet.AddLayer<LAYER_FC>(80, 500, NULL);
+    LeNet.AddLayer<LAYER_FC>(800, 500, NULL);
     LeNet.AddLayer<LAYER_FC_BN>(0, 1, SIGMOID);
     LeNet.AddLayer<LAYER_FC>(500, 10, SOFTMAX);
     cout << "[LeNet depth][" << LeNet.Depth() << ']' << endl;

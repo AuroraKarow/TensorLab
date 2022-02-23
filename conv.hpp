@@ -150,37 +150,24 @@ vect PoolUpMaxAvg(vect &vecInput, uint64_t iFilterLnCnt, uint64_t iFilterColCnt,
         iOutputColnCnt = SAMP_INPUT_DIR_CNT(vecInput.COL_CNT, iFilterColCnt, iColStride, iColDilation);
     }
     vect vecOutput(iOutputLnCnt, iOutputColnCnt);
-    for(auto i=0; i<vecInput.LN_CNT; ++i) for(auto j=0; j<vecInput.COL_CNT; ++j) 
-    {
-        MATRIX_POS posMax;
-        auto iTraceLn = SAMP_TRACE_POS(i, 0, iLnStride, iLnDilation),
-            iTraceCol = SAMP_TRACE_POS(j, 0, iColStride, iColDilation);
-        posMax.ln = iTraceLn;
-        posMax.col = iTraceCol;
-        for(auto k=0; k<iFilterLnCnt; ++k) for(auto l=0; l<iFilterColCnt; ++l)
+    auto iFilterSize = iFilterLnCnt * iFilterColCnt;
+    for(auto i=0; i<vecInput.LN_CNT; ++i) for(auto j=0; j<vecInput.COL_CNT; ++j)
+        if(iPoolType==POOL_UP_AVG) for(auto k=0; k<iFilterLnCnt; ++k) for(auto l=0; l<iFilterColCnt; ++l)
         {
-            iTraceLn = SAMP_TRACE_POS(i, k, iLnStride, iLnDilation);
-            iTraceCol = SAMP_TRACE_POS(j, l, iColStride, iColDilation);
-            switch (iPoolType)
-            {
-            case POOL_UP_AVG:
-                vecOutput[iTraceLn][iTraceCol] += vecInput[i][j] / (iFilterLnCnt * iFilterColCnt);
-                break;
-            case POOL_UP_MAX:
-                if(vecTraceInput[iTraceLn][iTraceCol] > vecTraceInput[posMax.ln][posMax.col])
-                {
-                    posMax.ln = iTraceLn;
-                    posMax.col = iTraceCol;
-                }
-                if(k+1==iFilterLnCnt && l+1==iFilterColCnt) vecOutput[posMax.ln][posMax.col] += vecInput[i][j];
-                break;
-            case POOL_UP_FIL:
-                vecOutput[iTraceLn][iTraceCol] += vecInput[i][j];
-                break;
-            default: return blank_vect;
-            }
+            auto iTraceLn = SAMP_TRACE_POS(i, k, iLnStride, iLnDilation),
+                iTraceCol = SAMP_TRACE_POS(j, l, iColStride, iColDilation);
+            vecOutput[iTraceLn][iTraceCol] = vecInput[i][j] / iFilterSize;
         }
-    }
+        else if(iPoolType==POOL_UP_MAX && vecTraceInput.is_matrix())
+        {
+            auto iFromLn = SAMP_TRACE_POS(i, 0, iLnStride, iLnDilation),
+                iToLn = SAMP_TRACE_POS(i, iFilterLnCnt-1, iLnStride, iLnDilation),
+                iFromCol = SAMP_TRACE_POS(j, 0, iColStride, iColDilation),
+                iToCol = SAMP_TRACE_POS(j, iFilterColCnt-1, iColStride, iColDilation);
+            auto posExtrm = vecTraceInput.extremum(iFromLn, iToLn, iFromCol, iToCol, iLnDilation, iColDilation);
+            for(auto m=0; m<posExtrm.pos_list.size(); ++m) vecOutput[posExtrm.pos_list[m].ln][posExtrm.pos_list[m].col] += vecInput[i][j];
+        }
+        else return blank_vect;
     return vecOutput;
 }
 
@@ -189,9 +176,9 @@ feature PoolUp(feature &vecInput, uint64_t iPoolType = POOL_UP_MAX, feature &vec
     feature vecOutput(vecInput.size());
     for(auto i=0; i<vecInput.size(); ++i) 
     {
-        if(iPoolType == POOL_UP_GAG) vecInput[i] = PoolUpGlbAvg(vecInput[i], vecTraceInput[i].LN_CNT, vecTraceInput[i].COL_CNT);
-        else vecInput[i] = PoolUpMaxAvg(vecInput[i], iFilterLnCnt, iFilterColCnt, iLnStride, iColStride, vecTraceInput[i], iPoolType, iLnDilation, iColDilation);
-        if(!vecInput[i].is_matrix()) return blank_feature;
+        if(iPoolType == POOL_UP_GAG) vecOutput[i] = PoolUpGlbAvg(vecInput[i], vecTraceInput[i].LN_CNT, vecTraceInput[i].COL_CNT);
+        else vecOutput[i] = PoolUpMaxAvg(vecInput[i], iFilterLnCnt, iFilterColCnt, iLnStride, iColStride, vecTraceInput[i], iPoolType, iLnDilation, iColDilation);
+        if(!vecOutput[i].is_matrix()) return blank_feature;
     }
     return vecOutput;
 }

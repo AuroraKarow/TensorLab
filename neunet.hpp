@@ -3,15 +3,13 @@ NEUNET_BEGIN
 class NetBase
 {
 protected:
-    double dAcc = 1e-2, dNetLearnRate = 0;
-    uint64_t iNetMiniBatch = 0, iNetDscType = GD_BGD;
+    double dAcc = 1e-2;
+    uint64_t iNetDscType = GD_BGD;
     NET_LIST<LAYER_PTR> lsLayer;
 
     virtual void ValueAssign(NetBase &netSrc)
     {
         dAcc = netSrc.dAcc;
-        dNetLearnRate = netSrc.dNetLearnRate;
-        iNetMiniBatch = netSrc.iNetMiniBatch;
         iNetDscType = netSrc.iNetDscType;
     }
     void ShowIter() {}
@@ -25,7 +23,7 @@ public:
     void operator=(NetBase &netSrc) { new (this)NetBase(netSrc); }
     void operator=(NetBase &&netSrc) { new (this)NetBase(std::move(netSrc)); }
     
-    NetBase(uint64_t iDscType = GD_BGD, double dNetAcc = 1e-2, double dLearnRate = 0, uint64_t iMiniBatch = 0) : iNetDscType(iDscType), dAcc(dNetAcc), dNetLearnRate(dLearnRate), iNetMiniBatch(iMiniBatch) {}
+    NetBase(uint64_t iDscType = GD_BGD, double dNetAcc = 1e-2) : iNetDscType(iDscType), dAcc(dNetAcc) {}
     template<typename LayerType, typename ... Args,  typename = std::enable_if_t<std::is_base_of_v<_LAYER Layer, LayerType>>> bool AddLayer(Args&& ... pacArgs) { return lsLayer.emplace_back(std::make_shared<LayerType>(pacArgs...)); }
     uint64_t Depth() { return lsLayer.size(); }
     void Run() {}
@@ -78,7 +76,7 @@ public:
     void operator=(NetClassify &netSrc) { new (this)NetClassify(netSrc); }
     void operator=(NetClassify &&netSrc) { new (this)NetClassify(std::move(netSrc)); }
 
-    NetClassify(uint64_t iDscType = GD_BGD, double dNetAcc = 1e-2, double dLearnRate = 0, uint64_t iMiniBatch = 0, bool bShowIter = false) : NetBase(iDscType, dNetAcc, dLearnRate, iMiniBatch), bShowIterFlag(bShowIter) {}
+    NetClassify(uint64_t iDscType = GD_BGD, double dNetAcc = 1e-2, bool bShowIter = false) : NetBase(iDscType, dNetAcc), bShowIterFlag(bShowIter) {}
 };
 
 NEUNET_END

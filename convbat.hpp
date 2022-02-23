@@ -24,12 +24,11 @@ set<feature> Conv(set<feature> &setInput, tensor &tenKernel, uint64_t iLnStride,
 
 tensor GradLossToKernel(set<feature> &setGradLossToOutput, set<feature> &setInput, uint64_t iLnStride, uint64_t iColStride, uint64_t iLnDilation = 0, uint64_t iColDilation = 0, uint64_t iInputPadTop = 0, uint64_t iInputPadRight = 0, uint64_t iInputPadBottom = 0, uint64_t iInputPadLeft = 0, uint64_t iLnDistance = 0, uint64_t iColDistance = 0)
 {
-    tensor tenGradLossToKernel(setInput.size());
+    tensor tenGradLossToKernel;
     for(auto i=0; i<setInput.size(); ++i)
     {
         auto tenSglGrad = GradLossToKernel(setGradLossToOutput[i], setInput[i], iLnStride, iColStride, iLnDilation, iColDilation, iInputPadTop, iInputPadRight, iInputPadBottom, iInputPadLeft, iLnDistance, iColDistance);
-        if(tenGradLossToKernel.size()) for(auto j=0; j<tenSglGrad.size(); ++j) for(auto k=0; k<tenSglGrad[i].size(); ++k)
-            tenGradLossToKernel[j][k] += tenSglGrad[j][k];
+        if(tenGradLossToKernel.size()) for(auto j=0; j<tenSglGrad.size(); ++j) for(auto k=0; k<tenSglGrad[i].size(); ++k) tenGradLossToKernel[j][k] += tenSglGrad[j][k];
         else tenGradLossToKernel = std::move(tenSglGrad);
         if(!tenGradLossToKernel.size()) return blank_tensor;
     }
@@ -214,12 +213,6 @@ vect BNGradLossToShift(set<feature> &setGradLossToOutput)
             for(auto k=0; k<setGradLossToOutput[j][i].ELEM_CNT; ++k)
                 vecGradBeta.pos_idx(i) += setGradLossToOutput[j][i].pos_idx(k);
     return vecGradBeta;
-}
-
-vect BNUpdateScaleShift(vect &vecGammaBeta, vect &vecGrad, double dLearnRate = 1e-10)
-{
-    if(vecGammaBeta.shape_valid(vecGrad)) return vecGammaBeta - dLearnRate * vecGrad;
-    else return blank_vect;
 }
 
 set<feature> BNDeduce(set<feature> &setNetInput, vect &vecBeta, vect &vecGamma, set<BN_PTR> &setbnData, uint64_t iMiniBatchSize = 0, double dEpsilon = 1e-10)

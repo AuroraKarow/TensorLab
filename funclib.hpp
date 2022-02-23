@@ -38,7 +38,7 @@ vect softmax(vect &vec_val)
             sum += std::exp(vec_val[i][j]);
     for(auto i=0; i<vec_val.get_ln_cnt(); ++i)
         for(auto j=0; j<vec_val.get_col_cnt(); ++j)
-            ans[i][j] = exp(vec_val[i][j]) / sum;
+            ans[i][j] = std::exp(vec_val[i][j]) / sum;
     return ans;
 }
 

@@ -21,6 +21,7 @@ struct Layer
         {
         case SIGMOID:   return activate(setInput, sigmoid);
         case RELU:      return activate(setInput, ReLU);
+        case SOFTMAX:   return activate(setInput, softmax);
         default: return setInput;
         }
     }
@@ -53,7 +54,7 @@ struct LayerFC : Layer
     void operator=(LayerFC &lyrSrc) { new(this)LayerFC(lyrSrc); }
     void operator=(LayerFC &&lyrSrc) { new(this)LayerFC(std::move(lyrSrc)); }
     
-    LayerFC(uint64_t iInputLnCnt, uint64_t iOutputLnCnt, uint64_t iActFuncTypeVal = SIGMOID, double dLearnRate = 0, double dRandBoundryFirst = 0, double dRandBoundrySecond = 0, double dAcc = 1e-05) : Layer(FC, iActFuncTypeVal, dLearnRate) { _FC InitWeight(iInputLnCnt, iOutputLnCnt, dRandBoundryFirst, dRandBoundrySecond, dAcc); }
+    LayerFC(uint64_t iInputLnCnt, uint64_t iOutputLnCnt, uint64_t iActFuncTypeVal = SIGMOID, double dLearnRate = 0, double dRandBoundryFirst = 0, double dRandBoundrySecond = 0, double dAcc = 1e-05) : Layer(FC, iActFuncTypeVal, dLearnRate) { vecLayerWeight = _FC InitWeight(iInputLnCnt, iOutputLnCnt, dRandBoundryFirst, dRandBoundrySecond, dAcc); }
     set<vect> ForwProp(set<vect> &setInput, bool bFirstLayer = false)
     {
         if(bFirstLayer) setLayerInput = setInput;
@@ -108,8 +109,8 @@ struct LayerFCBN : Layer
             dGradShift = _FC BNGradLossToShift(setGradOrOutput);
         if(dLayerLearnRate)
         {
-            dGamma = _FC BNUpdateScaleShift(dGamma, dGradScale, dLayerLearnRate);
-            dBeta = _FC BNUpdateScaleShift(dBeta, dGradShift, dLayerLearnRate);
+            dGamma -= dLayerLearnRate * dGradScale;
+            dBeta -= dLayerLearnRate * dGradShift;
         }
         else
         {
@@ -146,7 +147,7 @@ struct LayerConv : Layer
     void operator=(LayerConv &lyrSrc) { new(this)LayerConv(lyrSrc); }
     void operator=(LayerConv &&lyrSrc) { new(this)LayerConv(std::move(lyrSrc)); }
 
-    LayerConv(uint64_t iKernelAmt, uint64_t iKernelChannCnt, uint64_t iKernelLnCnt, uint64_t iKernelColCnt, uint64_t iLnStride, uint64_t iColStride, uint64_t iActFuncTypeVal = RELU, double dLearnRate = 0, double dRandBoundryFirst = 0, double dRandBoundrySecond = 0, double dAcc = 1e-5, uint64_t iLnDilation = 0, uint64_t iColDilation = 0, uint64_t iInputPadTop = 0, uint64_t iInputPadRight = 0, uint64_t iInputPadBottom = 0, uint64_t iInputPadLeft = 0, uint64_t iLnDistance = 0, uint64_t iColDistance = 0) : Layer(CONV, iActFuncTypeVal, dLearnRate), iLayerLnStride(iLnStride), iLayerColStride(iColStride), iLayerLnDilation(iLnDilation), iLayerColDilation(iColDilation), iLayerInputPadTop(iInputPadTop), iLayerInputPadRight(iInputPadRight), iLayerInputPadBottom( iInputPadBottom), iLayerInputPadLeft(iInputPadLeft), iLayerLnDistance(iLnDistance), iLayerColDistance(iColDistance) { tenKernel = _CONV InitKernel(iKernelAmt, iKernelChannCnt, iKernelLnCnt, iKernelColCnt, dRandBoundryFirst, dRandBoundrySecond, dAcc); }
+    LayerConv(uint64_t iKernelAmt, uint64_t iKernelChannCnt, uint64_t iKernelLnCnt, uint64_t iKernelColCnt, uint64_t iLnStride, uint64_t iColStride, uint64_t iActFuncTypeVal = RELU, double dLearnRate = 0, double dRandBoundryFirst = 0, double dRandBoundrySecond = 0, double dRandBoundryAcc = 1e-5, uint64_t iLnDilation = 0, uint64_t iColDilation = 0, uint64_t iInputPadTop = 0, uint64_t iInputPadRight = 0, uint64_t iInputPadBottom = 0, uint64_t iInputPadLeft = 0, uint64_t iLnDistance = 0, uint64_t iColDistance = 0) : Layer(CONV, iActFuncTypeVal, dLearnRate), iLayerLnStride(iLnStride), iLayerColStride(iColStride), iLayerLnDilation(iLnDilation), iLayerColDilation(iColDilation), iLayerInputPadTop(iInputPadTop), iLayerInputPadRight(iInputPadRight), iLayerInputPadBottom( iInputPadBottom), iLayerInputPadLeft(iInputPadLeft), iLayerLnDistance(iLnDistance), iLayerColDistance(iColDistance) { tenKernel = _CONV InitKernel(iKernelAmt, iKernelChannCnt, iKernelLnCnt, iKernelColCnt, dRandBoundryFirst, dRandBoundrySecond, dRandBoundryAcc); }
     set<feature> ForwProp(set<feature> &setInput, bool bFirstLayer = false)
     {
         if(bFirstLayer) setLayerInput = setInput;
@@ -180,7 +181,7 @@ struct LayerConvBN : Layer
     void operator=(LayerConvBN &lyrSrc) { new(this)LayerConvBN(lyrSrc); }
     void operator=(LayerConvBN &&lyrSrc) { new(this)LayerConvBN(std::move(lyrSrc)); }
 
-    LayerConvBN(uint64_t iChannCnt = 1, double dShift = 0, double dScale = 1, uint64_t iActFuncTypeVal = RELU, double dLearnRate = 0, double dDmt = 1e-10) : Layer(CONV_BN, iActFuncTypeVal, dLearnRate)
+    LayerConvBN(uint64_t iChannCnt = 1, double dShift = 0, double dScale = 1, uint64_t iActFuncTypeVal = RELU, double dLearnRate = 0, double dDmt = 1e-10) : Layer(CONV_BN, iActFuncTypeVal, dLearnRate), dEpsilon(dDmt)
     {
         vecBeta = _CONV BNInitScaleShift(iChannCnt, dShift);
         vecGamma = _CONV BNInitScaleShift(iChannCnt, dScale);
@@ -192,7 +193,7 @@ struct LayerConvBN : Layer
         BNData = _CONV BNTrain(setLayerInput, vecBeta, vecGamma, dEpsilon);
         return Activate(BNData.setY);
     }
-    set<feature> BackProp(set<feature> &setGrad, BN_CONV &BNData, uint64_t iMiniBatchIdx = 0)
+    set<feature> BackProp(set<feature> &setGrad, BN_CONV &BNData)
     {
         setGrad = Derivative(BNData.setY, setGrad);
         auto setGradBack = _CONV BNGradLossToInput(BNData, setLayerInput, setGrad, vecGamma, dEpsilon);
@@ -200,8 +201,8 @@ struct LayerConvBN : Layer
             dGradShift = _CONV BNGradLossToShift(setGrad);
         if(dLayerLearnRate)
         {
-            vecGamma = _CONV BNUpdateScaleShift(vecGamma, dGradScale, dLayerLearnRate);
-            vecBeta = _CONV BNUpdateScaleShift(vecBeta, dGradShift, dLayerLearnRate);
+            vecGamma -= dLayerLearnRate * dGradScale;
+            vecBeta -= dLayerLearnRate * dGradShift;
         }
         else
         {
@@ -219,6 +220,7 @@ struct LayerPool : Layer
 
     void ValueAssign(LayerPool &lyrSrc)
     {
+        iPoolType = lyrSrc.iPoolType;
         iLayerLnStride = lyrSrc.iLayerLnStride;
         iLayerColStride = lyrSrc.iLayerColStride;
         iLayerLnDilation = lyrSrc.iLayerLnDilation;
@@ -226,8 +228,8 @@ struct LayerPool : Layer
         iLayerFilterLnCnt = lyrSrc.iLayerFilterLnCnt;
         iLayerFilterColCnt = lyrSrc.iLayerFilterColCnt;
     }
-    LayerPool(LayerPool &lyrSrc) : Layer(lyrSrc), setLayerInput(lyrSrc.setLayerInput) { ValueAssign(lyrSrc); }
-    LayerPool(LayerPool &&lyrSrc) : Layer(lyrSrc), setLayerInput(std::move(lyrSrc.setLayerInput)) { ValueAssign(lyrSrc); }
+    LayerPool(LayerPool &lyrSrc) : Layer(lyrSrc), setLayerInput(lyrSrc.setLayerInput), setLayerOutput(lyrSrc.setLayerOutput) { ValueAssign(lyrSrc); }
+    LayerPool(LayerPool &&lyrSrc) : Layer(lyrSrc), setLayerInput(std::move(lyrSrc.setLayerInput)), setLayerOutput(std::move(lyrSrc.setLayerOutput)) { ValueAssign(lyrSrc); }
     void operator=(LayerPool &lyrSrc) { new(this)LayerPool(lyrSrc); }
     void operator=(LayerPool &&lyrSrc) { new(this)LayerPool(std::move(lyrSrc)); }
 
@@ -241,7 +243,7 @@ struct LayerPool : Layer
         default: return (uint64_t)NAN;
         }
     }
-    LayerPool(uint64_t iPoolTypeVal = POOL_MAX, uint64_t iFilterLnCnt = 0, uint64_t iFilterColCnt = 0, uint64_t iLnStride = 0, uint64_t iColStride = 0, uint64_t iLnDilation = 0, uint64_t iColDilation = 0, uint64_t iActFuncTypeVal = NULL) : Layer(POOL, iActFuncTypeVal, 0), iPoolType(iPoolTypeVal) {}
+    LayerPool(uint64_t iPoolTypeVal = POOL_MAX, uint64_t iFilterLnCnt = 0, uint64_t iFilterColCnt = 0, uint64_t iLnStride = 0, uint64_t iColStride = 0, uint64_t iLnDilation = 0, uint64_t iColDilation = 0, uint64_t iActFuncTypeVal = NULL) : Layer(POOL, iActFuncTypeVal, 0), iPoolType(iPoolTypeVal), iLayerFilterLnCnt(iFilterLnCnt), iLayerFilterColCnt(iFilterColCnt), iLayerLnStride(iLnStride), iLayerColStride(iColStride), iLayerLnDilation(iLnDilation), iLayerColDilation(iColDilation) {}
     set<feature> ForwProp(set<feature> &setInput, bool bFirstLayer = false)
     {
         if(bFirstLayer) setLayerInput = setInput;
