@@ -97,8 +97,7 @@ bool mtx_refresh(MATRIX &mtx_val, uint64_t elem_cnt)
 {
     if(mtx_val)
     {
-        for(auto i=0; i<elem_cnt; ++i)
-            if(mtx_val[i]) mtx_val[i] = 0;
+        for(auto i=0; i<elem_cnt; ++i) if(mtx_val[i]) mtx_val[i] = 0;
         return true;
     }
     else return false;
@@ -139,9 +138,10 @@ double mtx_det(MATRIX &mtx_val, int dms)
             int flag = (arow % 2 == 0 ? 1 : -1);
             sum += flag * mtx_val[arow * dms] * mtx_det(ac, dms - 1);
         }
+        mtx_reset(ac);
         return sum;
     }
-    else return -1;    
+    else return NAN;    
 }
 
 mtx_extm mtx_extm_val(MATRIX &mtx_val, uint64_t from_ln, uint64_t to_ln, uint64_t from_col, uint64_t to_col, uint64_t ln_cnt, uint64_t col_cnt, uint64_t ln_dilation = 0, uint64_t col_dilation = 0, bool max_flag = true)
@@ -387,11 +387,13 @@ MATRIX mtx_LU(MATRIX &mtx_val, int dms)
             for (int j = dms - 1; j > i; --j) l[mtx_elem_pos(j, i, dms)] = (-1.0) * tool[mtx_elem_pos(j, i, dms)];
             for (int j = dms - 1; j > i; --j) lu[mtx_elem_pos(j, i, dms)] = (-1.0) * tool[mtx_elem_pos(j, i, dms)];
             lu = mtx_mult(tool, lu, dms, dms, dms, dms);
+            mtx_reset(tool);
         }
         // get the inversion matrix
         for (int i = 0; i < dms; ++i)
             for (int j = 0; j < i; ++j)
                 lu[mtx_elem_pos(i, j, dms)] = l[mtx_elem_pos(i, j, dms)];
+        mtx_reset(e, l);
         return lu;
     }
     else return MATRIX_NULL;
@@ -424,6 +426,7 @@ MATRIX mtx_equation(MATRIX &coefficient, MATRIX &b, int dms)
             x[i-1] = (y[i-1] - temp) / u[mtx_elem_pos(i-1, i-1, dms)];
         }
         else x[dms-1] = y[dms-1] / u[mtx_elem_pos(dms-1, dms-1, dms)];
+        mtx_reset(lu, e, l, u, y);
         return x;
     }
     else return MATRIX_NULL;
@@ -483,10 +486,12 @@ double mtx_max_eigenvalue(MATRIX &mtx_val, int dms, MATRIX &w, double error = 1e
             x = mtx_mult(mtx_val, x, dms, dms, dms, 1);
             for (int i=0; i<dms; ++i) temp[i] = x[i];
             lambda_temp = mtx_extm_val(temp, 0, dms-1, 0, 0, dms, 1).val;
+            mtx_reset(temp, temp_abs);
         } while (std::abs(lambda_temp - lambda) > error);
+        mtx_reset(x);
         return lambda;
     }
-    else return -1;
+    else return NAN;
 }
 
 MATRIX mtx_jacobi_iterate(MATRIX &coefficient, MATRIX &b, int dms, double error = 1e-5, double init_elem = 1)
@@ -510,6 +515,7 @@ MATRIX mtx_jacobi_iterate(MATRIX &coefficient, MATRIX &b, int dms, double error 
             break;
         }
     } while (flag);
+    mtx_reset(temp);
     return x;
 }
 
@@ -570,9 +576,10 @@ uint64_t mtx_rank(MATRIX &mtx_val, uint64_t ln_cnt, uint64_t col_cnt)
                 }
             }
         }
+        mtx_reset(ans);
         return rank_val;
     }
-    else return 0;
+    else return NAN;
 }
 
 mtx_info mtx_pad(MATRIX &mtx_val, uint64_t ln_cnt, uint64_t col_cnt, uint64_t ln_t = 0, uint64_t col_r = 0, uint64_t ln_b = 0, uint64_t col_l = 0, uint64_t ln_dist = 0, uint64_t col_dist = 0)
@@ -620,12 +627,17 @@ class matrix
 protected:
     mtx_info info;
     uint64_t elem_cnt = 0;
-    void _init(uint64_t ln_cnt, uint64_t col_cnt, bool init_ptr = false)
+    void _para_init(uint64_t ln_cnt, uint64_t col_cnt)
     {
-        elem_cnt = ln_cnt * col_cnt;
         info.ln_cnt = ln_cnt;
         info.col_cnt = col_cnt;
-        if(init_ptr) info.mtx_val = mtx_init(elem_cnt);
+        elem_cnt = ln_cnt * col_cnt;
+    }
+    void _init(uint64_t ln_cnt, uint64_t col_cnt)
+    {
+        _para_init(ln_cnt, col_cnt);
+        bagrt::reset_ptr(info.mtx_val);
+        info.mtx_val = mtx_init(ln_cnt, col_cnt);
     }
     void _para_reset()
     {
@@ -634,36 +646,48 @@ protected:
         info.ln_cnt = 0;
     }
 public:
-    static matrix blank_matrix() {return matrix();}
-    bool is_matrix() {return info.col_cnt && info.ln_cnt && info.mtx_val && elem_cnt && elem_cnt==info.ln_cnt*info.col_cnt;}
-    MATRIX ptr() {return mtx_copy(info.mtx_val, info.ln_cnt, info.col_cnt);}
+    void reset()
+    {
+        _para_reset();
+        bagrt::reset_ptr(info.mtx_val);
+    }
+    static matrix blank_matrix() { return matrix(); }
+    bool is_matrix() { return info.col_cnt && info.ln_cnt && info.mtx_val && elem_cnt && elem_cnt==info.ln_cnt*info.col_cnt; }
+    MATRIX ptr() { return mtx_copy(info.mtx_val, info.ln_cnt, info.col_cnt); }
     matrix() {}
     matrix(uint64_t ln_cnt, uint64_t col_cnt, bool rand = false, double rand_boundry_first = 0, double rand_boundry_second = 0, double rand_acc = 1e-5)
     {
         if(ln_cnt && col_cnt)
         {
-            _init(ln_cnt, col_cnt);
+            reset();
+            _para_init(ln_cnt, col_cnt);
             if(rand) info.mtx_val = mtx_init_rand(elem_cnt, rand_boundry_first, rand_boundry_second, rand_acc);
             else info.mtx_val = mtx_init(elem_cnt);
         }
     }
     matrix(MATRIX &&ptr_val, uint64_t ln_cnt, uint64_t col_cnt)
     {
-        _init(ln_cnt, col_cnt);
+        reset();
+        _para_init(ln_cnt, col_cnt);
         info.mtx_val = std::move(ptr_val);
     }
     matrix(MATRIX &ptr_val, uint64_t ln_cnt, uint64_t col_cnt)
     {
-        _init(ln_cnt, col_cnt);
-        info.mtx_val = mtx_copy(ptr_val, elem_cnt);
+        if(ln_cnt*col_cnt != elem_cnt)
+        {
+            reset();
+            info.mtx_val = mtx_copy(ptr_val, ln_cnt*col_cnt);
+        }
+        else for(auto i=0; i<elem_cnt; ++i) info.mtx_val[i] = ptr_val[i];
+        _para_init(ln_cnt, col_cnt);
     }
     matrix(double atom) 
-    {
-        _init(1, 1, true);
+    {  
+        if(elem_cnt > 1) _init(1, 1);
         info.mtx_val[IDX_ZERO] = atom;
     }
-    matrix(matrix &val) {value_copy(val);}
-    matrix(matrix &&val) {value_move(std::move(val));}
+    matrix(matrix &val) { value_copy(val); }
+    matrix(matrix &&val) { value_move(std::move(val)); }
     matrix(std::initializer_list<std::initializer_list<double>> _vect)
     {
         bagrt::net_list<double> elem_temp;
@@ -688,7 +712,7 @@ public:
         if(asg_flag)
         {
             auto _elem_cnt = elem_temp.size();
-            if(_elem_cnt != elem_cnt || _col_cnt != info.col_cnt)  _init(_elem_cnt/_col_cnt, _col_cnt, true);
+            if(_elem_cnt != elem_cnt || _col_cnt != info.col_cnt)  _init(_elem_cnt/_col_cnt, _col_cnt);
             for(auto i=0; i<elem_cnt; ++i) info.mtx_val[i] = elem_temp[i];
         }
     }
@@ -696,7 +720,8 @@ public:
     {
         if(val.is_matrix())
         {
-            _init(val.info.ln_cnt, val.info.col_cnt, elem_cnt!=val.elem_cnt);
+            if(val.elem_cnt != elem_cnt) _init(val.info.ln_cnt, val.info.col_cnt);
+            else _para_init(val.info.ln_cnt, val.info.col_cnt);
             for(auto i=0; i<elem_cnt; ++i) info.mtx_val[i] = val.info.mtx_val[i];
             return true;
         }
@@ -706,17 +731,18 @@ public:
     {
         if(val.is_matrix())
         {
-            _init(val.info.ln_cnt, val.info.col_cnt);
+            reset();
+            _para_init(val.info.ln_cnt, val.info.col_cnt);
             info.mtx_val = std::move(val.info.mtx_val);
-            val._para_reset();
+            val.reset();
             return true;
         }
         else return false;
     }
-    void value_fill(double val) {for(auto i=0; i<elem_cnt; ++i) info.mtx_val[i] = val;}
-    uint64_t get_ln_cnt() {return info.ln_cnt;}
-    uint64_t get_col_cnt() {return info.col_cnt;}
-    uint64_t get_elem_cnt() {return elem_cnt;}
+    void value_fill(double val) { for(auto i=0; i<elem_cnt; ++i) info.mtx_val[i] = val; }
+    uint64_t get_ln_cnt() { return info.ln_cnt; }
+    uint64_t get_col_cnt() { return info.col_cnt; }
+    uint64_t get_elem_cnt() { return elem_cnt; }
     __declspec(property(get = get_ln_cnt)) uint64_t LN_CNT;
     __declspec(property(get = get_col_cnt)) uint64_t COL_CNT;
     __declspec(property(get = get_elem_cnt)) uint64_t ELEM_CNT;
@@ -735,7 +761,7 @@ public:
         if(is_matrix()) return matrix(mtx_transposition(info.mtx_val, info.ln_cnt, info.col_cnt), info.col_cnt, info.ln_cnt);
         else return matrix();
     }
-    mtx_extm extremum(uint64_t from_ln, uint64_t to_ln, uint64_t from_col, uint64_t to_col, uint64_t ln_dilation = 0, uint64_t col_dilation = 0, bool max_flag = true) {return mtx_extm_val(info.mtx_val, from_ln, to_ln, from_col, to_col, info.ln_cnt, info.col_cnt, ln_dilation, col_dilation, max_flag);}
+    mtx_extm extremum(uint64_t from_ln, uint64_t to_ln, uint64_t from_col, uint64_t to_col, uint64_t ln_dilation = 0, uint64_t col_dilation = 0, bool max_flag = true) { return mtx_extm_val(info.mtx_val, from_ln, to_ln, from_col, to_col, info.ln_cnt, info.col_cnt, ln_dilation, col_dilation, max_flag); }
     double atom()
     {
         if(elem_cnt==1 && is_matrix()) return info.mtx_val[IDX_ZERO];
@@ -761,16 +787,16 @@ public:
         if(ln_cnt==info.ln_cnt && col_cnt==info.col_cnt) return true;
         else return false;
     }
-    bool shape_valid(matrix &mtx_src) {return shape_valid(mtx_src.info.ln_cnt, mtx_src.info.col_cnt);}
+    bool shape_valid(matrix &mtx_src) { return shape_valid(mtx_src.info.ln_cnt, mtx_src.info.col_cnt); }
     matrix reshape(uint64_t ln_cnt, uint64_t col_cnt)
     {
         auto elem_cnt = ln_cnt * col_cnt;
         if(this->elem_cnt==elem_cnt && is_matrix()) return matrix(info.mtx_val, ln_cnt, col_cnt);
         else return matrix();
     }
-    matrix reshape(matrix &as_val) {return reshape(as_val.info.ln_cnt, as_val.info.col_cnt);}
-    double elem_sum(uint64_t from_ln, uint64_t to_ln, uint64_t from_col, uint64_t to_col, uint64_t ln_dilation = 0, uint64_t col_dilation = 0) {return mtx_sum(info.mtx_val, from_ln, to_ln, from_col, to_col, info.ln_cnt, info.col_cnt, ln_dilation, col_dilation);}
-    double elem_sum() {return elem_sum(0, info.ln_cnt-1, 0, info.col_cnt-1);}
+    matrix reshape(matrix &as_val) { return reshape(as_val.info.ln_cnt, as_val.info.col_cnt); }
+    double elem_sum(uint64_t from_ln, uint64_t to_ln, uint64_t from_col, uint64_t to_col, uint64_t ln_dilation = 0, uint64_t col_dilation = 0) { return mtx_sum(info.mtx_val, from_ln, to_ln, from_col, to_col, info.ln_cnt, info.col_cnt, ln_dilation, col_dilation); }
+    double elem_sum() { return elem_sum(0, info.ln_cnt-1, 0, info.col_cnt-1); }
     matrix abs()
     {
         auto cpy_ptr = mtx_copy(info.mtx_val, elem_cnt);
@@ -787,8 +813,8 @@ public:
         if(is_matrix()) return matrix(mtx_elem_cal_opt(info.mtx_val, para, info.ln_cnt, info.col_cnt, opt_idx), info.ln_cnt, info.col_cnt);
         else return matrix();
     }
-    matrix broadcast_add(double val) {return matrix(mtx_broadcast_add(info.mtx_val, elem_cnt, val), info.ln_cnt, info.col_cnt);}
-    matrix broadcast_subtract(double val, bool is_subtrahend = true) {return matrix(mtx_broadcast_subtract(info.mtx_val, elem_cnt, val, is_subtrahend), info.ln_cnt, info.col_cnt);}
+    matrix broadcast_add(double val) { return matrix(mtx_broadcast_add(info.mtx_val, elem_cnt, val), info.ln_cnt, info.col_cnt); }
+    matrix broadcast_subtract(double val, bool is_subtrahend = true) { return matrix(mtx_broadcast_subtract(info.mtx_val, elem_cnt, val, is_subtrahend), info.ln_cnt, info.col_cnt); }
     matrix pad(uint64_t ln_t = 0, uint64_t col_r = 0, uint64_t ln_b = 0, uint64_t col_l = 0, uint64_t ln_dist = 0, uint64_t col_dist = 0)
     {
         if(ln_t || col_r || ln_b || col_l || ln_dist || col_dist)
@@ -829,26 +855,26 @@ public:
             else return matrix(mtx_jacobi_iterate(info.mtx_val, val_b.info.mtx_val, info.ln_cnt), info.ln_cnt, info.col_cnt);
         else return matrix();
     }
-    matrix swap_dir_elem(uint64_t l_idx, uint64_t r_idx, bool is_ln = true) {return matrix(mtx_swap_elem(info.mtx_val, l_idx, r_idx, info.ln_cnt, info.col_cnt, is_ln), info.ln_cnt, info.col_cnt);}
+    matrix swap_dir_elem(uint64_t l_idx, uint64_t r_idx, bool is_ln = true) { return matrix(mtx_swap_elem(info.mtx_val, l_idx, r_idx, info.ln_cnt, info.col_cnt, is_ln), info.ln_cnt, info.col_cnt); }
     matrix adjugate(uint64_t ln, uint64_t col)
     {
         if(info.col_cnt == info.ln_cnt) return matrix(mtx_adjugate(info.mtx_val, ln, col, info.ln_cnt), info.ln_cnt, info.col_cnt);
         else return blank_matrix();
     }
-    uint64_t rank() {return mtx_rank(info.mtx_val, info.ln_cnt, info.col_cnt);}
-    double &pos_idx(uint64_t idx) {return info.mtx_val[idx];}
-    matrix operator+(matrix &val) {return matrix(mtx_add(info.mtx_val, val.info.mtx_val, info.ln_cnt, info.col_cnt), info.ln_cnt, info.col_cnt);}
-    matrix operator-(matrix &val) {return matrix(mtx_add(info.mtx_val, val.info.mtx_val, info.ln_cnt, info.col_cnt, true), info.ln_cnt, info.col_cnt);}
-    void operator+=(matrix &val) {new (this)matrix(std::move(*this + val));}
-    void operator-=(matrix &val) {new (this)matrix(std::move(*this - val));}
-    matrix operator*(matrix &val) {return matrix(mtx_mult(info.mtx_val, val.info.mtx_val, info.ln_cnt, info.col_cnt, val.info.ln_cnt, val.info.col_cnt), info.ln_cnt, val.info.col_cnt);}
-    void operator*=(matrix &val) {new (this)matrix(std::move(*this * val));}
-    matrix operator*(double val) {return matrix(mtx_mult(info.mtx_val, val, info.ln_cnt, info.col_cnt), info.ln_cnt, info.col_cnt);}
-    void operator*=(double val) {new (this)matrix(std::move(*this * val));}
-    friend matrix operator*(double val, matrix &r_val) {return r_val * val;}
-    void operator=(matrix &val) {new(this)matrix(val);}
-    void operator=(matrix &&val) {new(this)matrix(std::move(val));}
-    void operator=(std::initializer_list<std::initializer_list<double>> _vect) {new(this)matrix(_vect);}
+    uint64_t rank() { return mtx_rank(info.mtx_val, info.ln_cnt, info.col_cnt); }
+    double &pos_idx(uint64_t idx) { return info.mtx_val[idx]; }
+    matrix operator+(matrix &val) { return matrix(mtx_add(info.mtx_val, val.info.mtx_val, info.ln_cnt, info.col_cnt), info.ln_cnt, info.col_cnt); }
+    matrix operator-(matrix &val) { return matrix(mtx_add(info.mtx_val, val.info.mtx_val, info.ln_cnt, info.col_cnt, true), info.ln_cnt, info.col_cnt); }
+    void operator+=(matrix &val) { new (this)matrix(std::move(*this + val)); }
+    void operator-=(matrix &val) { new (this)matrix(std::move(*this - val)); }
+    matrix operator*(matrix &val) { return matrix(mtx_mult(info.mtx_val, val.info.mtx_val, info.ln_cnt, info.col_cnt, val.info.ln_cnt, val.info.col_cnt), info.ln_cnt, val.info.col_cnt); }
+    void operator*=(matrix &val) { new (this)matrix(std::move(*this * val)); }
+    matrix operator*(double val) { return matrix(mtx_mult(info.mtx_val, val, info.ln_cnt, info.col_cnt), info.ln_cnt, info.col_cnt); }
+    void operator*=(double val) { new (this)matrix(std::move(*this * val)); }
+    friend matrix operator*(double val, matrix &r_val) { return r_val * val; }
+    void operator=(matrix &val) { new(this)matrix(val); }
+    void operator=(matrix &&val) { new(this)matrix(std::move(val)); }
+    void operator=(std::initializer_list<std::initializer_list<double>> _vect) { new(this)matrix(_vect); }
     bool operator==(matrix &val)
     {
         if(shape_valid(val))
@@ -859,8 +885,8 @@ public:
         }
         else return false;
     }
-    bool operator!=(matrix &val) {return !(*this == val);}
-    double *operator[](uint64_t ln) {return info.mtx_val.get() + ln * info.col_cnt;}
+    bool operator!=(matrix &val) { return !(*this == val); }
+    double *operator[](uint64_t ln) { return info.mtx_val.get() + ln * info.col_cnt; }
     friend std::ostream &operator<<(std::ostream &output, matrix &out_matrix)
     {
         if(out_matrix.is_matrix()) for(auto i=0; i<out_matrix.elem_cnt; ++i)
@@ -871,13 +897,7 @@ public:
         }
         return output;
     }
-    void reset()
-    {
-        info.ln_cnt = 0;
-        info.col_cnt = 0;
-        mtx_reset(info.mtx_val);
-    }
-    // ~matrix() {_para_reset();}
+    ~matrix() { reset(); }
 };
 
 MATRIX_END

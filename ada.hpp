@@ -9,6 +9,12 @@ public:
     double dRho = 0.95;
     double dEpsilon = 1e-6;
     vect vecPreDelta;
+    friend std::ostream& operator<<(std::ostream &output, AdaDeltaVect &val)
+    {
+        output << "E[Gradient] = " << val.vecExpGrad << "; E[Delta] = " << val.vecExpDelta << std::endl;
+        output<< "Rho = " << val.dRho << "; Delta = " << val.vecPreDelta << std::endl;
+        return output;
+    }
     AdaDeltaVect(){}
     AdaDeltaVect(AdaDeltaVect &asSrc) {*this = asSrc;}
     AdaDeltaVect(AdaDeltaVect &&asSrc) {*this = std::move(asSrc);}
@@ -56,6 +62,12 @@ public:
     double dRho = 0.95;
     double dEpsilon = 1e-6;
     double dPreDelta = 0;
+    friend std::ostream& operator<<(std::ostream &output, AdaDeltaVal &val)
+    {
+        output << "E[Gradient] = " << val.dExpGrad << "; E[Delta] = " << val.dExpDelta << std::endl;
+        output<< "Rho = " << val.dRho << "; Delta = " << val.dPreDelta << std::endl;
+        return output;
+    }
     AdaDeltaVal(double dRhoVal = 0.95, double dEpsilonVal = 1e-6) : dRho(dRhoVal), dEpsilon(dEpsilonVal) {}
     void operator=(AdaDeltaVal &adSrc)
     {

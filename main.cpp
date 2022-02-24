@@ -5,6 +5,7 @@
 #include "thread_pool"
 
 using namespace std;
+using namespace mtx;
 using namespace dataset;
 using namespace neunet;
 using namespace layer;
