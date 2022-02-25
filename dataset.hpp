@@ -178,6 +178,11 @@ public:
      * @param   bool_preprocess [Input] Data unit's element bool signal
      */
     MNIST(bool bool_preprocess) : is_bool(bool_preprocess) {}
+    void reset()
+    {
+        elem.reset();
+        elem_lbl.reset();
+    }
     uint64_t size()
     {
         if(elem[elem.size()-1].size() == elem[IDX_ZERO].size()) return elem[IDX_ZERO].size() * elem.size();
@@ -203,7 +208,7 @@ public:
             _orgn[lbl_val][IDX_ZERO] = 1;
             return _orgn;
         }
-        else return vect::blank_matrix();
+        else return blank_vect;
     }
     // Get origin vector sequence
     vect_t<vect> orgn()
@@ -352,7 +357,7 @@ public:
             return true;
         }
     }
-    // ~MNIST() {}
+    ~MNIST() { reset(); }
 };
 
 DATASET_END

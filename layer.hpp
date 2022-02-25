@@ -38,6 +38,7 @@ struct Layer
     }
     virtual void ForwProp() {}
     virtual void BackProp() {}
+    ~Layer() {}
 };
 
 struct LayerFC : Layer
@@ -72,6 +73,15 @@ struct LayerFC : Layer
         else vecLayerWeight = _FC AdaDeltaUpdateWeight(vecLayerWeight, vecGradWeight, advLayerDelta);
         return setGradBack;
     }
+
+    void reset()
+    {
+        vecLayerWeight.reset();
+        setLayerInput.reset();
+        setLayerOutput.reset();
+        advLayerDelta.reset();
+    }
+    ~LayerFC() { reset(); }
 };
 
 struct LayerFCBN : Layer
@@ -119,6 +129,9 @@ struct LayerFCBN : Layer
         }
         return setGradBack;
     }
+
+    void reset() { setLayerInput.reset(); }
+    ~LayerFCBN() { reset(); }
 };
 
 struct LayerConv : Layer
@@ -164,6 +177,14 @@ struct LayerConv : Layer
         else tenKernel = _CONV AdaDeltaUpdateKernel(tenKernel, tenGradKernel, advLayerDelta);
         return setGradBack;
     }
+
+    void reset()
+    {
+        setLayerInput.reset();
+        setLayerOutput.reset();
+        advLayerDelta.reset();
+    }
+    ~LayerConv() { reset(); }
 };
 
 struct LayerConvBN : Layer
@@ -211,6 +232,16 @@ struct LayerConvBN : Layer
         }
         return setGradBack;
     }
+
+    void reset()
+    {
+        vecBeta.reset();
+        vecGamma.reset();
+        setLayerInput.reset();
+        advBeta.reset();
+        advGamma.reset();
+    }
+    ~LayerConvBN() { reset(); }
 };
 
 struct LayerPool : Layer
@@ -252,6 +283,13 @@ struct LayerPool : Layer
         return Activate(setLayerOutput);
     }
     set<feature> BackProp(set<feature> &setGrad) { return _CONV Pool(Derivative(setLayerOutput, setGrad), PoolUpType(iPoolType), false, setLayerInput, iLayerFilterLnCnt, iLayerFilterColCnt, iLayerLnStride, iLayerColStride, iLayerLnDilation, iLayerColDilation); }
+
+    void reset()
+    {
+        setLayerInput.reset();
+        setLayerOutput.reset();
+    }
+    ~LayerPool() { reset(); }
 };
 
 struct LayerTrans : Layer

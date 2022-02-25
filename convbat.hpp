@@ -101,7 +101,14 @@ struct ConvBN : BN
     }
     void operator=(ConvBN &ConvBNVal) {new(this)ConvBN(ConvBNVal);}
     void operator=(ConvBN &&ConvBNVal) {new(this)ConvBN(std::move(ConvBNVal));}
-    // ~ConvBN() {}
+    void reset()
+    {
+        vecMiuBeta.reset();
+        vecSigmaSqr.reset();
+        setBarX.reset();
+        setY.reset();
+    }
+    ~ConvBN() { reset(); }
 };
 
 vect BNInitScaleShift(uint64_t iChannCnt, double dFillVal)

@@ -654,7 +654,12 @@ public:
     static matrix blank_matrix() { return matrix(); }
     bool is_matrix() { return info.col_cnt && info.ln_cnt && info.mtx_val && elem_cnt && elem_cnt==info.ln_cnt*info.col_cnt; }
     MATRIX ptr() { return mtx_copy(info.mtx_val, info.ln_cnt, info.col_cnt); }
-    matrix() {}
+    matrix()
+    {
+        info.ln_cnt = 0;
+        info.col_cnt = 0;
+        info.mtx_val = nullptr;
+    }
     matrix(uint64_t ln_cnt, uint64_t col_cnt, bool rand = false, double rand_boundry_first = 0, double rand_boundry_second = 0, double rand_acc = 1e-5)
     {
         if(ln_cnt && col_cnt)

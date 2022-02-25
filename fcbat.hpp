@@ -85,7 +85,14 @@ struct FCBN : BN
     }
     void operator=(FCBN &FCBNVal) {new(this)FCBN(FCBNVal);}
     void operator=(FCBN &&FCBNVal) {new(this)FCBN(std::move(FCBNVal));}
-    // ~FCBN() {}
+    void reset()
+    {
+        vecMiuBeta.reset();
+        vecSigmaSqr.reset();
+        setBarX.reset();
+        setY.reset();
+    }
+    ~FCBN() { reset(); }
 };
 
 FCBN BNTrain(set<vect> &setInput, double dBeta = 0, double dGamma = 1, double dEpsilon = 1e-10)

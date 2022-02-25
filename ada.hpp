@@ -50,7 +50,13 @@ public:
         vecExpDelta = dRho * vecExpDelta + (1 - dRho) * vecPreDelta.elem_cal_opt(2, MATRIX_ELEM_POW);
         return vecPreDelta;
     }
-    // ~AdaDeltaVect() {}
+    void reset()
+    {
+        vecExpDelta.reset();
+        vecExpGrad.reset();
+        vecPreDelta.reset();
+    }
+    ~AdaDeltaVect() { reset(); }
 };
 
 struct AdaDeltaVal
@@ -104,7 +110,7 @@ vect AdaDeltaUpdateWeight(vect &vecWeight, vect &vecGradLossToWeight, ada::AdaDe
     else return blank_vect;
 }
 
-double BNAdaDeltaUpdateScaleShift(double dGammaBeta, double dGradLossToScaleShift, ada::AdaDeltaVal advCurrDelta) {return dGammaBeta - advCurrDelta.Delta(dGradLossToScaleShift);}
+double BNAdaDeltaUpdateScaleShift(double dGammaBeta, double dGradLossToScaleShift, ada::AdaDeltaVal advCurrDelta) { return dGammaBeta - advCurrDelta.Delta(dGradLossToScaleShift); }
 
 FC_END
 

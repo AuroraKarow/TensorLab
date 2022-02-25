@@ -100,17 +100,24 @@ private:
     bool refresh_chann() {return (refresh_chann(BMIO_R) && refresh_chann(BMIO_G) && refresh_chann(BMIO_B) && refresh_chann(BMIO_A));}
 public:
     bitmap() {}
-    bool set_size(uint64_t ln_cnt, uint64_t col_cnt){return init_chann(ln_cnt, col_cnt);}
-    bool set_raw(BMIO_CHANN &R_src, BMIO_CHANN &G_src, BMIO_CHANN &B_src, BMIO_CHANN &A_src, bool move_flag = false) {return set_chann(R_src, G_src, B_src, A_src, move_flag);}
-    uint64_t ln_cnt() {return R.LN_CNT;}
-    uint64_t col_cnt() {return R.COL_CNT;}
+    bool set_size(uint64_t ln_cnt, uint64_t col_cnt) { return init_chann(ln_cnt, col_cnt); }
+    bool set_raw(BMIO_CHANN &R_src, BMIO_CHANN &G_src, BMIO_CHANN &B_src, BMIO_CHANN &A_src, bool move_flag = false) { return set_chann(R_src, G_src, B_src, A_src, move_flag); }
+    void reset()
+    {
+        R.reset();
+        G.reset();
+        B.reset();
+        A.reset();
+    }
+    uint64_t ln_cnt() { return R.LN_CNT; }
+    uint64_t col_cnt() { return R.COL_CNT; }
     __declspec (property (get=ln_cnt)) uint64_t HEIGHT;
     __declspec (property (get=col_cnt)) uint64_t WIDTH;
-    bool img_valid() {return HEIGHT && WIDTH && R.shape_valid(G) && G.shape_valid(B);}
-    bitmap(bitmap &val) {*this = val;}
-    bitmap(bitmap &&val) {*this = std::move(val);}
-    bitmap(BMIO_RAW &&vec) {if(vec.size() == BMIO_RGB_CNT) set_chann(vec[BMIO_R], vec[BMIO_G], vec[BMIO_B], vec[BMIO_A], true);}
-    bitmap(BMIO_RAW &vec) {if(vec.size() == BMIO_RGB_CNT) set_chann(vec[BMIO_R], vec[BMIO_G], vec[BMIO_B], vec[BMIO_A]);}
+    bool img_valid() { return HEIGHT && WIDTH && R.shape_valid(G) && G.shape_valid(B); }
+    bitmap(bitmap &val) { *this = val; }
+    bitmap(bitmap &&val) { *this = std::move(val); }
+    bitmap(BMIO_RAW &&vec) { if(vec.size() == BMIO_RGB_CNT) set_chann(vec[BMIO_R], vec[BMIO_G], vec[BMIO_B], vec[BMIO_A], true); }
+    bitmap(BMIO_RAW &vec) { if(vec.size() == BMIO_RGB_CNT) set_chann(vec[BMIO_R], vec[BMIO_G], vec[BMIO_B], vec[BMIO_A]); }
     bool load_img(BMIO_WSTR dir, bool rgba = false)
     {
         GDI_STARTUP(&gph_token, &st_gph, nullptr);
@@ -135,9 +142,9 @@ public:
             }
         return true;
     }
-    bool load_img(BMIO_STR dir, bool rgba = false) {return load_img(BMIO_CHARSET(dir), rgba);}
-    bitmap(BMIO_STR dir, bool rgba = false) {load_img(dir, rgba);}
-    bitmap(BMIO_WSTR dir, bool rgba = false) {load_img(dir, rgba);}
+    bool load_img(BMIO_STR dir, bool rgba = false) { return load_img(BMIO_CHARSET(dir), rgba); }
+    bitmap(BMIO_STR dir, bool rgba = false) { load_img(dir, rgba); }
+    bitmap(BMIO_WSTR dir, bool rgba = false) { load_img(dir, rgba); }
     bool save_img(BMIO_WSTR dir_root, BMIO_WSTR name, uint64_t extend, bool rgba = false, wchar_t div_syb = L'\\')
     {
         if(img_valid())
@@ -200,7 +207,7 @@ public:
         }
         else return false;
     }
-    bool save_img(BMIO_STR dir_root, BMIO_STR name, uint64_t extend, bool rgba = false, char div_syb = '\\') {return save_img(BMIO_CHARSET(dir_root), BMIO_CHARSET(name), extend, rgba, div_syb);}
+    bool save_img(BMIO_STR dir_root, BMIO_STR name, uint64_t extend, bool rgba = false, char div_syb = '\\') { return save_img(BMIO_CHARSET(dir_root), BMIO_CHARSET(name), extend, rgba, div_syb); }
     BMIO_CHANN gray()
     {
         if(img_valid()) return BMIO_GRAY_WEIGHT_R * R + BMIO_GRAY_WEIGHT_G * G + BMIO_GRAY_WEIGHT_B * B;
@@ -229,11 +236,11 @@ public:
         if(rgba) raw_vec[BMIO_A] = A;
         return raw_vec;
     }
-    bool operator==(bitmap &val) {return R==val.R && G==val.G && B==val.B && A==val.A;}
-    bool operator!=(bitmap &val) {return !(*this == val);}
-    void operator=(bitmap &val) {set_chann(val.R, val.G, val.B, val.A);}
-    void operator=(bitmap &&val) {set_chann(val.R, val.G, val.B, val.A, true);}
-    // ~bitmap() {}
+    bool operator==(bitmap &val) { return R==val.R && G==val.G && B==val.B && A==val.A; }
+    bool operator!=(bitmap &val) { return !(*this == val); }
+    void operator=(bitmap &val) { set_chann(val.R, val.G, val.B, val.A); }
+    void operator=(bitmap &&val) { set_chann(val.R, val.G, val.B, val.A, true); }
+    ~bitmap() { reset(); }
 };
 
 BMIO_END
