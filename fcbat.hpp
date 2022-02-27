@@ -69,22 +69,24 @@ struct FCBN : BN
     set<vect> setBarX;
     set<vect> setY;
     FCBN(){}
-    FCBN(FCBN &FCBNVal) 
+    void ValueCopy(FCBN &FCBNVal)
     {
         vecMiuBeta = FCBNVal.vecMiuBeta;
         vecSigmaSqr = FCBNVal.vecSigmaSqr;
         setBarX = FCBNVal.setBarX;
         setY = FCBNVal.setY;
     }
-    FCBN(FCBN &&FCBNVal)
+    void ValueMove(FCBN &&FCBNVal)
     {
         vecMiuBeta = std::move(FCBNVal.vecMiuBeta);
         vecSigmaSqr = std::move(FCBNVal.vecSigmaSqr);
         setBarX = std::move(FCBNVal.setBarX);
         setY = std::move(FCBNVal.setY);
     }
-    void operator=(FCBN &FCBNVal) {new(this)FCBN(FCBNVal);}
-    void operator=(FCBN &&FCBNVal) {new(this)FCBN(std::move(FCBNVal));}
+    FCBN(FCBN &FCBNVal) { ValueCopy(FCBNVal); }
+    FCBN(FCBN &&FCBNVal) { ValueMove(std::move(FCBNVal)); }
+    void operator=(FCBN &FCBNVal) { ValueCopy(FCBNVal); }
+    void operator=(FCBN &&FCBNVal) { ValueMove(std::move(FCBNVal)); }
     void reset()
     {
         vecMiuBeta.reset();

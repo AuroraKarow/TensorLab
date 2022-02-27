@@ -6,14 +6,6 @@ uint64_t num_cnt(uint64_t from, uint64_t to)
     else return 0;
 }
 
-template<typename CT, typename PT> const std::shared_ptr<CT> instance_derive_ptr(std::shared_ptr<PT> &pBaseInstance) {return std::dynamic_pointer_cast<CT>(pBaseInstance);}
-
-template<typename T> std::shared_ptr<T>instance_to_ptr(T &&val) { return std::make_shared<T>( std::move(val)); }
-
-template<typename T> std::shared_ptr<T>instance_to_ptr(T &val) {return instance_to_ptr<T>( std::move(val)); }
-
-template<typename T> T &instance_ptr_quote(std::shared_ptr<T> src) { return *src.get(); }
-
 template<typename _T> void quick_sort(std::unique_ptr<_T[]> &seq_val, uint64_t begin, uint64_t end, bool asc = true, std::function<bool(_T&, _T&)>func_comp = [](_T &_first, _T &_second){return _first > _second;})
 {
     if(end == begin) return;
@@ -47,16 +39,8 @@ template<typename _T> void quick_sort(std::unique_ptr<_T[]> &seq_val, uint64_t b
 }
 
 void reset_ptr() {}
-template<typename T> void reset_ptr(T& val)
-{
-    if(val)
-    {
-        val.reset();
-        val.release();
-        val = nullptr;
-    }
-}
-template<typename arg, typename...args> void reset_ptr(arg& first, args&...others)
+template<typename T> void reset_ptr(std::unique_ptr<T> &val) { if(val) val.reset(); }
+template<typename arg, typename...args> void reset_ptr(arg &&first, args &&...others)
 {
     reset_ptr(first);
     reset_ptr(others...);
@@ -107,7 +91,7 @@ protected:
     _Ty temp;
 public:
     net_queue(uint64_t _size = 0) {realloc_inc_ptr(_size);}
-    net_queue(net_queue &cpy_val)
+    void value_copy(net_queue &cpy_val)
     {
         if(cpy_val.len)
         {
@@ -120,13 +104,15 @@ public:
             for(auto i=0; i<len; ++i) _ptr[i] = cpy_val._ptr[i];
         }
     }
-    net_queue(net_queue &&mov_val)
+    void value_move(net_queue &&mov_val)
     {
         reset();
         _ptr = std::move(mov_val._ptr);
         len = mov_val.len;
         mov_val.reset();
     }
+    net_queue(net_queue &cpy_val) { value_copy(cpy_val); }
+    net_queue(net_queue &&mov_val) { value_move(std::move(mov_val)); }
     bool init(uint64_t _size = 1)
     {
         if(_size > 0)
@@ -239,8 +225,8 @@ public:
         else return false;
     }
     bool operator!=(net_queue &val) { return !(val == *this); }
-    void operator=(net_queue &val) { new(this)net_queue(val); }
-    void operator=(net_queue &&val) { new(this)net_queue(std::move(val)); }
+    void operator=(net_queue &val) { value_copy(val); }
+    void operator=(net_queue &&val) { value_move(std::move(val)); }
     friend std::ostream& operator<<(std::ostream &output, net_queue &val)
     {
         for(auto i=0; i<val.len; ++i)
@@ -327,8 +313,9 @@ public:
     }
     net_list() {}
     bool empty() {return !len;}
-    net_list(net_list &src) : len(src.len)
+    void value_copy(net_list &src)
     {
+        len = src.len;
         if(len)
         {
             clear();
@@ -347,8 +334,9 @@ public:
             }
         }
     }
-    net_list(net_list &&src): len(src.len)
+    void value_move(net_list &&src)
     {
+        len = src.len;
         clear();
         head = std::move(src.head);
         tail = src.tail;
@@ -356,6 +344,8 @@ public:
         itr_idx = src.itr_idx;
         src.reset();
     }
+    net_list(net_list &src) { value_copy(src); }
+    net_list(net_list &&src) { value_move(std::move(src)); }
     template<typename...args>bool insert(uint64_t idx, args &&...src)
     {
         if(idx > len) return false;
@@ -475,8 +465,8 @@ public:
         if(idx < len) return idx_node(idx) -> elem;
         else return temp;
     }
-    void operator=(net_list &src) { new (this)net_list(src); }
-    void operator=(net_list &&src) { new (this)net_list(std::move(src)); }
+    void operator=(net_list &src) { value_copy(src); }
+    void operator=(net_list &&src) { value_move(std::move(src)); }
     bool operator==(net_list &src)
     {
         if(len == src.len)
@@ -534,16 +524,16 @@ protected:
     kv kv_temp;
 public:
     net_map() {}
-    net_map(net_map &src) { val = src.val; }
-    net_map(net_map &&src) { val = std::move(src.val); }
+    net_map(net_map &src) { val.value_copy(src.val); }
+    net_map(net_map &&src) { val.value_move(std::move(src.val)); }
     void reset() { val.reset(); }
     uint64_t size() { return val.size(); }
-    uint64_t find_idx(_K &&key)
+    int find_idx(_K &&key)
     {
         for(auto i=0; i<size(); ++i) if(val[i].key == key) return i;
-        return 0;
+        return -1;
     }
-    uint64_t find_idx(_K &key) { return find_idx(std::move(key)); }
+    int find_idx(_K &key) { return find_idx(std::move(key)); }
     net_list<_K> find_key(_V &&value)
     {
         net_list<_K> key_set;
@@ -553,7 +543,7 @@ public:
     net_list<_K> find_key(_V &value) { return find_key(std::move(value)); }
     bool insert(_K &&key, _V &&value)
     {
-        if(this->find_idx(key) || val[IDX_ZERO].key==key) return false;
+        if(this->find_idx(key)>=0 || val[IDX_ZERO].key==key) return false;
         else
         {
             kv in_temp;
@@ -578,11 +568,12 @@ public:
     _V &operator[](_K &&key) 
     {
         auto tar_idx = find_idx(key);
-        return val[tar_idx].value;
+        if(tar_idx < 0) return v_temp;
+        else return val[tar_idx].value;
     }
     _V &operator[](_K &key) { return this->operator[](std::move(key)); }
-    void operator=(net_map &src) { new(this)net_map(src); }
-    void operator=(net_map &&src) { new(this)net_map(std::move(src)); }
+    void operator=(net_map &src) { val.value_copy(src.val); }
+    void operator=(net_map &&src) { val.value_move(std::move(src.val)); }
     bool operator==(net_map &val) { return val == val.val; }
     bool operator!=(net_map &val) { return val != val.val; }
     friend std::ostream &operator<<(std::ostream &output, net_map &out_val)

@@ -16,6 +16,4 @@
 #define DV                  derivative
 #define MRG_CHANN           merge_channel
 
-#define INSTANCE_DERIVE     bagrt::instance_derive_ptr
-#define INSTANCE_TO_PTR(_V) bagrt::instance_to_ptr(_V)
-#define INSTANCE_QUOTE(_V)  bagrt::instance_ptr_quote(_V)
+#define INSTANCE_DERIVE     std::dynamic_pointer_cast

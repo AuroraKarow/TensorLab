@@ -75,6 +75,7 @@ public:
         return output;
     }
     AdaDeltaVal(double dRhoVal = 0.95, double dEpsilonVal = 1e-6) : dRho(dRhoVal), dEpsilon(dEpsilonVal) {}
+    AdaDeltaVal(AdaDeltaVal &adSrc) { *this = adSrc; }
     void operator=(AdaDeltaVal &adSrc)
     {
         dExpGrad = adSrc.dExpGrad;

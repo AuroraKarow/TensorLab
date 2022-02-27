@@ -15,45 +15,45 @@ class NetBNMNIST final : public NetClassify
 private:
     NET_MAP<uint64_t, set<BN_PTR>> mapBNData;
 
-    set<vect> ForwProp(set<feature> &setInput, uint64_t iMiniBatchIdx = 0)
+    set<vect> ForwProp(set<feature> &setInput)
     {
         set<vect> setOutput;
         set<feature> setTemp;
-        for(auto i=0Ui64; i<lsLayer.size(); ++i) switch (lsLayer[i].get() -> iLayerType)
+        for(auto i=0Ui64; i<lsLayer.size(); ++i) switch (lsLayer[i] -> iLayerType)
         {
         case FC:
-            setOutput = INSTANCE_DERIVE<LAYER_FC>(lsLayer[i]).get() -> ForwProp(setOutput);
+            setOutput = INSTANCE_DERIVE<LAYER_FC>(lsLayer[i]) -> ForwProp(setOutput);
             if(setOutput.size()) break;
             else return blank_vect_seq;
         case FC_BN:
-            setOutput = INSTANCE_DERIVE<LAYER_FC_BN>(lsLayer[i]).get() -> ForwProp(setOutput, INSTANCE_QUOTE(INSTANCE_DERIVE<BN_FC>(mapBNData[i][iMiniBatchIdx])));
+            setOutput = INSTANCE_DERIVE<LAYER_FC_BN>(lsLayer[i]) -> ForwProp(setOutput);
             if(setOutput.size()) break;
             else return blank_vect_seq;
         case CONV:
-            if(i) setTemp = INSTANCE_DERIVE<LAYER_CONV>(lsLayer[i]).get() -> ForwProp(setTemp);
-            else setTemp = INSTANCE_DERIVE<LAYER_CONV>(lsLayer[i]).get() -> ForwProp(setInput, true);
+            if(i) setTemp = INSTANCE_DERIVE<LAYER_CONV>(lsLayer[i]) -> ForwProp(setTemp);
+            else setTemp = INSTANCE_DERIVE<LAYER_CONV>(lsLayer[i]) -> ForwProp(setInput, true);
             if(setTemp.size()) break;
             else return blank_vect_seq;
         case CONV_BN:
-            if(i) setTemp = INSTANCE_DERIVE<LAYER_CONV_BN>(lsLayer[i]).get() -> ForwProp(setTemp, INSTANCE_QUOTE(INSTANCE_DERIVE<BN_CONV>(mapBNData[i][iMiniBatchIdx])));
-            else setTemp = INSTANCE_DERIVE<LAYER_CONV_BN>(lsLayer[i]).get() -> ForwProp(setInput, INSTANCE_QUOTE(INSTANCE_DERIVE<BN_CONV>(mapBNData[i][iMiniBatchIdx])), true);
+            if(i) setTemp = INSTANCE_DERIVE<LAYER_CONV_BN>(lsLayer[i]) -> ForwProp(setTemp);
+            else setTemp = INSTANCE_DERIVE<LAYER_CONV_BN>(lsLayer[i]) -> ForwProp(setInput, true);
             if(setTemp.size()) break;
             else return blank_vect_seq;
         case POOL:
-            setTemp = INSTANCE_DERIVE<LAYER_POOL>(lsLayer[i]).get() -> ForwProp(setTemp);
+            setTemp = INSTANCE_DERIVE<LAYER_POOL>(lsLayer[i]) -> ForwProp(setTemp);
             if(setTemp.size()) break;
             else return blank_vect_seq;
         case TRANS:
-            if(INSTANCE_DERIVE<LAYER_TRANS>(lsLayer[i]).get()->bFeatToVec)
+            if(INSTANCE_DERIVE<LAYER_TRANS>(lsLayer[i]) -> bFeatToVec)
             {
-                if(i) setOutput = INSTANCE_DERIVE<LAYER_TRANS>(lsLayer[i]).get() -> ForwProp(setTemp);
-                else setOutput = INSTANCE_DERIVE<LAYER_TRANS>(lsLayer[i]).get() -> ForwProp(setInput);
+                if(i) setOutput = INSTANCE_DERIVE<LAYER_TRANS>(lsLayer[i]) -> ForwProp(setTemp);
+                else setOutput = INSTANCE_DERIVE<LAYER_TRANS>(lsLayer[i]) -> ForwProp(setInput);
                 if(setOutput.size()) break;
                 else return blank_vect_seq;
             }
             else
             {
-                setTemp = INSTANCE_DERIVE<LAYER_TRANS>(lsLayer[i]).get() -> ForwProp(setOutput);
+                setTemp = INSTANCE_DERIVE<LAYER_TRANS>(lsLayer[i]) -> ForwProp(setOutput);
                 if(setTemp.size()) break;
                 else return blank_vect_seq;
             }
@@ -65,40 +65,48 @@ private:
     {
         set<vect> setGradVec;
         set<feature> setGradFt;
-        for(auto i=lsLayer.size()-1; i>0; --i) switch (lsLayer[i].get() -> iLayerType)
+        for(auto i=lsLayer.size()-1; i>0; --i) switch (lsLayer[i] -> iLayerType)
         {
         case FC:
-            if(i==lsLayer.size()-1) setGradVec = INSTANCE_DERIVE<LAYER_FC>(lsLayer[i]).get() -> BackProp(setOutput, Origin);
-            else setGradVec = INSTANCE_DERIVE<LAYER_FC>(lsLayer[i]).get() -> BackProp(setGradVec);
+            if(i==lsLayer.size()-1) setGradVec = INSTANCE_DERIVE<LAYER_FC>(lsLayer[i]) -> BackProp(setOutput, Origin);
+            else setGradVec = INSTANCE_DERIVE<LAYER_FC>(lsLayer[i]) -> BackProp(setGradVec);
             if(setGradVec.size()) break;
             else return false;
         case FC_BN:
-            if(i==lsLayer.size()-1) setGradVec = INSTANCE_DERIVE<LAYER_FC_BN>(lsLayer[i]).get() -> BackProp(setOutput, INSTANCE_QUOTE(INSTANCE_DERIVE<BN_FC>(mapBNData[i][iMiniBatchIdx])), Origin);
-            else setGradVec = INSTANCE_DERIVE<LAYER_FC_BN>(lsLayer[i]).get() -> BackProp(setGradVec, INSTANCE_QUOTE(INSTANCE_DERIVE<BN_FC>(mapBNData[i][iMiniBatchIdx])));
-            if(setGradVec.size()) break;
+            if(i==lsLayer.size()-1) setGradVec = INSTANCE_DERIVE<LAYER_FC_BN>(lsLayer[i]) -> BackProp(setOutput, Origin);
+            else setGradVec = INSTANCE_DERIVE<LAYER_FC_BN>(lsLayer[i]) -> BackProp(setGradVec);
+            if(setGradVec.size())
+            {
+                mapBNData[i][iMiniBatchIdx] = std::make_shared<BN_FC>(std::move(INSTANCE_DERIVE<LAYER_FC_BN>(lsLayer[i])->BNData));
+                break;
+            }
             else return false;
         case CONV:
-            setGradFt = INSTANCE_DERIVE<LAYER_CONV>(lsLayer[i]).get() -> BackProp(setGradFt);
+            setGradFt = INSTANCE_DERIVE<LAYER_CONV>(lsLayer[i]) -> BackProp(setGradFt);
             if(setGradFt.size()) break;
             else return false;
         case CONV_BN:
-            setGradFt = INSTANCE_DERIVE<LAYER_CONV_BN>(lsLayer[i]).get() -> ForwProp(setGradFt, INSTANCE_QUOTE(INSTANCE_DERIVE<BN_CONV>(mapBNData[i][iMiniBatchIdx])));
-            if(setGradFt.size()) break;
+            setGradFt = INSTANCE_DERIVE<LAYER_CONV_BN>(lsLayer[i]) -> ForwProp(setGradFt);
+            if(setGradFt.size())
+            {
+                mapBNData[i][iMiniBatchIdx] = std::make_shared<BN_CONV>(std::move(INSTANCE_DERIVE<LAYER_CONV_BN>(lsLayer[i])->BNData));
+                break;
+            }
             else return false;
         case POOL:
-            setGradFt = INSTANCE_DERIVE<LAYER_POOL>(lsLayer[i]).get() -> BackProp(setGradFt);
+            setGradFt = INSTANCE_DERIVE<LAYER_POOL>(lsLayer[i]) -> BackProp(setGradFt);
             if(setGradFt.size()) break;
             else return false;
         case TRANS:
-            if(INSTANCE_DERIVE<LAYER_TRANS>(lsLayer[i]).get()->bFeatToVec)
+            if(INSTANCE_DERIVE<LAYER_TRANS>(lsLayer[i]) -> bFeatToVec)
             {
-                setGradFt = INSTANCE_DERIVE<LAYER_TRANS>(lsLayer[i]).get() -> BackProp(setGradVec);
+                setGradFt = INSTANCE_DERIVE<LAYER_TRANS>(lsLayer[i]) -> BackProp(setGradVec);
                 if(setGradFt.size()) break;
                 else return false;
             }
             else
             {
-                setGradVec = INSTANCE_DERIVE<LAYER_TRANS>(lsLayer[i]).get() -> BackProp(setGradFt);
+                setGradVec = INSTANCE_DERIVE<LAYER_TRANS>(lsLayer[i]) -> BackProp(setGradFt);
                 if(setGradVec.size()) break;
                 else return false;
             }
@@ -106,11 +114,14 @@ private:
         }
         return true;
     }
+    void ValueAssign(NetBNMNIST &netSrc) {}
 public:
-    NetBNMNIST(NetBNMNIST &netSrc) : NetClassify(netSrc), mapBNData(netSrc.mapBNData) { ValueAssign(netSrc); }
-    NetBNMNIST(NetBNMNIST &&netSrc) : NetClassify(move(netSrc)), mapBNData(move(netSrc.mapBNData)) { ValueAssign(netSrc); }
-    void operator=(NetBNMNIST &netSrc) { new (this)NetBNMNIST(netSrc); }
-    void operator=(NetBNMNIST &&netSrc) { new (this)NetBNMNIST(move(netSrc)); }
+    void ValueCopy(NetBNMNIST &netSrc) { mapBNData = netSrc.mapBNData; }
+    void ValueMove(NetBNMNIST &&netSrc) { mapBNData = move(netSrc.mapBNData); }
+    NetBNMNIST(NetBNMNIST &netSrc) : NetClassify(netSrc) { ValueCopy(netSrc); }
+    NetBNMNIST(NetBNMNIST &&netSrc) : NetClassify(move(netSrc)) { ValueMove(move(netSrc)); }
+    void operator=(NetBNMNIST &netSrc) { NetClassify::operator=(netSrc);  ValueCopy(netSrc); }
+    void operator=(NetBNMNIST &&netSrc) { NetClassify::operator=(move(netSrc));  ValueMove(move(netSrc)); }
 
     NetBNMNIST(uint64_t iDscType = GD_BGD, double dNetAcc = 1e-2, bool bShowIter = true) : NetClassify(iDscType, dNetAcc, bShowIter) {}
     /* FC
@@ -130,30 +141,28 @@ public:
     template<typename LayerType, typename ... Args,  typename = enable_if_t<is_base_of_v<Layer, LayerType>>> bool AddLayer(Args&& ... pacArgs)
     {
         auto lyrCurrTemp = std::make_shared<LayerType>(pacArgs...);
-        if(lyrCurrTemp.get()->iLayerType==FC_BN || lyrCurrTemp.get()->iLayerType == CONV_BN) mapBNData.insert(lsLayer.size(), set<BN_PTR>());
+        if(lyrCurrTemp->iLayerType==FC_BN || lyrCurrTemp->iLayerType == CONV_BN) mapBNData.insert(lsLayer.size(), set<BN_PTR>());
         return lsLayer.emplace_back(lyrCurrTemp);
     }
     void Run(MNIST &mnistDataset)
         {
-            for(auto i=0; i<mapBNData.size(); ++i)
-            {
-                mapBNData.index(i).value.init(mnistDataset.elem.size());
-                for(auto j=0; j<mnistDataset.elem.size(); ++j)
-                    if(lsLayer[mapBNData.index(i).key].get()->iLayerType == FC_BN) mapBNData.index(i).value[j] = make_shared<BN_FC>();
-                    else mapBNData.index(i).value[j] = make_shared<BN_CONV>();
-            }
-            auto bTrainFlag = false;
+            for(auto i=0; i<mapBNData.size(); ++i) mapBNData.index(i).value.init(mnistDataset.elem.size());
             auto setOrigin = mnistDataset.orgn();
             set<vect> setPreOutput;
             vect_t<vect> batPreOutput;
-            do for(auto i=0; i<mnistDataset.elem.size(); ++i)
+            for(auto i=0; i<mnistDataset.elem.size(); ++i)
             {
+                auto bTrainFlag = false;
+                do 
+                {
                 auto setOutput = ForwProp(mnistDataset.elem[i]);
                 if(bShowIterFlag) IterShow(setPreOutput, setOutput, setOrigin[i]);
                 if(IterFlag(setOutput, setOrigin[i])) bTrainFlag = true;
                 if(bTrainFlag) bTrainFlag = BackProp(setOutput, setOrigin[IDX_ZERO]);
+                }
+                while (bTrainFlag);
             }
-            while (bTrainFlag);
+            
         }
 };
 // std::cout << "[]" << std::endl <<  << std::endl << std::endl;

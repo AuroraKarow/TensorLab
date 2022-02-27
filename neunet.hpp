@@ -18,10 +18,20 @@ protected:
     bool BackProp() { return true; }
     set<vect> Deduce() { return blank_vect_seq; }
 public:
-    NetBase(NetBase &netSrc) : lsLayer(netSrc.lsLayer) { ValueAssign(netSrc); }
-    NetBase(NetBase &&netSrc) : lsLayer(std::move(netSrc.lsLayer)) { ValueAssign(netSrc); }
-    void operator=(NetBase &netSrc) { new (this)NetBase(netSrc); }
-    void operator=(NetBase &&netSrc) { new (this)NetBase(std::move(netSrc)); }
+    virtual void ValueCopy(NetBase &netSrc)
+    {
+        ValueAssign(netSrc);
+        lsLayer = netSrc.lsLayer;
+    }
+    virtual void ValueMove(NetBase &&netSrc)
+    {
+        ValueAssign(netSrc);
+        lsLayer = std::move(netSrc.lsLayer);
+    }
+    NetBase(NetBase &netSrc) { ValueCopy(netSrc); }
+    NetBase(NetBase &&netSrc) { ValueMove(std::move(netSrc)); }
+    void operator=(NetBase &netSrc) { ValueCopy(netSrc); }
+    void operator=(NetBase &&netSrc) { ValueMove(std::move(netSrc)); }
     
     NetBase(uint64_t iDscType = GD_BGD, double dNetAcc = 1e-2) : iNetDscType(iDscType), dAcc(dNetAcc) {}
     template<typename LayerType, typename ... Args,  typename = std::enable_if_t<std::is_base_of_v<_LAYER Layer, LayerType>>> bool AddLayer(Args&& ... pacArgs) { return lsLayer.emplace_back(std::make_shared<LayerType>(pacArgs...)); }
@@ -71,10 +81,12 @@ protected:
         return false;
     }
 public:
-    NetClassify(NetClassify &netSrc) : NetBase(netSrc) { ValueAssign(netSrc); }
-    NetClassify(NetClassify &&netSrc) : NetBase(std::move(netSrc)) { ValueAssign(netSrc); }
-    void operator=(NetClassify &netSrc) { new (this)NetClassify(netSrc); }
-    void operator=(NetClassify &&netSrc) { new (this)NetClassify(std::move(netSrc)); }
+    virtual void ValueCopy(NetClassify &netSrc) { ValueAssign(netSrc); }
+    virtual void ValueMove(NetClassify &&netSrc) { ValueAssign(netSrc); }
+    NetClassify(NetClassify &netSrc) : NetBase(netSrc) { ValueCopy(netSrc); }
+    NetClassify(NetClassify &&netSrc) : NetBase(std::move(netSrc)) { ValueMove(std::move(netSrc)); }
+    void operator=(NetClassify &netSrc) { NetBase::operator=(netSrc); ValueCopy(netSrc); }
+    void operator=(NetClassify &&netSrc) { NetBase::operator=(std::move(netSrc)); ValueMove(std::move(netSrc)); }
 
     NetClassify(uint64_t iDscType = GD_BGD, double dNetAcc = 1e-2, bool bShowIter = false) : NetBase(iDscType, dNetAcc), bShowIterFlag(bShowIter) {}
 };

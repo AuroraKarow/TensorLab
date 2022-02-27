@@ -85,30 +85,32 @@ struct ConvBN : BN
     set<feature> setBarX;
     set<feature> setY;
     ConvBN(){}
-    ConvBN(ConvBN &ConvBNVal)
+    void ValueCopy(ConvBN &ConvBNVal)
     {
         vecMiuBeta = ConvBNVal.vecMiuBeta;
         vecSigmaSqr = ConvBNVal.vecSigmaSqr;
         setBarX = ConvBNVal.setBarX;
         setY = ConvBNVal.setY;
     }
-    ConvBN(ConvBN &&ConvBNVal)
+    void ValueMove(ConvBN &&ConvBNVal)
     {
         vecMiuBeta = std::move(ConvBNVal.vecMiuBeta);
         vecSigmaSqr = std::move(ConvBNVal.vecSigmaSqr);
         setBarX = std::move(ConvBNVal.setBarX);
         setY = std::move(ConvBNVal.setY);
     }
-    void operator=(ConvBN &ConvBNVal) {new(this)ConvBN(ConvBNVal);}
-    void operator=(ConvBN &&ConvBNVal) {new(this)ConvBN(std::move(ConvBNVal));}
-    void reset()
+    ConvBN(ConvBN &ConvBNVal) { ValueCopy(ConvBNVal); }
+    ConvBN(ConvBN &&ConvBNVal) { ValueMove(std::move(ConvBNVal)); }
+    void operator=(ConvBN &ConvBNVal) { ValueCopy(ConvBNVal); }
+    void operator=(ConvBN &&ConvBNVal) { ValueMove(std::move(ConvBNVal)); }
+    void Reset()
     {
         vecMiuBeta.reset();
         vecSigmaSqr.reset();
         setBarX.reset();
         setY.reset();
     }
-    ~ConvBN() { reset(); }
+    ~ConvBN() { Reset(); }
 };
 
 vect BNInitScaleShift(uint64_t iChannCnt, double dFillVal)

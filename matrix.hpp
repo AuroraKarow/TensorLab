@@ -249,8 +249,6 @@ MATRIX mtx_swap_elem(MATRIX &mtx_val, uint64_t l_pos, uint64_t r_pos, uint64_t l
     return ans;
 }
 
-
-
 MATRIX mtx_add(MATRIX &l_mtx, MATRIX &r_mtx, uint64_t ln_cnt, uint64_t col_cnt, bool nega = false)
 {
     if(l_mtx && r_mtx && ln_cnt && col_cnt)
@@ -870,16 +868,16 @@ public:
     double &pos_idx(uint64_t idx) { return info.mtx_val[idx]; }
     matrix operator+(matrix &val) { return matrix(mtx_add(info.mtx_val, val.info.mtx_val, info.ln_cnt, info.col_cnt), info.ln_cnt, info.col_cnt); }
     matrix operator-(matrix &val) { return matrix(mtx_add(info.mtx_val, val.info.mtx_val, info.ln_cnt, info.col_cnt, true), info.ln_cnt, info.col_cnt); }
-    void operator+=(matrix &val) { new (this)matrix(std::move(*this + val)); }
-    void operator-=(matrix &val) { new (this)matrix(std::move(*this - val)); }
+    void operator+=(matrix &val) { *this = matrix(std::move(*this + val)); }
+    void operator-=(matrix &val) { *this = matrix(std::move(*this - val)); }
     matrix operator*(matrix &val) { return matrix(mtx_mult(info.mtx_val, val.info.mtx_val, info.ln_cnt, info.col_cnt, val.info.ln_cnt, val.info.col_cnt), info.ln_cnt, val.info.col_cnt); }
-    void operator*=(matrix &val) { new (this)matrix(std::move(*this * val)); }
+    void operator*=(matrix &val) { *this = matrix(std::move(*this * val)); }
     matrix operator*(double val) { return matrix(mtx_mult(info.mtx_val, val, info.ln_cnt, info.col_cnt), info.ln_cnt, info.col_cnt); }
-    void operator*=(double val) { new (this)matrix(std::move(*this * val)); }
+    void operator*=(double val) { *this = matrix(std::move(*this * val)); }
     friend matrix operator*(double val, matrix &r_val) { return r_val * val; }
-    void operator=(matrix &val) { new(this)matrix(val); }
-    void operator=(matrix &&val) { new(this)matrix(std::move(val)); }
-    void operator=(std::initializer_list<std::initializer_list<double>> _vect) { new(this)matrix(_vect); }
+    void operator=(matrix &val) { value_copy(val); }
+    void operator=(matrix &&val) { value_move(std::move(val)); }
+    void operator=(std::initializer_list<std::initializer_list<double>> _vect) { *this = matrix(_vect); }
     bool operator==(matrix &val)
     {
         if(shape_valid(val))
