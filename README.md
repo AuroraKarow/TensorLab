@@ -6,3 +6,5 @@ Open source issue
 Multi-thread pool head file
 <br>多綫程池頭文件<br>
 https://github.com/progschj/ThreadPool
+<br>Microsoft GDI+<br>
+https://docs.microsoft.com/zh-cn/windows/win32/gdiplus/-gdiplus-gdi-start
