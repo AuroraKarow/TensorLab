@@ -39,7 +39,14 @@ template<typename _T> void quick_sort(std::unique_ptr<_T[]> &seq_val, uint64_t b
 }
 
 void reset_ptr() {}
-template<typename T> void reset_ptr(std::unique_ptr<T> &val) { if(val) val.reset(); }
+template<typename T> void reset_ptr(std::unique_ptr<T> &val)
+{
+    if(val)
+    {
+        val.reset();
+        val.release();
+    }
+}
 template<typename arg, typename...args> void reset_ptr(arg &&first, args &&...others)
 {
     reset_ptr(first);
