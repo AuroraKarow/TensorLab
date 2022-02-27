@@ -149,26 +149,27 @@ public:
             for(auto i=0; i<mapBNData.size(); ++i) mapBNData.index(i).value.init(mnistDataset.elem.size());
             auto setOrigin = mnistDataset.orgn();
             set<vect> setPreOutput;
-            vect_t<vect> batPreOutput;
             for(auto i=0; i<mnistDataset.elem.size(); ++i)
             {
                 auto bTrainFlag = false;
                 do 
                 {
                 auto setOutput = ForwProp(mnistDataset.elem[i]);
+                if(setPreOutput.size()) bTrainFlag = IterFlag(setOutput, setOrigin[i]);
+                else bTrainFlag = true;
                 if(bShowIterFlag) IterShow(setPreOutput, setOutput, setOrigin[i]);
-                if(IterFlag(setOutput, setOrigin[i])) bTrainFlag = true;
-                if(bTrainFlag) bTrainFlag = BackProp(setOutput, setOrigin[IDX_ZERO]);
+                if(bTrainFlag) bTrainFlag = BackProp(setOutput, setOrigin[i]);
                 }
                 while (bTrainFlag);
             }
             
         }
 };
-// std::cout << "[]" << std::endl <<  << std::endl << std::endl;
+
 int main(int argc, char *argv[], char *envp[])
 {
     cout << "hello, world." << endl;
+    // MNIST demo
     string root_dir = "E:\\VS Code project data\\MNIST\\";
     MNIST dataset(root_dir + "train-images.idx3-ubyte", root_dir + "train-labels.idx1-ubyte", {5});
     NetBNMNIST LeNet;

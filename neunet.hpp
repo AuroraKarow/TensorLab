@@ -3,7 +3,7 @@ NEUNET_BEGIN
 class NetBase
 {
 protected:
-    double dAcc = 1e-2;
+    double dAcc = 1e-5;
     uint64_t iNetDscType = GD_BGD;
     NET_LIST<LAYER_PTR> lsLayer;
 
@@ -71,8 +71,8 @@ protected:
     void IterShow(vect_t<vect> &batPreOutput, vect_t<vect> &batCurrOutput, vect_t<vect> &batOrigin) { for(auto i=0; i<batCurrOutput.size(); ++i) IterShow(batPreOutput[i], batCurrOutput[i], batOrigin[i]); }
     bool IterFlag(set<vect> &setCurrOutput, set<vect> &setOrigin)
     {
-        for(auto i=0; i<setOrigin.size(); ++i) for(auto j=0; j<setOrigin[i].LN_CNT; ++j)
-            if(std::abs(setOrigin[i][j][IDX_ZERO] - setCurrOutput[i][j][IDX_ZERO]) > dAcc) return true;
+        for(auto i=0; i<setCurrOutput.size(); ++i) for(auto j=0; j<setCurrOutput[i].LN_CNT; ++j)
+            if(setOrigin[i][j][IDX_ZERO] == 1) if(std::abs(1-setCurrOutput[i][j][IDX_ZERO]) > dAcc) return true;
         return false;
     }
     bool IterFlag(vect_t<vect> &batCurrOutput, vect_t<vect> &batOrigin)
