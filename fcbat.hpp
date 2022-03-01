@@ -163,7 +163,7 @@ double BNGradLossToShift(set<vect> &setGradLossToOutput)
     return dGrad;
 }
 
-bagrt::net_queue<vect> BNDeduce(bagrt::net_queue<vect> &setNetInput, double dBeta, double dGamma, set<BN_PTR> &setbnData, uint64_t iMiniBatchSize = 0, double dEpsilon = 1e-10)
+set<vect> BNDeduce(set<vect> &setNetInput, double dBeta, double dGamma, set<BN_PTR> &setbnData, uint64_t iMiniBatchSize = 0, double dEpsilon = 1e-10)
 {
     /**
      * Expectation Average, Expectation MiuBeta
