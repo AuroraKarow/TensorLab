@@ -21,7 +21,7 @@ public:
     AdaDeltaVect(uint64_t nSizeLnCnt, uint64_t nSizeColCnt, double dRho = 0.95, double dEpsilon = 1e-6)
     {
         vecExpGrad = vect(nSizeLnCnt, nSizeColCnt);
-        vecExpGrad = vect(nSizeLnCnt, nSizeColCnt);
+        vecExpDelta = vect(nSizeLnCnt, nSizeColCnt);
         this->dRho = dRho;
         this->dEpsilon = dEpsilon;
     }
