@@ -25,6 +25,6 @@
 #define TRANS               5
 
 #define GD_BGD              0
-#define BD_MINIBATCH_SGD    1
+#define GD_MINIBATCH_SGD    1
 
 #include "layer.hpp"
