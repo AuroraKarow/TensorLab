@@ -8,3 +8,5 @@ Multi-thread pool head file
 https://github.com/progschj/ThreadPool
 <br>Microsoft GDI+<br>
 https://docs.microsoft.com/zh-cn/windows/win32/gdiplus/-gdiplus-gdi-start
+<br>PDF wiki is in file fold Src<br>
+https://github.com/AuroraKarow/TensorLab/blob/master/Src/TensorLab%20Wiki.pdf
