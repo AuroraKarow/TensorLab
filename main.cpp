@@ -86,7 +86,7 @@ private:
             if(setGradFt.size()) break;
             else return false;
         case CONV_BN:
-            setGradFt = INSTANCE_DERIVE<LAYER_CONV_BN>(lsLayer[i]) -> ForwProp(setGradFt);
+            setGradFt = INSTANCE_DERIVE<LAYER_CONV_BN>(lsLayer[i]) -> BackProp(setGradFt);
             if(setGradFt.size())
             {
                 mapBNData[i][iMiniBatchIdx] = std::make_shared<BN_CONV>(std::move(INSTANCE_DERIVE<LAYER_CONV_BN>(lsLayer[i])->BNData));
