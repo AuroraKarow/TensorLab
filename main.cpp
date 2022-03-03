@@ -145,25 +145,25 @@ public:
         return lsLayer.emplace_back(lyrCurrTemp);
     }
     void Run(MNIST &mnistDataset)
+    {
+        for(auto i=0; i<mapBNData.size(); ++i) mapBNData.index(i).value.init(mnistDataset.elem.size());
+        auto setOrigin = mnistDataset.orgn();
+        set<vect> setPreOutput;
+        for(auto i=0; i<mnistDataset.elem.size(); ++i)
         {
-            for(auto i=0; i<mapBNData.size(); ++i) mapBNData.index(i).value.init(mnistDataset.elem.size());
-            auto setOrigin = mnistDataset.orgn();
-            set<vect> setPreOutput;
-            for(auto i=0; i<mnistDataset.elem.size(); ++i)
+            auto bTrainFlag = false;
+            do 
             {
-                auto bTrainFlag = false;
-                do 
-                {
-                auto setOutput = ForwProp(mnistDataset.elem[i]);
-                if(setPreOutput.size()) bTrainFlag = IterFlag(setOutput, setOrigin[i]);
-                else bTrainFlag = true;
-                if(bShowIterFlag) IterShow(setPreOutput, setOutput, setOrigin[i]);
-                if(bTrainFlag) bTrainFlag = BackProp(setOutput, setOrigin[i]);
-                }
-                while (bTrainFlag);
+            auto setOutput = ForwProp(mnistDataset.elem[i]);
+            if(setPreOutput.size()) bTrainFlag = IterFlag(setOutput, setOrigin[i]);
+            else bTrainFlag = true;
+            if(bShowIterFlag) IterShow(setPreOutput, setOutput, setOrigin[i]);
+            if(bTrainFlag) bTrainFlag = BackProp(setOutput, setOrigin[i]);
             }
-            
+            while (bTrainFlag);
         }
+        
+    }
 };
 
 int main(int argc, char *argv[], char *envp[])
@@ -173,7 +173,7 @@ int main(int argc, char *argv[], char *envp[])
     string root_dir = "E:\\VS Code project data\\MNIST\\";
     MNIST dataset(root_dir + "train-images.idx3-ubyte", root_dir + "train-labels.idx1-ubyte", {5});
     NetBNMNIST LeNet;
-    LeNet.AddLayer<LAYER_CONV>(20, 3, 5, 5, 1, 1, NULL);
+    LeNet.AddLayer<LAYER_CONV>(20, 1, 5, 5, 1, 1, NULL);
     LeNet.AddLayer<LAYER_CONV_BN>(20, 0, 1, RELU);
     LeNet.AddLayer<LAYER_POOL>(POOL_MAX, 2, 2, 2, 2);
     LeNet.AddLayer<LAYER_CONV>(50, 20, 5, 5, 1, 1, NULL);
