@@ -17,12 +17,14 @@
 #define POOL_MAX            1
 #define POOL_GAG            2
 
-#define FC                  0
-#define CONV                1
-#define POOL                2
-#define FC_BN               3
-#define CONV_BN             4
-#define TRANS               5
+#define ACT_VT              0
+#define ACT_FT              1
+#define FC                  2
+#define CONV                3
+#define POOL                4
+#define FC_BN               5
+#define CONV_BN             6
+#define TRANS               7
 
 #define GD_BGD              0
 #define GD_MINIBATCH_SGD    1

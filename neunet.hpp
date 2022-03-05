@@ -4,16 +4,11 @@ class NetBase
 {
 protected:
     double dAcc = 1e-5;
-    uint64_t iNetDscType = GD_BGD;
     NET_LIST<LAYER_PTR> lsLayer;
 
-    virtual void ValueAssign(NetBase &netSrc)
-    {
-        dAcc = netSrc.dAcc;
-        iNetDscType = netSrc.iNetDscType;
-    }
+    virtual void ValueAssign(NetBase &netSrc) {dAcc = netSrc.dAcc;}
     void ShowIter() {}
-    bool IterateFlag() { return true; }
+    bool IterFlag() { return true; }
     bool ForwProp() { return true; }
     bool BackProp() { return true; }
     set<vect> Deduce() { return blank_vect_seq; }
@@ -33,7 +28,7 @@ public:
     void operator=(NetBase &netSrc) { ValueCopy(netSrc); }
     void operator=(NetBase &&netSrc) { ValueMove(std::move(netSrc)); }
     
-    NetBase(uint64_t iDscType = GD_BGD, double dNetAcc = 1e-2) : iNetDscType(iDscType), dAcc(dNetAcc) {}
+    NetBase(double dNetAcc = 1e-2) : dAcc(dNetAcc) {}
     template<typename LayerType, typename ... Args,  typename = std::enable_if_t<std::is_base_of_v<_LAYER Layer, LayerType>>> bool AddLayer(Args&& ... pacArgs) { return lsLayer.emplace_back(std::make_shared<LayerType>(pacArgs...)); }
     uint64_t Depth() { return lsLayer.size(); }
     void Run() {}
@@ -68,16 +63,10 @@ protected:
             std::cout << std::endl;
         }
     }
-    void IterShow(vect_t<vect> &batPreOutput, vect_t<vect> &batCurrOutput, vect_t<vect> &batOrigin) { for(auto i=0; i<batCurrOutput.size(); ++i) IterShow(batPreOutput[i], batCurrOutput[i], batOrigin[i]); }
     bool IterFlag(set<vect> &setCurrOutput, set<vect> &setOrigin)
     {
         for(auto i=0; i<setCurrOutput.size(); ++i) for(auto j=0; j<setCurrOutput[i].LN_CNT; ++j)
             if(setOrigin[i][j][IDX_ZERO] == 1) if(std::abs(1-setCurrOutput[i][j][IDX_ZERO]) > dAcc) return true;
-        return false;
-    }
-    bool IterFlag(vect_t<vect> &batCurrOutput, vect_t<vect> &batOrigin)
-    {
-        for(auto i=0; i<batCurrOutput.size(); ++i) if(IterFlag(batCurrOutput[i], batOrigin[i])) return true;
         return false;
     }
 public:
@@ -87,8 +76,8 @@ public:
     NetClassify(NetClassify &&netSrc) : NetBase(std::move(netSrc)) { ValueMove(std::move(netSrc)); }
     void operator=(NetClassify &netSrc) { NetBase::operator=(netSrc); ValueCopy(netSrc); }
     void operator=(NetClassify &&netSrc) { NetBase::operator=(std::move(netSrc)); ValueMove(std::move(netSrc)); }
-
-    NetClassify(uint64_t iDscType = GD_BGD, double dNetAcc = 1e-2, bool bShowIter = false) : NetBase(iDscType, dNetAcc), bShowIterFlag(bShowIter) {}
+    
+    NetClassify(double dNetAcc = 1e-2, bool bShowIter = false) : NetBase(dNetAcc), bShowIterFlag(bShowIter) {}
 };
 
 NEUNET_END

@@ -13,6 +13,9 @@
 
 #define LAYER_PTR       std::shared_ptr<layer::Layer>
 
+#define LAYER_ACT_VT    layer::LayerActVect
+#define LAYER_ACT_FT    layer::LayerActFt
+
 #define LAYER_FC        layer::LayerFC
 #define LAYER_CONV      layer::LayerConv
 

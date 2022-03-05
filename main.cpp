@@ -21,6 +21,14 @@ private:
         set<feature> setTemp;
         for(auto i=0Ui64; i<lsLayer.size(); ++i) switch (lsLayer[i] -> iLayerType)
         {
+        case ACT_VT:
+            setOutput = INSTANCE_DERIVE<LAYER_ACT_VT>(lsLayer[i]) -> ForwProp(setOutput);
+            if(setOutput.size()) break;
+            else return blank_vect_seq;
+        case ACT_FT:
+            setTemp = INSTANCE_DERIVE<LAYER_ACT_FT>(lsLayer[i]) -> ForwProp(setTemp);
+            if(setTemp.size()) break;
+            else return blank_vect_seq;
         case FC:
             setOutput = INSTANCE_DERIVE<LAYER_FC>(lsLayer[i]) -> ForwProp(setOutput);
             if(setOutput.size()) break;
@@ -67,29 +75,66 @@ private:
         set<feature> setGradFt;
         for(auto i=lsLayer.size()-1; i>0; --i) switch (lsLayer[i] -> iLayerType)
         {
-        case FC:
-            if(i==lsLayer.size()-1) setGradVec = INSTANCE_DERIVE<LAYER_FC>(lsLayer[i]) -> BackProp(setOutput, Origin);
-            else setGradVec = INSTANCE_DERIVE<LAYER_FC>(lsLayer[i]) -> BackProp(setGradVec);
+        case ACT_FT:
+            setGradFt = INSTANCE_DERIVE<LAYER_ACT_FT>(lsLayer[i]) -> BackProp(setGradFt);
+            if(setGradFt.size()) break;
+            else return false;
+        case ACT_VT:
+            if(i+1 == lsLayer.size()) setGradVec = INSTANCE_DERIVE<LAYER_ACT_VT>(lsLayer[i]) -> BackProp(setOutput, Origin);
+            else setGradVec = INSTANCE_DERIVE<LAYER_ACT_VT>(lsLayer[i]) -> BackProp(setGradVec);
             if(setGradVec.size()) break;
             else return false;
+        case FC:
+            setGradVec = INSTANCE_DERIVE<LAYER_FC>(lsLayer[i]) -> BackProp(setGradVec);
+            if(setGradVec.size())
+            {
+                if(INSTANCE_DERIVE<LAYER_FC>(lsLayer[i]) -> dLayerLearnRate) INSTANCE_DERIVE<LAYER_FC>(lsLayer[i])->vecLayerWeight -= INSTANCE_DERIVE<LAYER_FC>(lsLayer[i])->dLayerLearnRate * INSTANCE_DERIVE<LAYER_FC>(lsLayer[i])->vecLayerGradWeight;
+                else INSTANCE_DERIVE<LAYER_FC>(lsLayer[i]) -> vecLayerWeight = _FC AdaDeltaUpdateWeight(INSTANCE_DERIVE<LAYER_FC>(lsLayer[i])->vecLayerWeight, INSTANCE_DERIVE<LAYER_FC>(lsLayer[i])->vecLayerGradWeight, INSTANCE_DERIVE<LAYER_FC>(lsLayer[i])->advLayerDelta);
+                break;
+            }
+            else return false;
         case FC_BN:
-            if(i==lsLayer.size()-1) setGradVec = INSTANCE_DERIVE<LAYER_FC_BN>(lsLayer[i]) -> BackProp(setOutput, Origin);
-            else setGradVec = INSTANCE_DERIVE<LAYER_FC_BN>(lsLayer[i]) -> BackProp(setGradVec);
+            setGradVec = INSTANCE_DERIVE<LAYER_FC_BN>(lsLayer[i]) -> BackProp(setGradVec);
             if(setGradVec.size())
             {
                 mapBNData[i][iMiniBatchIdx] = std::make_shared<BN_FC>(std::move(INSTANCE_DERIVE<LAYER_FC_BN>(lsLayer[i])->BNData));
+                if(INSTANCE_DERIVE<LAYER_FC_BN>(lsLayer[i]) -> dLayerLearnRate)
+                {
+                    INSTANCE_DERIVE<LAYER_FC_BN>(lsLayer[i])->dBeta -= INSTANCE_DERIVE<LAYER_FC_BN>(lsLayer[i])->dLayerLearnRate * INSTANCE_DERIVE<LAYER_FC_BN>(lsLayer[i])->dGradBeta;
+                    INSTANCE_DERIVE<LAYER_FC_BN>(lsLayer[i])->dGamma -= INSTANCE_DERIVE<LAYER_FC_BN>(lsLayer[i])->dLayerLearnRate * INSTANCE_DERIVE<LAYER_FC_BN>(lsLayer[i])->dGradGamma;
+                }
+                else
+                {
+                    INSTANCE_DERIVE<LAYER_FC_BN>(lsLayer[i])->dBeta -= INSTANCE_DERIVE<LAYER_FC_BN>(lsLayer[i])->advBeta.Delta(INSTANCE_DERIVE<LAYER_FC_BN>(lsLayer[i])->dGradBeta);
+                    INSTANCE_DERIVE<LAYER_FC_BN>(lsLayer[i])->dGamma -= INSTANCE_DERIVE<LAYER_FC_BN>(lsLayer[i])->advGamma.Delta(INSTANCE_DERIVE<LAYER_FC_BN>(lsLayer[i])->dGradGamma);
+                }
                 break;
             }
             else return false;
         case CONV:
             setGradFt = INSTANCE_DERIVE<LAYER_CONV>(lsLayer[i]) -> BackProp(setGradFt);
-            if(setGradFt.size()) break;
+            if(setGradFt.size())
+            {
+                if(INSTANCE_DERIVE<LAYER_CONV>(lsLayer[i]) -> dLayerLearnRate) INSTANCE_DERIVE<LAYER_CONV>(lsLayer[i])->tenKernel = _CONV UpdateKernel(INSTANCE_DERIVE<LAYER_CONV>(lsLayer[i])->tenKernel, INSTANCE_DERIVE<LAYER_CONV>(lsLayer[i])->tenGradKernel, INSTANCE_DERIVE<LAYER_CONV>(lsLayer[i])->dLayerLearnRate);
+                else INSTANCE_DERIVE<LAYER_CONV>(lsLayer[i])->tenKernel = _CONV AdaDeltaUpdateKernel(INSTANCE_DERIVE<LAYER_CONV>(lsLayer[i])->tenKernel, INSTANCE_DERIVE<LAYER_CONV>(lsLayer[i])->tenGradKernel, INSTANCE_DERIVE<LAYER_CONV>(lsLayer[i])->advLayerDelta);
+                break;
+            }
             else return false;
         case CONV_BN:
             setGradFt = INSTANCE_DERIVE<LAYER_CONV_BN>(lsLayer[i]) -> BackProp(setGradFt);
             if(setGradFt.size())
             {
                 mapBNData[i][iMiniBatchIdx] = std::make_shared<BN_CONV>(std::move(INSTANCE_DERIVE<LAYER_CONV_BN>(lsLayer[i])->BNData));
+                if(INSTANCE_DERIVE<LAYER_CONV_BN>(lsLayer[i]) -> dLayerLearnRate)
+                {
+                    INSTANCE_DERIVE<LAYER_CONV_BN>(lsLayer[i])->vecGamma -= INSTANCE_DERIVE<LAYER_CONV_BN>(lsLayer[i])->dLayerLearnRate * INSTANCE_DERIVE<LAYER_CONV_BN>(lsLayer[i])->vecGradGamma;
+                    INSTANCE_DERIVE<LAYER_CONV_BN>(lsLayer[i])->vecBeta -= INSTANCE_DERIVE<LAYER_CONV_BN>(lsLayer[i])->dLayerLearnRate * INSTANCE_DERIVE<LAYER_CONV_BN>(lsLayer[i])->vecGradBeta;
+                }
+                else
+                {
+                    INSTANCE_DERIVE<LAYER_CONV_BN>(lsLayer[i])->vecGamma -= INSTANCE_DERIVE<LAYER_CONV_BN>(lsLayer[i])->advGamma.Delta(INSTANCE_DERIVE<LAYER_CONV_BN>(lsLayer[i])->vecGradGamma);
+                    INSTANCE_DERIVE<LAYER_CONV_BN>(lsLayer[i])->vecBeta -= INSTANCE_DERIVE<LAYER_CONV_BN>(lsLayer[i])->advBeta.Delta(INSTANCE_DERIVE<LAYER_CONV_BN>(lsLayer[i])->vecGradBeta);
+                }
                 break;
             }
             else return false;
@@ -123,21 +168,24 @@ public:
     void operator=(NetBNMNIST &netSrc) { NetClassify::operator=(netSrc);  ValueCopy(netSrc); }
     void operator=(NetBNMNIST &&netSrc) { NetClassify::operator=(move(netSrc));  ValueMove(move(netSrc)); }
 
-    NetBNMNIST(uint64_t iDscType = GD_BGD, double dNetAcc = 1e-2, bool bShowIter = true) : NetClassify(iDscType, dNetAcc, bShowIter) {}
-    /* FC
-    uint64_t iInputLnCnt, uint64_t iOutputLnCnt, uint64_t iActFuncTypeVal = SIGMOID, double dLearnRate = 0, double dRandBoundryFirst = 0, double dRandBoundrySecond = 0, double dAcc = 1e-5
+    NetBNMNIST(double dNetAcc = 1e-2, bool bShowIter = true) : NetClassify(dNetAcc, bShowIter) {}
+    /* ACT_FT
+    * uint64_t iActFuncType
+    * ACT_VT
+    * uint64_t iActFuncType
+    *FC
+    uint64_t iInputLnCnt, uint64_t iOutputLnCnt, double dLearnRate = 0, double dRandBoundryFirst = 0, double dRandBoundrySecond = 0, double dAcc = 1e-05
     * FC_BN
-    double dShift = 0, double dScale = 1, uint64_t iActFuncTypeVal = SIGMOID, double dLearnRate = 0, double dDmt = 1e-10
+    double dShift = 0, double dScale = 1, double dLearnRate = 0, double dDmt = 1e-10
     * CONV
-    * uint64_t iKernelAmt, uint64_t iKernelChannCnt, uint64_t iKernelLnCnt, uint64_t iKernelColCnt, uint64_t iLnStride, uint64_t iColStride, uint64_t iActFuncTypeVal = RELU, double dLearnRate = 0, double dRandBoundryFirst = 0, double dRandBoundrySecond = 0, double dAcc = 1e-5, uint64_t iLnDilation = 0, uint64_t iColDilation = 0, uint64_t iInputPadTop = 0, uint64_t iInputPadRight = 0, uint64_t iInputPadBottom = 0, uint64_t iInputPadLeft = 0, uint64_t iLnDistance = 0, uint64_t iColDistance = 0
+    * uint64_t iKernelAmt, uint64_t iKernelChannCnt, uint64_t iKernelLnCnt, uint64_t iKernelColCnt, uint64_t iLnStride, uint64_t iColStride, double dLearnRate = 0, double dRandBoundryFirst = 0, double dRandBoundrySecond = 0, double dRandBoundryAcc = 1e-5, uint64_t iLnDilation = 0, uint64_t iColDilation = 0, uint64_t iInputPadTop = 0, uint64_t iInputPadRight = 0, uint64_t iInputPadBottom = 0, uint64_t iInputPadLeft = 0, uint64_t iLnDistance = 0, uint64_t iColDistance = 0
     * CONV_BN
-    * uint64_t iChannCnt = 1, double dShift = 0, double dScale = 1, uint64_t iActFuncTypeVal = RELU, double dLearnRate = 0, double dDmt = 1e-10
+    * uint64_t iChannCnt = 1, double dShift = 0, double dScale = 1, double dLearnRate = 0, double dDmt = 1e-10
     * POOL
-    * uint64_t iPoolTypeVal = POOL_MAX, uint64_t iFilterLnCnt = 0, uint64_t iFilterColCnt = 0, uint64_t iLnStride = 0, uint64_t iColStride = 0, uint64_t iLnDilation = 0, uint64_t iColDilation = 0, uint64_t iActFuncTypeVal = NULL
-    * LayerTrans - 
-    * uint64_t iActFuncTypeVal = NULL
-    * uint64_t iChannLnCnt, uint64_t iChannColCnt, uint64_t iActFuncIdx = NULL
-     */
+    * uint64_t iPoolTypeVal = POOL_MAX, uint64_t iFilterLnCnt = 0, uint64_t iFilterColCnt = 0, uint64_t iLnStride = 0, uint64_t iColStride = 0, uint64_t iLnDilation = 0, uint64_t iColDilation = 0
+    * LayerTrans -
+    * uint64_t iChannLnCnt, uint64_t iChannColCnt
+    */
     template<typename LayerType, typename ... Args,  typename = enable_if_t<is_base_of_v<Layer, LayerType>>> bool AddLayer(Args&& ... pacArgs)
     {
         auto lyrCurrTemp = std::make_shared<LayerType>(pacArgs...);
@@ -148,21 +196,34 @@ public:
     {
         for(auto i=0; i<mapBNData.size(); ++i) mapBNData.index(i).value.init(mnistDataset.elem.size());
         auto setOrigin = mnistDataset.orgn();
-        set<vect> setPreOutput;
-        for(auto i=0; i<mnistDataset.elem.size(); ++i)
+        auto bDatasetTrainCnt = 0;
+        bool bErrorFlag = false;
+        do
         {
-            auto bTrainFlag = false;
-            do 
+            bDatasetTrainCnt = 0;
+            for(auto i=0; i<mnistDataset.elem.size(); ++i)
             {
-            auto setOutput = ForwProp(mnistDataset.elem[i]);
-            if(setPreOutput.size()) bTrainFlag = IterFlag(setOutput, setOrigin[i]);
-            else bTrainFlag = true;
-            if(bShowIterFlag) IterShow(setPreOutput, setOutput, setOrigin[i]);
-            if(bTrainFlag) bTrainFlag = BackProp(setOutput, setOrigin[i]);
+                set<vect> setPreOutput;
+                auto bTrainFlag = false;
+                do 
+                {
+                    auto setOutput = ForwProp(mnistDataset.elem[i]);
+                    if(setOutput.size())
+                    {
+                        if(setPreOutput.size()) bTrainFlag = IterFlag(setOutput, setOrigin[i]);
+                        else bTrainFlag = true;
+                        if(bShowIterFlag) IterShow(setPreOutput, setOutput, setOrigin[i]);
+                        if(bTrainFlag) { if(bErrorFlag = !BackProp(setOutput, setOrigin[i])) break; }
+                        else ++ bDatasetTrainCnt;
+                    }
+                    else { bErrorFlag = true; break; }
+                }
+                while (bTrainFlag);
+                if(bErrorFlag) break;
             }
-            while (bTrainFlag);
+            if(bErrorFlag) break;
         }
-        
+        while(bDatasetTrainCnt < mnistDataset.size());
     }
 };
 
@@ -171,18 +232,22 @@ int main(int argc, char *argv[], char *envp[])
     cout << "hello, world." << endl;
     // MNIST demo
     string root_dir = "E:\\VS Code project data\\MNIST\\";
-    MNIST dataset(root_dir + "train-images.idx3-ubyte", root_dir + "train-labels.idx1-ubyte", {5});
+    MNIST dataset(root_dir + "train-images.idx3-ubyte", root_dir + "train-labels.idx1-ubyte", {64}, 32);
     NetBNMNIST LeNet;
-    LeNet.AddLayer<LAYER_CONV>(20, 1, 5, 5, 1, 1, NULL);
-    LeNet.AddLayer<LAYER_CONV_BN>(20, 0, 1, RELU);
+    LeNet.AddLayer<LAYER_CONV>(20, 1, 5, 5, 1, 1);
+    LeNet.AddLayer<LAYER_CONV_BN>(20);
+    LeNet.AddLayer<LAYER_ACT_FT>(RELU);
     LeNet.AddLayer<LAYER_POOL>(POOL_MAX, 2, 2, 2, 2);
-    LeNet.AddLayer<LAYER_CONV>(50, 20, 5, 5, 1, 1, NULL);
-    LeNet.AddLayer<LAYER_CONV_BN>(50, 0, 1, RELU);
+    LeNet.AddLayer<LAYER_CONV>(50, 20, 5, 5, 1, 1);
+    LeNet.AddLayer<LAYER_CONV_BN>(50);
+    LeNet.AddLayer<LAYER_ACT_FT>(RELU);
     LeNet.AddLayer<LAYER_POOL>(POOL_MAX, 2, 2, 2, 2);
     LeNet.AddLayer<LAYER_TRANS>();
-    LeNet.AddLayer<LAYER_FC>(800, 500, NULL);
-    LeNet.AddLayer<LAYER_FC_BN>(0, 1, SIGMOID);
-    LeNet.AddLayer<LAYER_FC>(500, 10, SOFTMAX);
+    LeNet.AddLayer<LAYER_FC>(800, 500);
+    LeNet.AddLayer<LAYER_FC_BN>();
+    LeNet.AddLayer<LAYER_ACT_VT>(SIGMOID);
+    LeNet.AddLayer<LAYER_FC>(500, 10);
+    LeNet.AddLayer<LAYER_ACT_VT>(SOFTMAX);
     cout << "[LeNet depth][" << LeNet.Depth() << ']' << endl;
     LeNet.Run(dataset);
     return EXIT_SUCCESS;

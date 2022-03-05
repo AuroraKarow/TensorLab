@@ -7,16 +7,39 @@ vect vec_travel(vect &vec_val, double (*func)(double&))
 
 double sigmoid(double &val){ return 1 / (1 + 1 / exp(val)); }
 
-double sigmoid_dv(double &val){ return sigmoid(val) * (1.0 - sigmoid(val)); }
-
 vect sigmoid(vect &vec_val){return vec_travel(vec_val, sigmoid);}
 
+template<typename T> set<T> sigmoid(set<T> &set_val)
+{
+    set<T> ans(set_val.size());
+    for(auto i=0; i<set_val.size(); ++i) ans[i] = sigmoid(set_val[i]);
+    return ans;
+}
+
+double sigmoid_dv(double &val){ return sigmoid(val) * (1.0 - sigmoid(val)); }
+
 vect sigmoid_dv(vect &vec_val){return vec_travel(vec_val, sigmoid_dv);}
+
+template<typename T> set<T> sigmoid_dv(set<T> &set_val)
+{
+    set<T> ans(set_val.size());
+    for(auto i=0; i<set_val.size(); ++i) ans[i] = sigmoid_dv(set_val[i]);
+    return ans;
+}
 
 double ReLU(double &val)
 {
     if(val < 0) return 0;
     else return val;
+}
+
+vect ReLU(vect &vec_val){return vec_travel(vec_val, ReLU);}
+
+template<typename T> set<T> ReLU(set<T> &set_val)
+{
+    set<T> ans(set_val.size());
+    for(auto i=0; i<set_val.size(); ++i) ans[i] = ReLU(set_val[i]);
+    return ans;
 }
 
 double ReLU_dv(double &val)
@@ -25,9 +48,14 @@ double ReLU_dv(double &val)
     else return 1;
 }
 
-vect ReLU(vect &vec_val){return vec_travel(vec_val, ReLU);}
-
 vect ReLU_dv(vect &vec_val){return vec_travel(vec_val, ReLU_dv);}
+
+template<typename T> set<T> ReLU_dv(set<T> &set_val)
+{
+    set<T> ans(set_val.size());
+    for(auto i=0; i<set_val.size(); ++i) ans[i] = ReLU_dv(set_val[i]);
+    return ans;
+}
 
 vect softmax(vect &vec_val)
 {
@@ -39,6 +67,13 @@ vect softmax(vect &vec_val)
     for(auto i=0; i<vec_val.get_ln_cnt(); ++i)
         for(auto j=0; j<vec_val.get_col_cnt(); ++j)
             ans[i][j] = std::exp(vec_val[i][j]) / sum;
+    return ans;
+}
+
+template<typename T> set<T> softmax(set<T> &set_vec)
+{
+    set<T> ans(set_vec.size());
+    for(auto i=0; i<ans.size(); ++i) ans[i] = softmax(set_vec[i]);
     return ans;
 }
 
@@ -54,6 +89,13 @@ vect softmax_dv(vect &vec_input, vect &vec_output)
         return ans;
     }
     else return blank_vect;
+}
+
+template<typename T> set<T> softmax_dv(set<T> &set_vec)
+{
+    set<T> ans(set_vec.size());
+    for(auto i=0; i<ans.size(); ++i) ans[i] = softmax(set_vec[i]);
+    return ans;
 }
 
 vect cec_grad(vect &output, vect &origin)
@@ -92,26 +134,24 @@ set<feature> cec_grad(set<feature> &output, set<feature> &origin)
 
 vect softmax_cec_grad(vect &softmax_output, vect &origin) {return softmax_output - origin;}
 
-set<vect> softmax_cec_grad(set<vect> &setSoftmaxOutput, set<vect> &setOrigin)
+template<typename T> set<T> softmax_cec_grad(set<T> &setSoftmaxOutput, set<T> &setOrigin)
 {
     if(setSoftmaxOutput.size() == setOrigin.size())
     {
-        set<vect> setGradOutput(setOrigin.size());
+        set<T> setGradOutput(setOrigin.size());
         for(auto i=0; i<setOrigin.size(); ++i) setGradOutput[i] = softmax_cec_grad(setSoftmaxOutput[i], setOrigin[i]);
         return setGradOutput;
     }
-    else return blank_vect_seq;
+    else return set<T>::blank_queue();
 }
 
-set<feature> softmax_cec_grad(set<feature> &setSoftmaxOutput, set<feature> &setOrigin)
+vect hadamard_produc(vect &l_vec, vect &r_vec) { return l_vec.elem_cal_opt(r_vec, MATRIX_ELEM_MULT); }
+
+template<typename T> set<T> hadamard_produc(set<T> &l_set, set<T> &r_set)
 {
-    if(setSoftmaxOutput.size() == setOrigin.size())
-    {
-        set<feature> setGradOutput(setOrigin.size());
-        for(auto i=0; i<setOrigin.size(); ++i) setGradOutput[i] = softmax_cec_grad(setSoftmaxOutput[i], setOrigin[i]);
-        return setGradOutput;
-    }
-    else return blank_ft_seq;
+    set<T> ans(l_set.size());
+    for(auto i=0; i<ans.size(); ++i) ans[i] = hadamard_produc(l_set[i], r_set[i]);
+    return ans;
 }
 
 vect divisor_dominate(vect &divisor, double epsilon)
@@ -121,41 +161,6 @@ vect divisor_dominate(vect &divisor, double epsilon)
         for(auto j=0; j<cpy_val.get_col_cnt(); ++j)
             if(cpy_val[i][j] == 0) cpy_val[i][j] = epsilon;
     return cpy_val;
-}
-
-feature activate(feature &input, vect(*act_func)(vect&))
-{
-    feature output(input.size());
-    for(auto i=0; i<input.size(); ++i) output[i] = act_func(input[i]);
-    return output;
-}
-
-set<feature> activate(set<feature> &input, vect(*act_func)(vect&))
-{
-    set<feature> output(input.size());
-    for(auto i=0; i<input.size(); ++i) output[i] = activate(input[i], act_func);
-    return output;
-}
-
-feature derivative(feature &act_input, feature &grad, vect(*act_func_dv)(vect&))
-{
-    feature grad_dv(act_input.size());
-    for(auto i=0; i<act_input.size(); ++i)
-    {
-        grad_dv[i] = act_func_dv(act_input[i]).elem_cal_opt(grad[i], MATRIX_ELEM_MULT);
-        if(!grad_dv[i].is_matrix()) return blank_feature;
-    }
-    return grad_dv;
-}
-set<feature> derivative(set<feature> &act_input, set<feature> &grad, vect(*act_func_dv)(vect&))
-{
-    set<feature> grad_dv(act_input.size());
-    for(auto i=0; i<act_input.size(); ++i)
-    {
-        grad_dv[i] = derivative(act_input[i], grad[i], act_func_dv);
-        if(!grad_dv[i].size()) return blank_ft_seq;
-    }
-    return grad_dv;
 }
 
 uint64_t samp_block_cnt(uint64_t filter_dir_cnt, uint64_t dir_dilation) {return (dir_dilation + 1) * filter_dir_cnt - dir_dilation;}
