@@ -93,6 +93,11 @@ public:
         dExpDelta = dRho * dExpDelta + (1 - dRho) * std::pow(dPreDelta, 2);
         return dPreDelta;
     }
+    void reset()
+    {
+        dExpGrad = 0;
+        dExpDelta = 0;
+    }
     // ~AdaDeltaVal()
     // {
     //     dExpGrad = 0;

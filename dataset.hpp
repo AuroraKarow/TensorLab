@@ -1,24 +1,13 @@
 DATASET_BEGIN
 
-MATRIX_POS minibatch_pos(uint64_t idx, uint64_t mini_batch)
-{
-    if(mini_batch) return mtx::mtx_elem_pos(idx, mini_batch);
-    else
-    {
-        MATRIX_POS pos;
-        pos.col = idx;
-        return pos;
-    }
-}
-
 class MNIST
 {
 public:
     /* Data sequence */
     // Element list of data
-    vect_t<feature> elem;
+    set<feature> elem;
     // Element index list of data, number sequence -> label value
-    vect_t<uint64_t> elem_lbl;
+    set<uint64_t> elem_lbl;
 private:
     /* Magic number */
     // Data
@@ -133,38 +122,6 @@ private:
         }
         return false;
     }
-    uint64_t initialize_load_qnty(std::initializer_list<uint64_t> &qnty_list)
-    {
-        auto ans = 0;
-        for(auto elem : qnty_list) ans += elem;
-        return ans;
-    }
-    void init_minibatch(uint64_t load_qnty, uint64_t minibatch)
-    {
-        auto minibatch_cnt = load_qnty / minibatch;
-        auto last_minibatch_size = load_qnty % minibatch;
-        if(last_minibatch_size) ++ minibatch_cnt;
-        elem.init(minibatch_cnt);
-        elem_lbl.init(minibatch_cnt);
-        for(auto i=0; i<minibatch_cnt; ++i)
-        {
-            auto alloc_minibatch_size = minibatch;
-            if(i+1==minibatch_cnt && last_minibatch_size) alloc_minibatch_size = last_minibatch_size;
-            elem[i].init(alloc_minibatch_size);
-            elem_lbl[i].init(alloc_minibatch_size);
-        }
-    }
-    void init(uint64_t load_qnty, uint64_t minibatch = 0)
-    {
-        if(minibatch) init_minibatch(load_qnty, minibatch);
-        else
-        {
-            elem.init();
-            elem[IDX_ZERO].init(load_qnty);
-            elem_lbl.init();
-            elem_lbl[IDX_ZERO].init(load_qnty);
-        }
-    }
     // Origin vector dimension
     static const uint64_t ORGN_SIZE = 10;
     // Bool element flag
@@ -177,18 +134,15 @@ public:
      * @brief   Default constructor
      * @param   bool_preprocess [Input] Data unit's element bool signal
      */
-    MNIST(bool bool_preprocess) : is_bool(bool_preprocess) {}
+    MNIST(bool bool_preprocess = false) : is_bool(bool_preprocess) {}
     void reset()
     {
         elem.reset();
         elem_lbl.reset();
     }
-    uint64_t size()
-    {
-        if(elem[elem.size()-1].size() == elem[IDX_ZERO].size()) return elem[IDX_ZERO].size() * elem.size();
-        else return elem[IDX_ZERO].size() * (elem.size() - 1) + elem[elem.size()-1].size();
-    }
-    uint64_t mini_batch() {return elem[IDX_ZERO].size();}
+    bool valid() { return (elem.size() == elem_lbl.size()); }
+    // Data size
+    uint64_t size() { return elem.size(); }
     // Column line per-data
     uint64_t ln_cnt() {return LN_CNT;}
     // Column count per-data
@@ -211,19 +165,15 @@ public:
         else return blank_vect;
     }
     // Get origin vector sequence
-    vect_t<vect> orgn()
+    set<vect> orgn()
     {
         if(size())
         {
-            vect_t<vect> elem_orgn(elem_lbl.size());
-            for(auto i=0; i<elem_lbl.size(); ++i)
-            {
-                elem_orgn[i].init(elem_lbl[i].size());
-                for(auto j=0; j<elem_lbl[i].size(); ++j) elem_orgn[i][j] = orgn(elem_lbl[i][j]);
-            }
+            set<vect> elem_orgn(elem_lbl.size());
+            for(auto i=0; i<elem_lbl.size(); ++i) elem_orgn[i] = orgn(elem_lbl[i]);
             return elem_orgn;
         }
-        else return blank_tensor;
+        else return blank_vect_seq;
     }
     /**
      * @brief   Load data
@@ -235,38 +185,30 @@ public:
      * @retval  true    Load successfully
      * @retval  false   Load filed
      */
-    bool load_data(std::string &dat_dir, std::string &lbl_dir, uint64_t load_qnty = 0, uint64_t minibatch = 0, uint64_t padding = 0)
+    bool load_data(std::string &dat_dir, std::string &lbl_dir, uint64_t load_qnty = 0, uint64_t padding = 0)
     {
-        bool pcdr_flag = true;
+        auto pcdr_flag = true;
         if(preprocess(dat_dir, lbl_dir))
         {
             set<uint64_t> lbl_data_stat;
-            if(load_qnty)
-            {
-                lbl_data_stat.init(load_qnty);
-                for(auto i=0; i<load_qnty; ++i) lbl_data_stat[i] = bagrt::random_number(0, QNTY_STAT, true);
-                lbl_data_stat.sort();
-            }
+            if(load_qnty) lbl_data_stat = bagrt::random_index(QNTY_STAT, load_qnty);
             else load_qnty = QNTY_STAT;
-            if(minibatch && load_qnty<minibatch) pcdr_flag = false;
-            if(pcdr_flag)
-            {
-                init(load_qnty, minibatch);
-                for(auto i=0,j=0; j<load_qnty; ++i)
-                    if((lbl_data_stat.size()&&(i==lbl_data_stat[j]||(j&&i==lbl_data_stat[j-1]))) || !lbl_data_stat.size())
-                    {
-                        auto idx_pos = minibatch_pos(j, minibatch);
-                        elem[idx_pos.ln][idx_pos.col].init();
-                        elem[idx_pos.ln][idx_pos.col][IDX_ZERO] = read_curr_dat(true, padding);
-                        elem_lbl[idx_pos.ln][idx_pos.col] = read_curr_lbl();
-                        ++ j;
-                    }
-                    else
-                    {
-                        read_curr_dat(false);
-                        read_curr_lbl();
-                    }
-            }
+            elem.init(load_qnty);
+            elem_lbl.init(load_qnty);
+            for(auto i=0,j=0; j<load_qnty; ++i)
+                if(i==lbl_data_stat[j] || !lbl_data_stat.size())
+                {
+                    elem[j].init();
+                    elem[j][IDX_ZERO] = read_curr_dat(true, padding);
+                    elem_lbl[j] = read_curr_lbl();
+                    ++ j;
+                }
+                else
+                {
+                    read_curr_dat(false);
+                    read_curr_lbl();
+                }
+            if(lbl_data_stat.size()) lbl_data_stat.reset();
         }
         else pcdr_flag = false;
         close_stream();
@@ -300,28 +242,24 @@ public:
                 load_qnty = qnty_list_cnt.sum();
             }
             else pcdr_flag = false;
-            if(minibatch && load_qnty<minibatch) pcdr_flag = false;
-            if(pcdr_flag)
+            elem.init(load_qnty);
+            elem_lbl.init(load_qnty);
+            if(pcdr_flag) while(check)
             {
-                init(load_qnty, minibatch);
-                while(check)
+                auto curr_lbl = read_curr_lbl();
+                if(((qnty_list_cnt[curr_lbl]<load_qnty)&&(qnty_list.size()==1)) || ((qnty_list_cnt[curr_lbl])&&(qnty_list.size()==ORGN_SIZE)))
                 {
-                    auto curr_lbl = read_curr_lbl();
-                    if(((qnty_list_cnt[curr_lbl]<load_qnty)&&(qnty_list.size()==1)) || ((qnty_list_cnt[curr_lbl])&&(qnty_list.size()==ORGN_SIZE)))
-                    {
-                        auto idx_pos = minibatch_pos(elem_cnt, minibatch);
-                        elem[idx_pos.ln][idx_pos.col].init();
-                        elem[idx_pos.ln][idx_pos.col][IDX_ZERO] = read_curr_dat(true, padding);
-                        elem_lbl[idx_pos.ln][idx_pos.col] = curr_lbl;
-                        ++ elem_cnt;
-                        if(qnty_list.size() == 1) ++ qnty_list_cnt[curr_lbl];
-                        else if(qnty_list.size()==ORGN_SIZE) -- qnty_list_cnt[curr_lbl];
-                    }
-                    else read_curr_dat(false);
-                    auto check_cnt = 0;
-                    for(check_cnt=0; check_cnt<ORGN_SIZE; ++check_cnt) if((qnty_list_cnt[check_cnt]<load_qnty)&&(qnty_list.size()==1) || ((qnty_list_cnt[check_cnt]>0)&&(qnty_list.size()==ORGN_SIZE))) break;
-                    check = check_cnt != ORGN_SIZE;
+                    elem[elem_cnt].init();
+                    elem[elem_cnt][IDX_ZERO] = read_curr_dat(true, padding);
+                    elem_lbl[elem_cnt] = curr_lbl;
+                    ++ elem_cnt;
+                    if(qnty_list.size() == 1) ++ qnty_list_cnt[curr_lbl];
+                    else if(qnty_list.size()==ORGN_SIZE) -- qnty_list_cnt[curr_lbl];
                 }
+                else read_curr_dat(false);
+                auto check_cnt = 0;
+                for(check_cnt=0; check_cnt<ORGN_SIZE; ++check_cnt) if((qnty_list_cnt[check_cnt]<load_qnty)&&(qnty_list.size()==1) || ((qnty_list_cnt[check_cnt]>0)&&(qnty_list.size()==ORGN_SIZE))) break;
+                check = check_cnt != ORGN_SIZE;
             }
             else pcdr_flag = false;
         }
@@ -329,8 +267,8 @@ public:
         close_stream();
         return pcdr_flag;
     }
-    MNIST(std::string dat_dir, std::string lbl_dir, uint64_t qnty = 0, uint64_t minibatch = 0, bool bool_preprocess = false, uint64_t padding = 0) : is_bool(bool_preprocess) { load_data(dat_dir, lbl_dir, qnty, minibatch, padding); }
-    MNIST(std::string dat_dir, std::string lbl_dir, std::initializer_list<uint64_t> qnty_list, uint64_t minibatch = 0, bool bool_preprocess = false, uint64_t padding = 0) : is_bool(bool_preprocess) { load_data(dat_dir, lbl_dir, qnty_list, minibatch, padding); }
+    MNIST(std::string dat_dir, std::string lbl_dir, uint64_t qnty = 0, bool bool_preprocess = false, uint64_t padding = 0) : is_bool(bool_preprocess) { load_data(dat_dir, lbl_dir, qnty, padding); }
+    MNIST(std::string dat_dir, std::string lbl_dir, std::initializer_list<uint64_t> qnty_list, bool bool_preprocess = false, uint64_t padding = 0) : is_bool(bool_preprocess) { load_data(dat_dir, lbl_dir, qnty_list, padding); }
     /**
      * @brief   Save data as bitmap
      * @param	dir_root	[Quote]	Saving root directory, '\\' is used to seperate sub directory path
@@ -347,13 +285,12 @@ public:
         {
             auto cnt = 0;
             for(auto i=0; i<elem.size(); ++i)
-                for(auto j=0; j<elem[i].size(); ++j)
-                {
-                    auto name = '[' + std::to_string(cnt++) + ']' + std::to_string(elem_lbl[i][j]);
-                    bmio::bitmap img;
-                    img.set_raw(elem[i][j][IDX_ZERO], elem[i][j][IDX_ZERO], elem[i][j][IDX_ZERO], elem[i][j][IDX_ZERO]);
-                    if(!img.save_img(dir_root, name, format)) return false;
-                }
+            {
+                auto name = '[' + std::to_string(cnt++) + ']' + std::to_string(elem_lbl[i]);
+                bmio::bitmap img;
+                img.set_raw(elem[i][IDX_ZERO], elem[i][IDX_ZERO], elem[i][IDX_ZERO], elem[i][IDX_ZERO]);
+                if(!img.save_img(dir_root, name, format)) return false;
+            }
             return true;
         }
     }

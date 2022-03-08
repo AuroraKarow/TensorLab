@@ -36,9 +36,7 @@ feature Conv(feature &vecInput, tensor &tenKernel, uint64_t iLnStride, uint64_t 
 vect GradLossToKernel(vect &vecGradLossToOutput, vect &vecInput, uint64_t iLnStride, uint64_t iColStride, uint64_t iLnDilation = 0, uint64_t iColDilation = 0, uint64_t iInputPadTop = 0, uint64_t iInputPadRight = 0, uint64_t iInputPadBottom = 0, uint64_t iInputPadLeft = 0, uint64_t iLnDistance = 0, uint64_t iColDistance = 0)
 {
     auto vecPrepInput = vecInput.pad(iInputPadTop, iInputPadRight, iInputPadBottom, iInputPadLeft, iLnDistance, iColDistance);
-    if(SAMP_VALID(vecPrepInput.LN_CNT, vecGradLossToOutput.LN_CNT, iLnStride, iLnDilation) &&
-    SAMP_VALID(vecPrepInput.COL_CNT, vecGradLossToOutput.COL_CNT, iColStride, iColDilation)) return Conv(vecPrepInput, vecGradLossToOutput, iLnStride, iColStride, iLnDilation, iColDilation);
-    else return blank_vect;
+    return Conv(vecPrepInput, vecGradLossToOutput, iLnStride, iColStride, iLnDilation, iColDilation);
 }
 
 tensor GradLossToKernel(feature &vecGradLossToOutput, feature &vecInput, uint64_t iLnStride, uint64_t iColStride, uint64_t iLnDilation = 0, uint64_t iColDilation = 0, uint64_t iInputPadTop = 0, uint64_t iInputPadRight = 0, uint64_t iInputPadBottom = 0, uint64_t iInputPadLeft = 0, uint64_t iLnDistance = 0, uint64_t iColDistance = 0)
@@ -118,8 +116,7 @@ feature PoolDown(feature &vecInput, uint64_t iPoolType = POOL_DOWN_MAX, uint64_t
     for(auto i=0; i<vecInput.size(); ++i)
     {
         if(iPoolType == POOL_DOWN_GAG) vecOutput[i] = PoolDownGlbAvg(vecInput[i]);
-        else vecOutput[i] = PoolDownMaxAvg(vecInput[i], iFilterLnCnt, iFilterColCnt, iLnStride, iColStride, iPoolType, iLnDilation, iColDilation
-        );
+        else vecOutput[i] = PoolDownMaxAvg(vecInput[i], iFilterLnCnt, iFilterColCnt, iLnStride, iColStride, iPoolType, iLnDilation, iColDilation);
         if(!vecOutput[i].is_matrix()) return blank_feature;
     }
     return vecOutput;
@@ -150,22 +147,16 @@ vect PoolUpMaxAvg(vect &vecInput, uint64_t iFilterLnCnt, uint64_t iFilterColCnt,
         iOutputColnCnt = SAMP_INPUT_DIR_CNT(vecInput.COL_CNT, iFilterColCnt, iColStride, iColDilation);
     }
     vect vecOutput(iOutputLnCnt, iOutputColnCnt);
-    auto iFilterSize = iFilterLnCnt * iFilterColCnt;
     for(auto i=0; i<vecInput.LN_CNT; ++i) for(auto j=0; j<vecInput.COL_CNT; ++j)
-        if(iPoolType==POOL_UP_AVG) for(auto k=0; k<iFilterLnCnt; ++k) for(auto l=0; l<iFilterColCnt; ++l)
+        if(iPoolType==POOL_UP_AVG)
         {
-            auto iTraceLn = SAMP_TRACE_POS(i, k, iLnStride, iLnDilation),
-                iTraceCol = SAMP_TRACE_POS(j, l, iColStride, iColDilation);
-            vecOutput[iTraceLn][iTraceCol] = vecInput[i][j] / iFilterSize;
+            auto dElemGrad = vecInput[i][j] / (iFilterLnCnt * iFilterColCnt);
+            for(auto k=0; k<iFilterLnCnt; ++k) for(auto l=0; l<iFilterColCnt; ++l) vecOutput[SAMP_TRACE_POS(i, k, iLnStride, iLnDilation)][SAMP_TRACE_POS(j, l, iColStride, iColDilation)] = dElemGrad;
         }
         else if(iPoolType==POOL_UP_MAX && vecTraceInput.is_matrix())
         {
-            auto iFromLn = SAMP_TRACE_POS(i, 0, iLnStride, iLnDilation),
-                iToLn = SAMP_TRACE_POS(i, iFilterLnCnt-1, iLnStride, iLnDilation),
-                iFromCol = SAMP_TRACE_POS(j, 0, iColStride, iColDilation),
-                iToCol = SAMP_TRACE_POS(j, iFilterColCnt-1, iColStride, iColDilation);
-            auto posExtrm = vecTraceInput.extremum(iFromLn, iToLn, iFromCol, iToCol, iLnDilation, iColDilation);
-            for(auto m=0; m<posExtrm.pos_list.size(); ++m) vecOutput[posExtrm.pos_list[m].ln][posExtrm.pos_list[m].col] += vecInput[i][j];
+            auto posExtrm = vecTraceInput.extremum(SAMP_TRACE_POS(i, 0, iLnStride, iLnDilation), SAMP_TRACE_POS(i, iFilterLnCnt-1, iLnStride, iLnDilation), SAMP_TRACE_POS(j, 0, iColStride, iColDilation), (j, iFilterColCnt-1, iColStride, iColDilation), iLnDilation, iColDilation);
+            for(auto k=0; k<posExtrm.pos_list.size(); ++k) vecOutput[posExtrm.pos_list[k].ln][posExtrm.pos_list[k].col] += vecInput[i][j];
         }
         else return blank_vect;
     return vecOutput;

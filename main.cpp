@@ -15,7 +15,7 @@ class NetBNMNIST final : public NetClassify
 private:
     NET_MAP<uint64_t, set<BN_PTR>> mapBNData;
 
-    set<vect> ForwProp(set<feature> &setInput)
+    set<vect> ForwProp(set<feature> &setInput, bool bResetAda = false)
     {
         set<vect> setOutput;
         set<feature> setTemp;
@@ -30,21 +30,25 @@ private:
             if(setTemp.size()) break;
             else return blank_vect_seq;
         case FC:
+            if(bResetAda) INSTANCE_DERIVE<LAYER_FC>(lsLayer[i]) -> ResetAda();
             setOutput = INSTANCE_DERIVE<LAYER_FC>(lsLayer[i]) -> ForwProp(setOutput);
             if(setOutput.size()) break;
             else return blank_vect_seq;
         case FC_BN:
+            if(bResetAda) INSTANCE_DERIVE<LAYER_FC_BN>(lsLayer[i]) -> ResetAda();
             setOutput = INSTANCE_DERIVE<LAYER_FC_BN>(lsLayer[i]) -> ForwProp(setOutput);
             if(setOutput.size()) break;
             else return blank_vect_seq;
         case CONV:
-            if(i) setTemp = INSTANCE_DERIVE<LAYER_CONV>(lsLayer[i]) -> ForwProp(setTemp);
-            else setTemp = INSTANCE_DERIVE<LAYER_CONV>(lsLayer[i]) -> ForwProp(setInput, true);
+            if(bResetAda) INSTANCE_DERIVE<LAYER_CONV>(lsLayer[i]) -> ResetAda();
+            if(!i) setTemp = INSTANCE_DERIVE<LAYER_CONV>(lsLayer[i]) -> ForwProp(setInput);
+            else setTemp = INSTANCE_DERIVE<LAYER_CONV>(lsLayer[i]) -> ForwProp(setTemp);
             if(setTemp.size()) break;
             else return blank_vect_seq;
         case CONV_BN:
-            if(i) setTemp = INSTANCE_DERIVE<LAYER_CONV_BN>(lsLayer[i]) -> ForwProp(setTemp);
-            else setTemp = INSTANCE_DERIVE<LAYER_CONV_BN>(lsLayer[i]) -> ForwProp(setInput, true);
+            if(bResetAda) INSTANCE_DERIVE<LAYER_CONV_BN>(lsLayer[i]) -> ResetAda();
+            if(!i) INSTANCE_DERIVE<LAYER_CONV_BN>(lsLayer[i]) -> ForwProp(setInput);
+            else setTemp = INSTANCE_DERIVE<LAYER_CONV_BN>(lsLayer[i]) -> ForwProp(setTemp);
             if(setTemp.size()) break;
             else return blank_vect_seq;
         case POOL:
@@ -168,7 +172,7 @@ public:
     void operator=(NetBNMNIST &netSrc) { NetClassify::operator=(netSrc);  ValueCopy(netSrc); }
     void operator=(NetBNMNIST &&netSrc) { NetClassify::operator=(move(netSrc));  ValueMove(move(netSrc)); }
 
-    NetBNMNIST(double dNetAcc = 1e-2, bool bShowIter = true) : NetClassify(dNetAcc, bShowIter) {}
+    NetBNMNIST(double dNetAcc = 1e-5, uint64_t iMinibatch = 0, bool bShowIter = true) : NetClassify(dNetAcc, iMinibatch, bShowIter) {}
     /* ACT_FT
     * uint64_t iActFuncType
     * ACT_VT
@@ -192,38 +196,75 @@ public:
         if(lyrCurrTemp->iLayerType==FC_BN || lyrCurrTemp->iLayerType == CONV_BN) mapBNData.insert(lsLayer.size(), set<BN_PTR>());
         return lsLayer.emplace_back(lyrCurrTemp);
     }
-    void Run(MNIST &mnistDataset)
+    bool Run(MNIST &mnistDataset)
     {
-        for(auto i=0; i<mapBNData.size(); ++i) mapBNData.index(i).value.init(mnistDataset.elem.size());
-        auto setOrigin = mnistDataset.orgn();
-        auto bDatasetTrainCnt = 0;
-        bool bErrorFlag = false;
-        do
+        if(mnistDataset.valid())
         {
-            bDatasetTrainCnt = 0;
-            for(auto i=0; i<mnistDataset.elem.size(); ++i)
+            if(!iNetMiniBatch) iNetMiniBatch = mnistDataset.size();
+            // Get origin vector of labels
+            auto setOrigin = mnistDataset.orgn();
+            // Batch size
+            auto iBatchCnt = mnistDataset.size() / iNetMiniBatch,
+                // Last bacth's size
+                iBatchSizeRear = mnistDataset.size() % iNetMiniBatch;
+            if(iBatchSizeRear) ++ iBatchCnt;
+            // Initial BN data sequence
+            for(auto i=0; i<mapBNData.size(); ++i) mapBNData.index(i).value.init(iBatchCnt);
+            // MNIST indexes set
+            set<uint64_t> setShuffleIdx;
+            if(iNetMiniBatch != mnistDataset.size())
             {
-                set<vect> setPreOutput;
-                auto bTrainFlag = false;
-                do 
-                {
-                    auto setOutput = ForwProp(mnistDataset.elem[i]);
-                    if(setOutput.size())
-                    {
-                        if(setPreOutput.size()) bTrainFlag = IterFlag(setOutput, setOrigin[i]);
-                        else bTrainFlag = true;
-                        if(bShowIterFlag) IterShow(setPreOutput, setOutput, setOrigin[i]);
-                        if(bTrainFlag) { if(bErrorFlag = !BackProp(setOutput, setOrigin[i])) break; }
-                        else ++ bDatasetTrainCnt;
-                    }
-                    else { bErrorFlag = true; break; }
-                }
-                while (bTrainFlag);
-                if(bErrorFlag) break;
+                setShuffleIdx.init(mnistDataset.size());
+                for(auto i=0; i<setShuffleIdx.size(); ++i) setShuffleIdx[i] = i;
             }
-            if(bErrorFlag) break;
+            auto iEpoch = 0, iBatchTrainCnt = 0;
+            do
+            {
+                // Batch shuffling
+                if(setShuffleIdx.size()) setShuffleIdx.shuffle();
+                for(auto i=0; i<iBatchCnt; ++i)
+                { 
+                    // Current batch origin vector set
+                    set<vect> setCurrOrigin;
+                    set<feature> setCurrInput;
+                    if(setShuffleIdx.size())
+                    {
+                        auto iBatchSize = iNetMiniBatch;
+                        if(iBatchSizeRear && i+1==iBatchCnt) iBatchSize = iBatchSizeRear;
+                        // Dataset shuffled indexes for current batch
+                        auto setShuffleCurrIdx = setShuffleIdx.sub_queue(mtx_elem_pos(i, 0, iNetMiniBatch), mtx_elem_pos(i, iBatchSize-1, iNetMiniBatch));
+                        setCurrOrigin = setOrigin.sub_queue(setShuffleCurrIdx);
+                        setCurrInput = mnistDataset.elem.sub_queue(setShuffleCurrIdx);
+                        setShuffleCurrIdx.reset();
+                    }
+                    else
+                    {
+                        setCurrOrigin = std::move(setOrigin);
+                        setCurrInput = mnistDataset.elem;
+                    }
+                    bool bBatchIterFlag = false;
+                    set<vect> setPreOutput;
+                    do
+                    {
+                        auto setCurrOutput = ForwProp(setCurrInput, !bBatchIterFlag);
+                        if(setCurrOutput.size())
+                        {
+                            bBatchIterFlag = IterFlag(setCurrOutput, setCurrOrigin);
+                            if(!bBatchIterFlag && !setPreOutput.size()) ++ iBatchTrainCnt;
+                            if(bShowIterFlag) IterShow(setPreOutput, setCurrOutput, setCurrOrigin);
+                            std::cout << "[Epoch][" << iEpoch << "][Batch Index][" << i << ']' << std::endl;
+                            if(bBatchIterFlag) if(!BackProp(setCurrOutput, setCurrOrigin, i)) return false;
+                        }
+                        else return false;
+                    }
+                    while(bBatchIterFlag);
+                }
+                ++ iEpoch;
+            }
+            while(iBatchTrainCnt < iBatchCnt);
+            return true;
         }
-        while(bDatasetTrainCnt < mnistDataset.size());
+        else return false;    
     }
 };
 
@@ -232,8 +273,9 @@ int main(int argc, char *argv[], char *envp[])
     cout << "hello, world." << endl;
     // MNIST demo
     string root_dir = "E:\\VS Code project data\\MNIST\\";
-    MNIST dataset(root_dir + "train-images.idx3-ubyte", root_dir + "train-labels.idx1-ubyte", {64}, 32);
-    NetBNMNIST LeNet;
+    MNIST dataset(root_dir + "train-images.idx3-ubyte", root_dir + "train-labels.idx1-ubyte", {64});
+    // dataset.output_bitmap("E:\\VS Code project data\\MNIST_out", BMIO_BMP);
+    NetBNMNIST LeNet(0.1, 32);
     LeNet.AddLayer<LAYER_CONV>(20, 1, 5, 5, 1, 1);
     LeNet.AddLayer<LAYER_CONV_BN>(20);
     LeNet.AddLayer<LAYER_ACT_FT>(RELU);

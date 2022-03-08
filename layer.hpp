@@ -73,7 +73,7 @@ struct LayerActVect : LayerAct
     LayerActVect(uint64_t iActFuncType) : LayerAct(ACT_VT, iActFuncType) {}
     set<vect> ForwProp(set<vect> &setInput)
     {
-        setLayerInput = std::move(setInput);
+        if(setInput.size()) setLayerInput = std::move(setInput);
         return LayerAct::ForwProp(setLayerInput);
     }
     set<vect> BackProp(set<vect> &setGrad, set<vect> &setOrigin = set<vect>()) { return LayerAct::BackProp(setLayerInput, setGrad, setOrigin); }
@@ -94,7 +94,7 @@ struct LayerActFt : LayerAct
     LayerActFt(uint64_t iActFuncType) : LayerAct(ACT_FT, iActFuncType) {}
     set<feature> ForwProp(set<feature> &setInput)
     {
-        setLayerInput = std::move(setInput);
+        if(setInput.size()) setLayerInput = std::move(setInput);
         return LayerAct::ForwProp(setLayerInput);
     }
     set<feature> BackProp(set<feature> &setGrad, set<feature> &setOrigin = set<feature>()) { return LayerAct::BackProp(setLayerInput, setGrad, setOrigin); }
@@ -127,10 +127,9 @@ struct LayerFC : Layer
     
     LayerFC() : Layer(FC) {}
     LayerFC(uint64_t iInputLnCnt, uint64_t iOutputLnCnt, double dLearnRate = 0, double dRandBoundryFirst = 0, double dRandBoundrySecond = 0, double dAcc = 1e-05) : Layer(FC, dLearnRate) { vecLayerWeight = _FC InitWeight(iInputLnCnt, iOutputLnCnt, dRandBoundryFirst, dRandBoundrySecond, dAcc); }
-    set<vect> ForwProp(set<vect> &setInput, bool bFirstLayer = false)
+    set<vect> ForwProp(set<vect> &setInput)
     {
-        if(bFirstLayer) { if(!setLayerInput.size()) setLayerInput = setInput; }
-        else setLayerInput = std::move(setInput);
+        if(setInput.size()) setLayerInput = std::move(setInput);
         return _FC Output(setLayerInput, vecLayerWeight);
     }
     set<vect> BackProp(set<vect> &setGrad)
@@ -139,12 +138,13 @@ struct LayerFC : Layer
         return _FC GradLossToInput(setGrad, vecLayerWeight);
     }
 
+    void ResetAda() { advLayerDelta.reset(); }
     void Reset()
     {
         vecLayerWeight.reset();
         setLayerInput.reset();
         vecLayerGradWeight.reset();
-        advLayerDelta.reset();
+        ResetAda();
     }
     ~LayerFC() { Reset(); }
 };
@@ -187,10 +187,9 @@ struct LayerFCBN : Layer
     void operator=(LayerFCBN &&lyrSrc) { Layer::operator=(std::move(lyrSrc)); ValueMove(std::move(lyrSrc)); }
 
     LayerFCBN(double dShift = 0, double dScale = 1, double dLearnRate = 0, double dDmt = 1e-10) : Layer(FC_BN, dLearnRate), dBeta(dShift), dGamma(dScale), dEpsilon(dDmt) {}
-    set<vect> ForwProp(set<vect> &setInput, bool bFirstLayer = false)
+    set<vect> ForwProp(set<vect> &setInput)
     {
-        if(bFirstLayer) { if(!setLayerInput.size()) setLayerInput = setInput; }
-        else setLayerInput = std::move(setInput);
+        if(setInput.size()) setLayerInput = std::move(setInput);
         BNData = _FC BNTrain(setLayerInput, dBeta, dGamma, dEpsilon);
         return BNData.setY;
     }
@@ -201,7 +200,16 @@ struct LayerFCBN : Layer
         return _FC BNGradLossToInput(BNData, setLayerInput, setGrad, dGamma, dEpsilon);
     }
 
-    void Reset() { setLayerInput.reset(); }
+    void ResetAda()
+    {
+        advBeta.reset();
+        advGamma.reset();
+    }
+    void Reset()
+    {
+        setLayerInput.reset();
+        BNData.reset();
+    }
     ~LayerFCBN() { Reset(); }
 };
 
@@ -248,10 +256,9 @@ struct LayerConv : Layer
 
     LayerConv() : Layer(CONV) {}
     LayerConv(uint64_t iKernelAmt, uint64_t iKernelChannCnt, uint64_t iKernelLnCnt, uint64_t iKernelColCnt, uint64_t iLnStride, uint64_t iColStride, double dLearnRate = 0, double dRandBoundryFirst = 0, double dRandBoundrySecond = 0, double dRandBoundryAcc = 1e-5, uint64_t iLnDilation = 0, uint64_t iColDilation = 0, uint64_t iInputPadTop = 0, uint64_t iInputPadRight = 0, uint64_t iInputPadBottom = 0, uint64_t iInputPadLeft = 0, uint64_t iLnDistance = 0, uint64_t iColDistance = 0) : Layer(CONV, dLearnRate), iLayerLnStride(iLnStride), iLayerColStride(iColStride), iLayerLnDilation(iLnDilation), iLayerColDilation(iColDilation), iLayerInputPadTop(iInputPadTop), iLayerInputPadRight(iInputPadRight), iLayerInputPadBottom( iInputPadBottom), iLayerInputPadLeft(iInputPadLeft), iLayerLnDistance(iLnDistance), iLayerColDistance(iColDistance) { tenKernel = _CONV InitKernel(iKernelAmt, iKernelChannCnt, iKernelLnCnt, iKernelColCnt, dRandBoundryFirst, dRandBoundrySecond, dRandBoundryAcc); }
-    set<feature> ForwProp(set<feature> &setInput, bool bFirstLayer = false)
+    set<feature> ForwProp(set<feature> &setInput)
     {
-        if(bFirstLayer) { if(!setLayerInput.size()) setLayerInput = setInput; }
-        else setLayerInput = std::move(setInput);
+        if(setInput.size()) setLayerInput = std::move(setInput);
         return _CONV Conv(setLayerInput, tenKernel, iLayerLnStride, iLayerColStride, iLayerLnDilation, iLayerColDilation, iLayerInputPadTop, iLayerInputPadRight, iLayerInputPadBottom, iLayerInputPadLeft, iLayerLnDistance, iLayerColDistance);
     }
     set<feature> BackProp(set<feature> &setGrad)
@@ -260,12 +267,13 @@ struct LayerConv : Layer
         return _CONV GradLossToInput(setGrad, tenKernel, iLayerLnStride, iLayerColStride, iLayerLnDilation, iLayerColDilation, iLayerInputPadTop, iLayerInputPadRight, iLayerInputPadBottom, iLayerInputPadLeft, iLayerLnDistance, iLayerColDistance);
     }
 
+    void ResetAda() { advLayerDelta.reset(); }
     void Reset()
     {
         setLayerInput.reset();
         tenGradKernel.reset();
-        advLayerDelta.reset();
         tenKernel.reset();
+        ResetAda();
     }
     ~LayerConv() { Reset(); }
 };
@@ -315,10 +323,9 @@ struct LayerConvBN : Layer
         vecBeta = _CONV BNInitScaleShift(iChannCnt, dShift);
         vecGamma = _CONV BNInitScaleShift(iChannCnt, dScale);
     }
-    set<feature> ForwProp(set<feature> &setInput, bool bFirstLayer = false)
+    set<feature> ForwProp(set<feature> &setInput)
     {
-        if(bFirstLayer) { if(!setLayerInput.size()) setLayerInput = setInput; }
-        else setLayerInput = std::move(setInput);
+        if(setInput.size()) setLayerInput = std::move(setInput);
         BNData = _CONV BNTrain(setLayerInput, vecBeta, vecGamma, dEpsilon);
         return BNData.setY;
     }
@@ -329,16 +336,20 @@ struct LayerConvBN : Layer
         return _CONV BNGradLossToInput(BNData, setLayerInput, setGrad, vecGamma, dEpsilon);
     }
 
+    void ResetAda()
+    {
+        advBeta.reset();
+        advGamma.reset();
+    }
     void Reset()
     {
         vecBeta.reset();
         vecGamma.reset();
         setLayerInput.reset();
-        advBeta.reset();
-        advGamma.reset();
         vecGradBeta.reset();
         vecGradGamma.reset();
         BNData.Reset();
+        ResetAda();
     }
     ~LayerConvBN() { Reset(); }
 };
@@ -384,10 +395,9 @@ struct LayerPool : Layer
         }
     }
     LayerPool(uint64_t iPoolTypeVal = POOL_MAX, uint64_t iFilterLnCnt = 0, uint64_t iFilterColCnt = 0, uint64_t iLnStride = 0, uint64_t iColStride = 0, uint64_t iLnDilation = 0, uint64_t iColDilation = 0) : Layer(POOL, 0), iPoolType(iPoolTypeVal), iLayerFilterLnCnt(iFilterLnCnt), iLayerFilterColCnt(iFilterColCnt), iLayerLnStride(iLnStride), iLayerColStride(iColStride), iLayerLnDilation(iLnDilation), iLayerColDilation(iColDilation) {}
-    set<feature> ForwProp(set<feature> &setInput, bool bFirstLayer = false)
+    set<feature> ForwProp(set<feature> &setInput)
     {
-        if(bFirstLayer) { if(!setLayerInput.size()) setLayerInput = setInput; }
-        else setLayerInput = std::move(setInput);
+        if(setInput.size()) setLayerInput = std::move(setInput);
         return _CONV Pool(setLayerInput, iPoolType, true, set<feature>(), iLayerFilterLnCnt, iLayerFilterColCnt, iLayerLnStride, iLayerColStride, iLayerLnDilation, iLayerColDilation);
     }
     set<feature> BackProp(set<feature> &setGrad) { return _CONV Pool(setGrad, PoolUpType(iPoolType), false, setLayerInput, iLayerFilterLnCnt, iLayerFilterColCnt, iLayerLnStride, iLayerColStride, iLayerLnDilation, iLayerColDilation); }

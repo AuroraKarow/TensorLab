@@ -13,7 +13,7 @@ vect FeatureTransform(feature &vecInput)
         iLnCnt = iChannCnt * iElemCnt,
         iCpyCnt = 0Ui64;
     auto vecResTransForm = vect(iLnCnt, 1);
-    for(auto i=0; i<iChannCnt; ++i) for(auto j=0; j<iElemCnt; ++j) vecResTransForm.pos_idx(++ iCpyCnt) = vecInput[i].pos_idx(j);
+    for(auto i=0; i<iChannCnt; ++i) for(auto j=0; j<iElemCnt; ++j) vecResTransForm.pos_idx(iCpyCnt++) = vecInput[i].pos_idx(j);
     return vecResTransForm;
 }
 

@@ -4,9 +4,14 @@ class NetBase
 {
 protected:
     double dAcc = 1e-5;
+    uint64_t iNetMiniBatch = 0;
     NET_LIST<LAYER_PTR> lsLayer;
 
-    virtual void ValueAssign(NetBase &netSrc) {dAcc = netSrc.dAcc;}
+    virtual void ValueAssign(NetBase &netSrc)
+    {
+        dAcc = netSrc.dAcc;
+        iNetMiniBatch = netSrc.iNetMiniBatch;
+    }
     void ShowIter() {}
     bool IterFlag() { return true; }
     bool ForwProp() { return true; }
@@ -28,10 +33,10 @@ public:
     void operator=(NetBase &netSrc) { ValueCopy(netSrc); }
     void operator=(NetBase &&netSrc) { ValueMove(std::move(netSrc)); }
     
-    NetBase(double dNetAcc = 1e-2) : dAcc(dNetAcc) {}
+    NetBase(double dNetAcc = 1e-5, uint64_t iMinibatch = 0) : dAcc(dNetAcc), iNetMiniBatch(iMinibatch) {}
     template<typename LayerType, typename ... Args,  typename = std::enable_if_t<std::is_base_of_v<_LAYER Layer, LayerType>>> bool AddLayer(Args&& ... pacArgs) { return lsLayer.emplace_back(std::make_shared<LayerType>(pacArgs...)); }
     uint64_t Depth() { return lsLayer.size(); }
-    void Run() {}
+    bool Run() { return true; }
 };
 
 class NetClassify : public NetBase
@@ -65,8 +70,7 @@ protected:
     }
     bool IterFlag(set<vect> &setCurrOutput, set<vect> &setOrigin)
     {
-        for(auto i=0; i<setCurrOutput.size(); ++i) for(auto j=0; j<setCurrOutput[i].LN_CNT; ++j)
-            if(setOrigin[i][j][IDX_ZERO] == 1) if(std::abs(1-setCurrOutput[i][j][IDX_ZERO]) > dAcc) return true;
+        for(auto i=0; i<setCurrOutput.size(); ++i) for(auto j=0; j<setCurrOutput[i].LN_CNT; ++j) if(setOrigin[i][j][IDX_ZERO]) if(std::abs(1-setCurrOutput[i][j][IDX_ZERO]) > dAcc) return true;
         return false;
     }
 public:
@@ -77,7 +81,7 @@ public:
     void operator=(NetClassify &netSrc) { NetBase::operator=(netSrc); ValueCopy(netSrc); }
     void operator=(NetClassify &&netSrc) { NetBase::operator=(std::move(netSrc)); ValueMove(std::move(netSrc)); }
     
-    NetClassify(double dNetAcc = 1e-2, bool bShowIter = false) : NetBase(dNetAcc), bShowIterFlag(bShowIter) {}
+    NetClassify(double dNetAcc = 1e-5, uint64_t iMinibatch = 0, bool bShowIter = false) : NetBase(dNetAcc, iMinibatch), bShowIterFlag(bShowIter) {}
 };
 
 NEUNET_END
