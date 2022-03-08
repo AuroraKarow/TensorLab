@@ -90,57 +90,19 @@ private:
             else return false;
         case FC:
             setGradVec = INSTANCE_DERIVE<LAYER_FC>(lsLayer[i]) -> BackProp(setGradVec);
-            if(setGradVec.size())
-            {
-                if(INSTANCE_DERIVE<LAYER_FC>(lsLayer[i]) -> dLayerLearnRate) INSTANCE_DERIVE<LAYER_FC>(lsLayer[i])->vecLayerWeight -= INSTANCE_DERIVE<LAYER_FC>(lsLayer[i])->dLayerLearnRate * INSTANCE_DERIVE<LAYER_FC>(lsLayer[i])->vecLayerGradWeight;
-                else INSTANCE_DERIVE<LAYER_FC>(lsLayer[i]) -> vecLayerWeight = _FC AdaDeltaUpdateWeight(INSTANCE_DERIVE<LAYER_FC>(lsLayer[i])->vecLayerWeight, INSTANCE_DERIVE<LAYER_FC>(lsLayer[i])->vecLayerGradWeight, INSTANCE_DERIVE<LAYER_FC>(lsLayer[i])->advLayerDelta);
-                break;
-            }
+            if(setGradVec.size() && INSTANCE_DERIVE<LAYER_FC>(lsLayer[i])->UpdatePara()) break;
             else return false;
         case FC_BN:
             setGradVec = INSTANCE_DERIVE<LAYER_FC_BN>(lsLayer[i]) -> BackProp(setGradVec);
-            if(setGradVec.size())
-            {
-                mapBNData[i][iMiniBatchIdx] = std::make_shared<BN_FC>(std::move(INSTANCE_DERIVE<LAYER_FC_BN>(lsLayer[i])->BNData));
-                if(INSTANCE_DERIVE<LAYER_FC_BN>(lsLayer[i]) -> dLayerLearnRate)
-                {
-                    INSTANCE_DERIVE<LAYER_FC_BN>(lsLayer[i])->dBeta -= INSTANCE_DERIVE<LAYER_FC_BN>(lsLayer[i])->dLayerLearnRate * INSTANCE_DERIVE<LAYER_FC_BN>(lsLayer[i])->dGradBeta;
-                    INSTANCE_DERIVE<LAYER_FC_BN>(lsLayer[i])->dGamma -= INSTANCE_DERIVE<LAYER_FC_BN>(lsLayer[i])->dLayerLearnRate * INSTANCE_DERIVE<LAYER_FC_BN>(lsLayer[i])->dGradGamma;
-                }
-                else
-                {
-                    INSTANCE_DERIVE<LAYER_FC_BN>(lsLayer[i])->dBeta -= INSTANCE_DERIVE<LAYER_FC_BN>(lsLayer[i])->advBeta.Delta(INSTANCE_DERIVE<LAYER_FC_BN>(lsLayer[i])->dGradBeta);
-                    INSTANCE_DERIVE<LAYER_FC_BN>(lsLayer[i])->dGamma -= INSTANCE_DERIVE<LAYER_FC_BN>(lsLayer[i])->advGamma.Delta(INSTANCE_DERIVE<LAYER_FC_BN>(lsLayer[i])->dGradGamma);
-                }
-                break;
-            }
+            if(setGradVec.size() && INSTANCE_DERIVE<LAYER_FC_BN>(lsLayer[i])->UpdatePara()) break;
             else return false;
         case CONV:
             setGradFt = INSTANCE_DERIVE<LAYER_CONV>(lsLayer[i]) -> BackProp(setGradFt);
-            if(setGradFt.size())
-            {
-                if(INSTANCE_DERIVE<LAYER_CONV>(lsLayer[i]) -> dLayerLearnRate) INSTANCE_DERIVE<LAYER_CONV>(lsLayer[i])->tenKernel = _CONV UpdateKernel(INSTANCE_DERIVE<LAYER_CONV>(lsLayer[i])->tenKernel, INSTANCE_DERIVE<LAYER_CONV>(lsLayer[i])->tenGradKernel, INSTANCE_DERIVE<LAYER_CONV>(lsLayer[i])->dLayerLearnRate);
-                else INSTANCE_DERIVE<LAYER_CONV>(lsLayer[i])->tenKernel = _CONV AdaDeltaUpdateKernel(INSTANCE_DERIVE<LAYER_CONV>(lsLayer[i])->tenKernel, INSTANCE_DERIVE<LAYER_CONV>(lsLayer[i])->tenGradKernel, INSTANCE_DERIVE<LAYER_CONV>(lsLayer[i])->advLayerDelta);
-                break;
-            }
+            if(setGradFt.size() && INSTANCE_DERIVE<LAYER_CONV>(lsLayer[i])->UpdatePara()) break;
             else return false;
         case CONV_BN:
             setGradFt = INSTANCE_DERIVE<LAYER_CONV_BN>(lsLayer[i]) -> BackProp(setGradFt);
-            if(setGradFt.size())
-            {
-                mapBNData[i][iMiniBatchIdx] = std::make_shared<BN_CONV>(std::move(INSTANCE_DERIVE<LAYER_CONV_BN>(lsLayer[i])->BNData));
-                if(INSTANCE_DERIVE<LAYER_CONV_BN>(lsLayer[i]) -> dLayerLearnRate)
-                {
-                    INSTANCE_DERIVE<LAYER_CONV_BN>(lsLayer[i])->vecGamma -= INSTANCE_DERIVE<LAYER_CONV_BN>(lsLayer[i])->dLayerLearnRate * INSTANCE_DERIVE<LAYER_CONV_BN>(lsLayer[i])->vecGradGamma;
-                    INSTANCE_DERIVE<LAYER_CONV_BN>(lsLayer[i])->vecBeta -= INSTANCE_DERIVE<LAYER_CONV_BN>(lsLayer[i])->dLayerLearnRate * INSTANCE_DERIVE<LAYER_CONV_BN>(lsLayer[i])->vecGradBeta;
-                }
-                else
-                {
-                    INSTANCE_DERIVE<LAYER_CONV_BN>(lsLayer[i])->vecGamma -= INSTANCE_DERIVE<LAYER_CONV_BN>(lsLayer[i])->advGamma.Delta(INSTANCE_DERIVE<LAYER_CONV_BN>(lsLayer[i])->vecGradGamma);
-                    INSTANCE_DERIVE<LAYER_CONV_BN>(lsLayer[i])->vecBeta -= INSTANCE_DERIVE<LAYER_CONV_BN>(lsLayer[i])->advBeta.Delta(INSTANCE_DERIVE<LAYER_CONV_BN>(lsLayer[i])->vecGradBeta);
-                }
-                break;
-            }
+            if(setGradFt.size() && INSTANCE_DERIVE<LAYER_CONV_BN>(lsLayer[i])->UpdatePara()) break;
             else return false;
         case POOL:
             setGradFt = INSTANCE_DERIVE<LAYER_POOL>(lsLayer[i]) -> BackProp(setGradFt);
@@ -225,8 +187,9 @@ public:
                 for(auto i=0; i<iBatchCnt; ++i)
                 { 
                     // Current batch origin vector set
-                    set<vect> setCurrOrigin;
+                    set<vect> setCurrOrigin, setPreOutput;
                     set<feature> setCurrInput;
+                    bool bBatchIterFlag = false;
                     if(setShuffleIdx.size())
                     {
                         auto iBatchSize = iNetMiniBatch;
@@ -242,8 +205,6 @@ public:
                         setCurrOrigin = std::move(setOrigin);
                         setCurrInput = mnistDataset.elem;
                     }
-                    bool bBatchIterFlag = false;
-                    set<vect> setPreOutput;
                     do
                     {
                         auto setCurrOutput = ForwProp(setCurrInput, !bBatchIterFlag);
@@ -256,6 +217,7 @@ public:
                             if(bBatchIterFlag) if(!BackProp(setCurrOutput, setCurrOrigin, i)) return false;
                         }
                         else return false;
+                        setCurrOutput.reset();
                     }
                     while(bBatchIterFlag);
                 }

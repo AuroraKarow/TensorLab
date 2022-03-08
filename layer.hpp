@@ -18,6 +18,7 @@ struct Layer
     Layer(uint64_t iLayerTypeVal = ACT_VT, double dLearnRate = 0) : iLayerType(iLayerTypeVal), dLayerLearnRate(dLearnRate) {}
     void ForwProp() {}
     void BackProp() {}
+    virtual bool UpdatePara() {return true;}
 
     virtual void Reset() {}
     ~Layer() {}
@@ -137,6 +138,16 @@ struct LayerFC : Layer
         vecLayerGradWeight = _FC GradLossToWeight(setGrad, setLayerInput);
         return _FC GradLossToInput(setGrad, vecLayerWeight);
     }
+    bool UpdatePara()
+    {
+        if(vecLayerGradWeight.is_matrix())
+        {
+            if(dLayerLearnRate) vecLayerWeight -= dLayerLearnRate * vecLayerGradWeight;
+            else vecLayerWeight = _FC AdaDeltaUpdateWeight(vecLayerWeight, vecLayerGradWeight, advLayerDelta);
+            return true;
+        }
+        else return false;
+    }
 
     void ResetAda() { advLayerDelta.reset(); }
     void Reset()
@@ -198,6 +209,23 @@ struct LayerFCBN : Layer
         dGradGamma = _FC BNGradLossToScale(setGrad, BNData);
         dGradBeta = _FC BNGradLossToShift(setGrad);
         return _FC BNGradLossToInput(BNData, setLayerInput, setGrad, dGamma, dEpsilon);
+    }
+    bool UpdatePara()
+    {
+        if(dGradGamma && dGradBeta)
+        {
+            if(dLayerLearnRate)
+            {
+                dGamma -= dLayerLearnRate * dGradGamma;
+                dBeta -= dLayerLearnRate * dGradBeta;
+            }
+            else 
+            {
+                dGamma = _FC BNAdaDeltaUpdateScaleShift(dGamma, dGradGamma, advGamma);
+                dBeta = _FC BNAdaDeltaUpdateScaleShift(dBeta, dGradBeta, advBeta);
+            }
+        }
+        else return false;
     }
 
     void ResetAda()
@@ -265,6 +293,15 @@ struct LayerConv : Layer
     {
         tenGradKernel = _CONV GradLossToKernel(setGrad, setLayerInput, iLayerLnStride, iLayerColStride, iLayerLnDilation, iLayerColDilation, iLayerInputPadTop, iLayerInputPadRight, iLayerInputPadBottom, iLayerInputPadLeft, iLayerLnDistance, iLayerColDistance);
         return _CONV GradLossToInput(setGrad, tenKernel, iLayerLnStride, iLayerColStride, iLayerLnDilation, iLayerColDilation, iLayerInputPadTop, iLayerInputPadRight, iLayerInputPadBottom, iLayerInputPadLeft, iLayerLnDistance, iLayerColDistance);
+    }
+    bool UpdatePara()
+    {
+        if(tenGradKernel.size())
+        {
+            if(dLayerLearnRate) tenKernel = _CONV UpdateKernel(tenKernel, tenGradKernel, dLayerLearnRate);
+            else tenKernel = _CONV AdaDeltaUpdateKernel(tenKernel, tenGradKernel, advLayerDelta);
+        }
+        else return false;
     }
 
     void ResetAda() { advLayerDelta.reset(); }
@@ -334,6 +371,23 @@ struct LayerConvBN : Layer
         vecGradGamma = _CONV BNGradLossToScale(setGrad, BNData);
         vecGradBeta = _CONV BNGradLossToShift(setGrad);
         return _CONV BNGradLossToInput(BNData, setLayerInput, setGrad, vecGamma, dEpsilon);
+    }
+    bool UpdatePara()
+    {
+        if(vecGradGamma.is_matrix() && vecGradBeta.is_matrix())
+        {
+            if(dLayerLearnRate)
+            {
+                vecGamma -= dLayerLearnRate * vecGradGamma;
+                vecBeta -= dLayerLearnRate * vecGradBeta;
+            }
+            else 
+            {
+                vecGamma = _CONV BNAdaDeltaUpdateScaleShift(vecGamma, vecGradGamma, advGamma);
+                vecBeta = _CONV BNAdaDeltaUpdateScaleShift(vecBeta, vecGradBeta, advBeta);
+            }
+        }
+        else return false;
     }
 
     void ResetAda()
