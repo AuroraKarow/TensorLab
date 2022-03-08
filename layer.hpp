@@ -224,6 +224,7 @@ struct LayerFCBN : Layer
                 dGamma = _FC BNAdaDeltaUpdateScaleShift(dGamma, dGradGamma, advGamma);
                 dBeta = _FC BNAdaDeltaUpdateScaleShift(dBeta, dGradBeta, advBeta);
             }
+            return true;
         }
         else return false;
     }
@@ -300,6 +301,7 @@ struct LayerConv : Layer
         {
             if(dLayerLearnRate) tenKernel = _CONV UpdateKernel(tenKernel, tenGradKernel, dLayerLearnRate);
             else tenKernel = _CONV AdaDeltaUpdateKernel(tenKernel, tenGradKernel, advLayerDelta);
+            return true;
         }
         else return false;
     }
@@ -386,6 +388,7 @@ struct LayerConvBN : Layer
                 vecGamma = _CONV BNAdaDeltaUpdateScaleShift(vecGamma, vecGradGamma, advGamma);
                 vecBeta = _CONV BNAdaDeltaUpdateScaleShift(vecBeta, vecGradBeta, advBeta);
             }
+            return true;
         }
         else return false;
     }
