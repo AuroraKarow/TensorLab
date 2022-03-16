@@ -198,11 +198,10 @@ public:
                         auto setShuffleCurrIdx = setShuffleIdx.sub_queue(mtx_elem_pos(i, 0, iNetMiniBatch), mtx_elem_pos(i, iBatchSize-1, iNetMiniBatch));
                         setCurrOrigin = setOrigin.sub_queue(setShuffleCurrIdx);
                         setCurrInput = mnistDataset.elem.sub_queue(setShuffleCurrIdx);
-                        setShuffleCurrIdx.reset();
                     }
                     else
                     {
-                        setCurrOrigin = std::move(setOrigin);
+                        setCurrOrigin = setOrigin;
                         setCurrInput = mnistDataset.elem;
                     }
                     do
@@ -217,7 +216,6 @@ public:
                             if(bBatchIterFlag) if(!BackProp(setCurrOutput, setCurrOrigin, i)) return false;
                         }
                         else return false;
-                        setCurrOutput.reset();
                     }
                     while(bBatchIterFlag);
                 }
