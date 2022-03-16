@@ -207,7 +207,7 @@ public:
                     }
                     do
                     {
-                        auto setCurrOutput = ForwProp(setCurrInput, !bBatchIterFlag);
+                        auto setCurrOutput = ForwProp(setCurrInput);
                         if(setCurrOutput.size())
                         {
                             bBatchIterFlag = IterFlag(setCurrOutput, setCurrOrigin);

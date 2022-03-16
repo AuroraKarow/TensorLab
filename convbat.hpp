@@ -131,14 +131,14 @@ ConvBN BNTrain(set<feature> &setInput, vect &vecBeta, vect &vecGamma, double dEp
         for(auto j=0; j<setInput.size(); ++j)
             if(BNOutput.vecMiuBeta[i].is_matrix()) BNOutput.vecMiuBeta[i] += setInput[j][i];
             else BNOutput.vecMiuBeta[i] = setInput[j][i];
-        BNOutput.vecMiuBeta[i].elem_cal_opt(setInput.size(), MATRIX_ELEM_DIV);
+        BNOutput.vecMiuBeta[i] = BNOutput.vecMiuBeta[i].elem_cal_opt(setInput.size(), MATRIX_ELEM_DIV);
         for(auto j=0; j<setInput.size(); ++j)
         {
             auto vecSglSigmaSqr = (setInput[j][i] - BNOutput.vecMiuBeta[i]).elem_cal_opt(2, MATRIX_ELEM_POW);
             if(BNOutput.vecSigmaSqr[i].is_matrix()) BNOutput.vecSigmaSqr[i] += vecSglSigmaSqr;
             else BNOutput.vecSigmaSqr[i] = std::move(vecSglSigmaSqr);
         }
-        BNOutput.vecSigmaSqr[i].elem_cal_opt(setInput.size(), MATRIX_ELEM_DIV);
+        BNOutput.vecSigmaSqr[i] = BNOutput.vecSigmaSqr[i].elem_cal_opt(setInput.size(), MATRIX_ELEM_DIV);
     }
     // Normalize & Output
     BNOutput.setBarX.init(setInput.size());
