@@ -9,15 +9,9 @@ public:
     double dRho = 0.95;
     double dEpsilon = 1e-6;
     vect vecPreDelta;
-    friend std::ostream& operator<<(std::ostream &output, AdaDeltaVect &val)
-    {
-        output << "E[Gradient] = " << val.vecExpGrad << "; E[Delta] = " << val.vecExpDelta << std::endl;
-        output<< "Rho = " << val.dRho << "; Delta = " << val.vecPreDelta << std::endl;
-        return output;
-    }
     AdaDeltaVect(){}
-    AdaDeltaVect(AdaDeltaVect &asSrc) {*this = asSrc;}
-    AdaDeltaVect(AdaDeltaVect &&asSrc) {*this = std::move(asSrc);}
+    AdaDeltaVect(AdaDeltaVect &advSrc) {*this = advSrc;}
+    AdaDeltaVect(AdaDeltaVect &&advSrc) {*this = std::move(advSrc);}
     AdaDeltaVect(uint64_t nSizeLnCnt, uint64_t nSizeColCnt, double dRho = 0.95, double dEpsilon = 1e-6)
     {
         vecExpGrad = vect(nSizeLnCnt, nSizeColCnt);
@@ -25,19 +19,19 @@ public:
         this->dRho = dRho;
         this->dEpsilon = dEpsilon;
     }
-    void operator=(AdaDeltaVect &adSrc)
+    void operator=(AdaDeltaVect &advSrc)
     {
-        dRho = adSrc.dRho;
-        dEpsilon = adSrc.dEpsilon;
-        vecExpDelta = adSrc.vecExpDelta;
-        vecExpGrad = adSrc.vecExpGrad;
+        dRho = advSrc.dRho;
+        dEpsilon = advSrc.dEpsilon;
+        vecExpDelta = advSrc.vecExpDelta;
+        vecExpGrad = advSrc.vecExpGrad;
     }
-    void operator=(AdaDeltaVect &&adSrc)
+    void operator=(AdaDeltaVect &&advSrc)
     {
-        dRho = adSrc.dRho;
-        dEpsilon = adSrc.dEpsilon;
-        vecExpDelta = std::move(adSrc.vecExpDelta);
-        vecExpGrad = std::move(adSrc.vecExpGrad);
+        dRho = advSrc.dRho;
+        dEpsilon = advSrc.dEpsilon;
+        vecExpDelta = std::move(advSrc.vecExpDelta);
+        vecExpGrad = std::move(advSrc.vecExpGrad);
     }
     vect Delta(vect &vecCurrGrad)
     {
@@ -50,13 +44,13 @@ public:
         vecExpDelta = dRho * vecExpDelta + (1 - dRho) * vecPreDelta.elem_cal_opt(2, MATRIX_ELEM_POW);
         return vecPreDelta;
     }
-    void reset()
+    void Reset()
     {
         vecExpDelta.reset();
         vecExpGrad.reset();
         vecPreDelta.reset();
     }
-    ~AdaDeltaVect() { reset(); }
+    ~AdaDeltaVect() { Reset(); }
 };
 
 struct AdaDeltaVal
@@ -68,20 +62,14 @@ public:
     double dRho = 0.95;
     double dEpsilon = 1e-6;
     double dPreDelta = 0;
-    friend std::ostream& operator<<(std::ostream &output, AdaDeltaVal &val)
-    {
-        output << "E[Gradient] = " << val.dExpGrad << "; E[Delta] = " << val.dExpDelta << std::endl;
-        output<< "Rho = " << val.dRho << "; Delta = " << val.dPreDelta << std::endl;
-        return output;
-    }
     AdaDeltaVal(double dRhoVal = 0.95, double dEpsilonVal = 1e-6) : dRho(dRhoVal), dEpsilon(dEpsilonVal) {}
-    AdaDeltaVal(AdaDeltaVal &adSrc) { *this = adSrc; }
-    void operator=(AdaDeltaVal &adSrc)
+    AdaDeltaVal(AdaDeltaVal &advSrc) { *this = advSrc; }
+    void operator=(AdaDeltaVal &advSrc)
     {
-        dExpGrad = adSrc.dExpGrad;
-        dExpDelta = adSrc.dExpDelta;
-        dRho = adSrc.dRho;
-        dEpsilon = adSrc.dEpsilon;
+        dExpGrad = advSrc.dExpGrad;
+        dExpDelta = advSrc.dExpDelta;
+        dRho = advSrc.dRho;
+        dEpsilon = advSrc.dEpsilon;
     }
     double Delta(double dCurrGrad)
     {
@@ -93,16 +81,101 @@ public:
         dExpDelta = dRho * dExpDelta + (1 - dRho) * std::pow(dPreDelta, 2);
         return dPreDelta;
     }
-    void reset()
+    void Reset()
     {
         dExpGrad = 0;
         dExpDelta = 0;
     }
-    // ~AdaDeltaVal()
-    // {
-    //     dExpGrad = 0;
-    //     dExpDelta = 0;
-    // }
+};
+
+struct AdaNesterovVect
+{
+private:
+    uint64_t iIterCnt = 0;
+    double dEpsilon = 1e-6, dRho = 0.95, dNu = 0.95;
+    vect vecM, vecN;
+    void ValueAssign(AdaNesterovVect &anvSrc)
+    {
+        iIterCnt = anvSrc.iIterCnt;
+        dEpsilon = anvSrc.dEpsilon;
+        dRho = anvSrc.dRho;
+        dNu = anvSrc.dNu;
+    }
+public:
+    AdaNesterovVect() {}
+    AdaNesterovVect(AdaNesterovVect &anvSrc) { *this = anvSrc; }
+    AdaNesterovVect(AdaNesterovVect &&anvSrc) { *this = std::move(anvSrc); }
+    void operator=(AdaNesterovVect &anvSrc)
+    {
+        ValueAssign(anvSrc);
+        vecM = anvSrc.vecM;
+        vecN = anvSrc.vecN;
+    }
+    void operator=(AdaNesterovVect &&anvSrc)
+    {
+        ValueAssign(anvSrc);
+        vecM = std::move(anvSrc.vecM);
+        vecN = std::move(anvSrc.vecN);
+    }
+
+    vect Momentum(vect &vecGrad, double dLearnRate)
+    {
+        if(!vecM.is_matrix())
+        {
+            vecM = vect(vecGrad.LN_CNT, vecGrad.COL_CNT);
+            vecM.value_fill(dEpsilon);
+        }
+        if(!vecN.is_matrix()) vecN = vecM;
+        vecM = dRho * vecM + (1 - dRho) * vecGrad;
+        vecN = dNu * vecN + (1 - dNu) * vecGrad.elem_cal_opt(2, MATRIX_ELEM_POW);
+        auto vecBarM = (1 / (1 - std::pow(dRho, ++iIterCnt))) * vecM,
+            vecBarN = (1 / (1 - std::pow(dNu, iIterCnt))) * vecN;
+        return dLearnRate * (dRho * vecBarM + ((1 - dRho) / (1 - std::pow(dRho, iIterCnt))) * vecGrad).elem_cal_opt(vecBarN.elem_cal_opt(0.5, MATRIX_ELEM_POW), MATRIX_ELEM_DIV);
+    }
+
+    void Reset()
+    {
+        iIterCnt = 0;
+        dEpsilon = 1e-6;
+        dRho = 0.95;
+        dNu = 0.95;
+        vecM.reset();
+        vecN.reset();
+    }
+    ~AdaNesterovVect() { Reset(); }
+};
+
+struct AdaNesterovVal
+{
+private:
+    uint64_t iIterCnt = 0;
+    double dEpsilon = 1e-6, dRho = 0.95, dNu = 0.95, dM = dEpsilon, dN = dEpsilon;
+public:
+    AdaNesterovVal() {}
+    AdaNesterovVal(AdaNesterovVal &anvSrc) { *this = anvSrc; }
+    void operator=(AdaNesterovVal &anvSrc)
+    {
+        iIterCnt = anvSrc.iIterCnt;
+        dEpsilon = anvSrc.dEpsilon;
+        dRho = anvSrc.dRho; dNu = anvSrc.dNu;
+        dM = anvSrc.dM; dN = anvSrc.dN;
+    }
+
+    double Momentum(double dGrad, double dLearnRate)
+    {
+        dM = dRho * dM + (1 - dRho) * dGrad;
+        dN = dNu * dN + (1 - dNu) * std::pow(dGrad, 2);
+        auto dBarM = (1 / (1 - std::pow(dRho, ++iIterCnt))) * dM,
+            dBarN = (1 / (1 - std::pow(dNu, iIterCnt))) * dN;
+        return (dLearnRate / std::pow(dBarN, 0.5)) * (dRho * dBarM + ((1 - dRho) * dGrad) / (1 - std::pow(dRho, iIterCnt)));
+    }
+
+    void Reset()
+    {
+        iIterCnt = 0; dEpsilon = 1e-6;
+        dRho = 0.95; dNu = 0.95;
+        dM = dEpsilon; dN = dEpsilon;
+    }
 };
 
 ADA_END
@@ -116,7 +189,16 @@ vect AdaDeltaUpdateWeight(vect &vecWeight, vect &vecGradLossToWeight, ada::AdaDe
     else return blank_vect;
 }
 
-double BNAdaDeltaUpdateScaleShift(double dGammaBeta, double dGradLossToScaleShift, ada::AdaDeltaVal advCurrDelta) { return dGammaBeta - advCurrDelta.Delta(dGradLossToScaleShift); }
+double BNAdaDeltaUpdateScaleShift(double dGammaBeta, double dGradLossToScaleShift, ada::AdaDeltaVal &advCurrDelta) { return dGammaBeta - advCurrDelta.Delta(dGradLossToScaleShift); }
+
+vect AdaNesterovUpdateWeight(vect &vecWeight, vect &vecGradLossToWeight, double dLearnRate, ada::AdaNesterovVect &anvCurrLayerMomt)
+{
+    auto vecCurrMomt = anvCurrLayerMomt.Momentum(vecGradLossToWeight, dLearnRate);
+    if(vecCurrMomt.is_matrix()) return vecWeight - vecCurrMomt;
+    else return blank_vect;
+}
+
+double BNAdaNesterovUpdateScaleShift(double dGammaBeta, double dGradLossToScaleShift, double dLearnRate, ada::AdaNesterovVal &anvCurrMomt) { return dGammaBeta - anvCurrMomt.Momentum(dGradLossToScaleShift, dLearnRate); }
 
 FC_END
 
@@ -146,6 +228,33 @@ tensor AdaDeltaUpdateKernel(tensor &tenKernel, tensor &tenGradLossToKernel, ada:
 vect BNAdaDeltaUpdateScaleShift(vect &vecGammaBeta, vect &vecGradLossToScaleShift, ada::AdaDeltaVect &advCurrDelta)
 {
     if(vecGammaBeta.shape_valid(vecGradLossToScaleShift)) return vecGammaBeta - advCurrDelta.Delta(vecGradLossToScaleShift);
+    else return blank_vect;
+}
+
+tensor AdaNesterovUpdateKernel(tensor &tenKernel, tensor &tenGradLossToKernel, double dLearnRate, ada::ada_tensor<ada::AdaNesterovVect> &anvCurrMomt)
+{
+    if(tenKernel.size() == tenGradLossToKernel.size())
+    {
+        tensor tenUpdatedKernel(tenKernel.size());
+        for(auto i=0; i<tenKernel.size(); ++i)
+            if(tenKernel[i].size() == tenGradLossToKernel[i].size())
+            {
+                tenUpdatedKernel[i].init(tenKernel[i].size());
+                for(auto j=0; j<tenKernel[i].size(); ++j)
+                {
+                    tenUpdatedKernel[i][j] = tenKernel[i][j] - anvCurrMomt[i][j].Momentum(tenGradLossToKernel[i][j], dLearnRate);
+                    if(!tenUpdatedKernel[i][j].is_matrix()) return blank_tensor;
+                }
+            }
+            else return blank_tensor;
+        return tenUpdatedKernel;
+    }
+    else return blank_tensor;
+}
+
+vect BNAdaNesterovUpdateScaleShift(vect &vecGammaBeta, vect &vecGradLossToScaleShift, double dLearnRate, ada::AdaNesterovVect &anvCurrMomt)
+{
+    if(vecGammaBeta.shape_valid(vecGradLossToScaleShift)) return vecGammaBeta - anvCurrMomt.Momentum(vecGradLossToScaleShift, dLearnRate);
     else return blank_vect;
 }
 

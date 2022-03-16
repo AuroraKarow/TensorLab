@@ -35,26 +35,6 @@ tensor GradLossToKernel(set<feature> &setGradLossToOutput, set<feature> &setInpu
     return tenGradLossToKernel;
 }
 
-tensor UpdateKernel(tensor &tenKernel, tensor tenGradLossToKernel, double dLearnRate)
-{
-    if(tenKernel.size() == tenGradLossToKernel.size())
-    {
-        tensor tenUpdatedKernel(tenKernel.size());
-        for(auto i=0; i<tenKernel.size(); ++i) if(tenKernel[i].size() == tenGradLossToKernel.size())
-        {
-            tenUpdatedKernel[i].init(tenKernel[i].size());
-            for(auto j=0; j<tenKernel[j].size(); ++j)
-            {
-                tenUpdatedKernel[i][j] = tenKernel[i][j] - dLearnRate * tenGradLossToKernel[i][j];
-                if(!tenUpdatedKernel[i][j].is_matrix()) return blank_tensor;
-            }
-        }
-        else return blank_tensor;
-        return tenUpdatedKernel;
-    }
-    else return blank_tensor;
-}
-
 set<feature> GradLossToInput(set<feature> &setGradLossToOutput, tensor &tenKernel, uint64_t iLnStride, uint64_t iColStride, uint64_t iLnDilation = 0, uint64_t iColDilation = 0, uint64_t iInputPadTop = 0, uint64_t iInputPadRight = 0, uint64_t iInputPadBottom = 0, uint64_t iInputPadLeft = 0, uint64_t iLnDistance = 0, uint64_t iColDistance = 0)
 {
     set<feature> setGradLossToInput(setGradLossToOutput.size());

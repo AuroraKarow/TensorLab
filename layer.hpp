@@ -107,6 +107,7 @@ struct LayerFC : Layer
     set<vect> setLayerInput;
     // Default
     _ADA AdaDeltaVect advLayerDelta;
+    _ADA AdaNesterovVect anvLayerMomt;
 
     void ValueAssign(LayerFC &lyrSrc) {}
     void ValueCopy(LayerFC &lyrSrc)
@@ -114,12 +115,14 @@ struct LayerFC : Layer
         vecLayerWeight = lyrSrc.vecLayerWeight;
         setLayerInput = lyrSrc.setLayerInput;
         vecLayerGradWeight = lyrSrc.vecLayerGradWeight;
+        anvLayerMomt = lyrSrc.anvLayerMomt;
     }
     void ValueMove(LayerFC &&lyrSrc)
     {
         vecLayerWeight = std::move(lyrSrc.vecLayerWeight);
         setLayerInput = std::move(lyrSrc.setLayerInput);
         vecLayerGradWeight = std::move(lyrSrc.vecLayerGradWeight);
+        anvLayerMomt = std::move(lyrSrc.anvLayerMomt);
     }
     LayerFC(LayerFC &lyrSrc) : Layer(lyrSrc) { ValueCopy(lyrSrc); }
     LayerFC(LayerFC &&lyrSrc) : Layer(lyrSrc) { ValueMove(std::move(lyrSrc)); }
@@ -142,14 +145,18 @@ struct LayerFC : Layer
     {
         if(vecLayerGradWeight.is_matrix())
         {
-            if(dLayerLearnRate) vecLayerWeight -= dLayerLearnRate * vecLayerGradWeight;
+            if(dLayerLearnRate) vecLayerWeight = _FC AdaNesterovUpdateWeight(vecLayerWeight, vecLayerGradWeight, dLayerLearnRate, anvLayerMomt);
             else vecLayerWeight = _FC AdaDeltaUpdateWeight(vecLayerWeight, vecLayerGradWeight, advLayerDelta);
             return true;
         }
         else return false;
     }
 
-    void ResetAda() { advLayerDelta.reset(); }
+    void ResetAda()
+    {
+        advLayerDelta.Reset();
+        anvLayerMomt.Reset();
+    }
     void Reset()
     {
         vecLayerWeight.reset();
@@ -166,6 +173,7 @@ struct LayerFCBN : Layer
     double dBeta = 0, dGamma = 1, dEpsilon = 1e-10, dGradBeta = 0, dGradGamma = 0;
     set<vect> setLayerInput;
     _ADA AdaDeltaVal advBeta, advGamma;
+    _ADA AdaNesterovVal anvBeta, anvGamma;
     BN_FC BNData;
 
     void ValueAssign(LayerFCBN &lyrSrc)
@@ -175,21 +183,21 @@ struct LayerFCBN : Layer
         dEpsilon = lyrSrc.dEpsilon;
         dGradBeta = lyrSrc.dGradBeta;
         dGradGamma = lyrSrc.dGradGamma;
+        advBeta = lyrSrc.advBeta;
+        advGamma = lyrSrc.advGamma;
+        anvBeta = lyrSrc.anvBeta;
+        anvGamma = lyrSrc.anvGamma;
     }
     void ValueCopy(LayerFCBN &lyrSrc)
     {
         ValueAssign(lyrSrc);
         setLayerInput = lyrSrc.setLayerInput;
-        advBeta = lyrSrc.advBeta;
-        advGamma = lyrSrc.advGamma;
         BNData = lyrSrc.BNData;
     }
     void ValueMove(LayerFCBN &&lyrSrc)
     {
         ValueAssign(lyrSrc);
         setLayerInput = std::move(lyrSrc.setLayerInput);
-        advBeta = std::move(lyrSrc.advBeta);
-        advGamma = std::move(lyrSrc.advGamma);
         BNData = std::move(lyrSrc.BNData);
     }
     LayerFCBN(LayerFCBN &lyrSrc) : Layer(lyrSrc) { ValueCopy(lyrSrc); }
@@ -216,8 +224,8 @@ struct LayerFCBN : Layer
         {
             if(dLayerLearnRate)
             {
-                dGamma -= dLayerLearnRate * dGradGamma;
-                dBeta -= dLayerLearnRate * dGradBeta;
+                dGamma = _FC BNAdaNesterovUpdateScaleShift(dGamma, dGradGamma, dLayerLearnRate,  anvGamma);
+                dBeta = _FC BNAdaNesterovUpdateScaleShift(dBeta, dGradBeta, dLayerLearnRate, anvBeta);
             }
             else 
             {
@@ -231,8 +239,10 @@ struct LayerFCBN : Layer
 
     void ResetAda()
     {
-        advBeta.reset();
-        advGamma.reset();
+        advBeta.Reset();
+        advGamma.Reset();
+        anvBeta.Reset();
+        anvGamma.Reset();
     }
     void Reset()
     {
@@ -248,6 +258,7 @@ struct LayerConv : Layer
     tensor tenKernel, tenGradKernel;
     set<feature> setLayerInput;
     _ADA ada_tensor<_ADA AdaDeltaVect> advLayerDelta;
+    _ADA ada_tensor<_ADA AdaNesterovVect> anvLayerMomt;
 
     void ValueAssign(LayerConv &lyrSrc)
     {
@@ -269,6 +280,7 @@ struct LayerConv : Layer
         setLayerInput = lyrSrc.setLayerInput;
         tenGradKernel = lyrSrc.tenGradKernel;
         advLayerDelta = lyrSrc.advLayerDelta;
+        anvLayerMomt = lyrSrc.anvLayerMomt;
     }
     void ValueMove(LayerConv &&lyrSrc)
     {
@@ -277,6 +289,7 @@ struct LayerConv : Layer
         setLayerInput = std::move(lyrSrc.setLayerInput);
         tenGradKernel = std::move(lyrSrc.tenGradKernel);
         advLayerDelta = std::move(lyrSrc.advLayerDelta);
+        anvLayerMomt = std::move(lyrSrc.anvLayerMomt);
     }
     LayerConv(LayerConv &lyrSrc) : Layer(lyrSrc) { ValueCopy(lyrSrc); }
     LayerConv(LayerConv &&lyrSrc) : Layer(lyrSrc) { ValueMove(std::move(lyrSrc)); }
@@ -299,14 +312,18 @@ struct LayerConv : Layer
     {
         if(tenGradKernel.size())
         {
-            if(dLayerLearnRate) tenKernel = _CONV UpdateKernel(tenKernel, tenGradKernel, dLayerLearnRate);
+            if(dLayerLearnRate) tenKernel = _CONV AdaNesterovUpdateKernel(tenKernel, tenGradKernel, dLayerLearnRate, anvLayerMomt);
             else tenKernel = _CONV AdaDeltaUpdateKernel(tenKernel, tenGradKernel, advLayerDelta);
             return true;
         }
         else return false;
     }
 
-    void ResetAda() { advLayerDelta.reset(); }
+    void ResetAda()
+    {
+        advLayerDelta.reset();
+        anvLayerMomt.reset();
+    }
     void Reset()
     {
         setLayerInput.reset();
@@ -325,6 +342,7 @@ struct LayerConvBN : Layer
     vect vecBeta, vecGamma, vecGradBeta, vecGradGamma;
     set<feature> setLayerInput;
     _ADA AdaDeltaVect advBeta, advGamma;
+    _ADA AdaNesterovVect anvBeta, anvGamma;
     BN_CONV BNData;
 
     void ValueAssign(LayerConvBN &lyrSrc) { dEpsilon = lyrSrc.dEpsilon;}
@@ -336,6 +354,8 @@ struct LayerConvBN : Layer
         setLayerInput = lyrSrc.setLayerInput;
         advBeta = lyrSrc.advBeta;
         advGamma = lyrSrc.advGamma;
+        anvBeta = lyrSrc.anvBeta;
+        anvGamma = lyrSrc.anvGamma;
         BNData = lyrSrc.BNData;
         vecGradBeta = lyrSrc.vecGradBeta;
         vecGradGamma = lyrSrc.vecGradGamma;
@@ -348,6 +368,8 @@ struct LayerConvBN : Layer
         setLayerInput = std::move(lyrSrc.setLayerInput);
         advBeta = std::move(lyrSrc.advBeta);
         advGamma = std::move(lyrSrc.advGamma);
+        anvBeta = std::move(lyrSrc.anvBeta);
+        anvGamma = std::move(lyrSrc.anvGamma);
         BNData = std::move(lyrSrc.BNData);
         vecGradBeta = std::move(lyrSrc.vecGradBeta);
         vecGradGamma = std::move(lyrSrc.vecGradGamma);
@@ -380,8 +402,8 @@ struct LayerConvBN : Layer
         {
             if(dLayerLearnRate)
             {
-                vecGamma -= dLayerLearnRate * vecGradGamma;
-                vecBeta -= dLayerLearnRate * vecGradBeta;
+                vecGamma = _CONV BNAdaNesterovUpdateScaleShift(vecGamma, vecGradGamma, dLayerLearnRate, anvGamma);
+                vecBeta = _CONV BNAdaNesterovUpdateScaleShift(vecBeta, vecGradBeta, dLayerLearnRate, anvBeta);
             }
             else 
             {
@@ -395,8 +417,10 @@ struct LayerConvBN : Layer
 
     void ResetAda()
     {
-        advBeta.reset();
-        advGamma.reset();
+        advBeta.Reset();
+        advGamma.Reset();
+        anvBeta.Reset();
+        anvGamma.Reset();
     }
     void Reset()
     {

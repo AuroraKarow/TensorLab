@@ -189,7 +189,7 @@ public:
                     // Current batch origin vector set
                     set<vect> setCurrOrigin, setPreOutput;
                     set<feature> setCurrInput;
-                    bool bBatchIterFlag = false;
+                    // bool bBatchIterFlag = false;
                     if(setShuffleIdx.size())
                     {
                         auto iBatchSize = iNetMiniBatch;
@@ -204,20 +204,16 @@ public:
                         setCurrOrigin = setOrigin;
                         setCurrInput = mnistDataset.elem;
                     }
-                    do
+                    auto setCurrOutput = ForwProp(setCurrInput);
+                    if(setCurrOutput.size())
                     {
-                        auto setCurrOutput = ForwProp(setCurrInput);
-                        if(setCurrOutput.size())
-                        {
-                            bBatchIterFlag = IterFlag(setCurrOutput, setCurrOrigin);
-                            if(!bBatchIterFlag && !setPreOutput.size()) ++ iBatchTrainCnt;
-                            if(bShowIterFlag) IterShow(setPreOutput, setCurrOutput, setCurrOrigin);
-                            std::cout << "[Epoch][" << iEpoch << "][Batch Index][" << i << ']' << std::endl;
-                            if(bBatchIterFlag) if(!BackProp(setCurrOutput, setCurrOrigin, i)) return false;
-                        }
-                        else return false;
+                        auto bBatchIterFlag = IterFlag(setCurrOutput, setCurrOrigin);
+                        if(!bBatchIterFlag) ++ iBatchTrainCnt;
+                        if(bShowIterFlag) IterShow(setCurrOutput, setCurrOrigin);
+                        std::cout << "[Epoch][" << iEpoch << "][Batch Index][" << i << ']' << std::endl;
+                        if(bBatchIterFlag) if(!BackProp(setCurrOutput, setCurrOrigin, i)) return false;
                     }
-                    while(bBatchIterFlag);
+                    else return false;
                 }
                 ++ iEpoch;
             }
