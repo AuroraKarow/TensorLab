@@ -68,6 +68,21 @@ protected:
             std::cout << std::endl;
         }
     }
+    void IterShow(set<vect> &setCurrOutput, set<vect> &setOrigin)
+    {
+        for(auto i=0; i<setOrigin.size(); i++)
+        {std::cout << " [BarY]\t\t[Label]\t[Y]" << std::endl;
+            for(auto j=0; j<setCurrOutput[i].LN_CNT; ++j)
+            {
+                if(setOrigin[i].pos_idx(j)) std::cout << '>';
+                else std::cout << ' ';
+                std::cout << setCurrOutput[i].pos_idx(j) << '\t';
+                std::cout << j << '\t';
+                std::cout << setOrigin[i].pos_idx(j) << std::endl;
+            }
+            std::cout << std::endl;
+        }
+    }
     bool IterFlag(set<vect> &setCurrOutput, set<vect> &setOrigin)
     {
         for(auto i=0; i<setCurrOutput.size(); ++i) for(auto j=0; j<setCurrOutput[i].LN_CNT; ++j) if(setOrigin[i][j][IDX_ZERO]) if(std::abs(1-setCurrOutput[i][j][IDX_ZERO]) > dAcc) return true;
