@@ -163,32 +163,20 @@ double BNGradLossToShift(set<vect> &setGradLossToOutput)
     return dGrad;
 }
 
-set<vect> BNDeduce(set<vect> &setNetInput, double dBeta, double dGamma, set<BN_PTR> &setbnData, uint64_t iMiniBatchSize = 0, double dEpsilon = 1e-10)
+vect BNDeduce(vect &vecInput, double dBeta, double dGamma, std::shared_ptr<FCBN> &pBNData, uint64_t iMiniBatchSize = 0, double iMiniBatchCnt = 0, double dEpsilon = 1e-10)
 {
     /**
      * Expectation Average, Expectation MiuBeta
      * Variance mini-batch variance, Variance SigmaSqr
      */
-    vect vecEX = INSTANCE_DERIVE<FCBN>(setbnData[0]) -> vecMiuBeta,
-        vecEVarX = INSTANCE_DERIVE<FCBN>(setbnData[0]) -> vecSigmaSqr;
-    for(auto i=1; i<setbnData.size(); ++i)
+    if(iMiniBatchCnt)
     {
-        vecEX += INSTANCE_DERIVE<FCBN>(setbnData[i]) -> vecMiuBeta;
-        vecEVarX += INSTANCE_DERIVE<FCBN>(setbnData[i]) -> vecSigmaSqr;
-    }
-    if(setbnData.size() > 1)
-    {
-        vecEX = vecEX.elem_cal_opt(setbnData.size(), MATRIX_ELEM_DIV);
-        vecEVarX = (iMiniBatchSize / (iMiniBatchSize - 1)) * vecEVarX.elem_cal_opt(setbnData.size(), MATRIX_ELEM_DIV);
+        pBNData->vecMiuBeta = pBNData->vecMiuBeta.elem_cal_opt(iMiniBatchCnt, MATRIX_ELEM_DIV);
+        pBNData->vecSigmaSqr = (iMiniBatchSize / (iMiniBatchSize - 1)) * pBNData->vecSigmaSqr.elem_cal_opt(iMiniBatchCnt, MATRIX_ELEM_DIV);
     }
     // Normalize
-    set<vect> setBNDeduceOutput(setNetInput.size());
-    for(auto i=0; i<setNetInput.size(); ++i)
-    {
-        auto vecBarX = (setNetInput[i] - vecEX).elem_cal_opt(DIV_DOM(vecEVarX, dEpsilon).elem_cal_opt(0.5, MATRIX_ELEM_POW), MATRIX_ELEM_DIV);
-        setBNDeduceOutput[i] = (dGamma * vecBarX).broadcast_add(dBeta);
-    }
-    return setBNDeduceOutput;
+    auto vecBarX = (vecInput - pBNData->vecMiuBeta).elem_cal_opt(DIV_DOM(pBNData->vecSigmaSqr, dEpsilon).elem_cal_opt(0.5, MATRIX_ELEM_POW), MATRIX_ELEM_DIV);
+    return (dGamma * vecBarX).broadcast_add(dBeta);
 }
 
 FC_END

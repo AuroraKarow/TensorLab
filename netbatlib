@@ -19,3 +19,6 @@ struct  BN              { virtual void _Deriv() {} };
 
 #define BN_FC           fc::FCBN
 #define BN_CONV         conv::ConvBN
+
+#define BN_FC_PTR       std::shared_ptr<BN_FC>
+#define BN_CONV_PTR     std::shared_ptr<BN_CONV>

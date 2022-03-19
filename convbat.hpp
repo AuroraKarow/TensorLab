@@ -204,31 +204,20 @@ vect BNGradLossToShift(set<feature> &setGradLossToOutput)
     return vecGradBeta;
 }
 
-set<feature> BNDeduce(set<feature> &setNetInput, vect &vecBeta, vect &vecGamma, set<BN_PTR> &setbnData, uint64_t iMiniBatchSize = 0, double dEpsilon = 1e-10)
+feature BNDeduce(feature &vecInput, vect &vecBeta, vect &vecGamma, std::shared_ptr<ConvBN> &pBNData, uint64_t iMiniBatchSize = 0, uint64_t iMiniBatchCnt = 0, double dEpsilon = 1e-10)
 {
-    auto vecEX = INSTANCE_DERIVE<ConvBN>(setbnData[0]) -> vecMiuBeta,
-        vecVarX = INSTANCE_DERIVE<ConvBN>(setbnData[0]) -> vecSigmaSqr;
-    for(auto i=1; i<setbnData.size(); ++i) for(auto j=0; j<INSTANCE_DERIVE<ConvBN>(setbnData[i])->vecMiuBeta.size(); ++j)
+    if(iMiniBatchCnt) for(auto i=0; i<vecInput.size(); ++i)
     {
-        vecEX[j] += INSTANCE_DERIVE<ConvBN>(setbnData[i]) -> vecMiuBeta[j];
-        vecVarX[j] += INSTANCE_DERIVE<ConvBN>(setbnData[i]) -> vecSigmaSqr[j];
+        pBNData->vecMiuBeta[i] = pBNData->vecMiuBeta[i].elem_cal_opt(iMiniBatchCnt, MATRIX_ELEM_DIV);
+        pBNData->vecSigmaSqr[i] = (iMiniBatchSize / (iMiniBatchSize - 1)) * pBNData->vecSigmaSqr[i].elem_cal_opt(iMiniBatchCnt, MATRIX_ELEM_DIV);
     }
-    if(iMiniBatchSize) for(auto i=0; i<vecEX.size(); ++i)
+    feature vecConvBNDeduceOutput(vecInput.size());
+    for(auto i=0; i<vecInput.size(); ++i)
     {
-        vecEX[i] = vecEX[i].elem_cal_opt(setbnData.size(), MATRIX_ELEM_DIV);
-        vecVarX[i] = (iMiniBatchSize / (iMiniBatchSize - 1)) * vecVarX[i].elem_cal_opt(setbnData.size(), MATRIX_ELEM_DIV);
+        auto vecBarX = (vecInput[i] - pBNData->vecMiuBeta[i]).elem_cal_opt(DIV_DOM(pBNData->vecSigmaSqr[i], dEpsilon).elem_cal_opt(0.5, MATRIX_ELEM_POW), MATRIX_ELEM_DIV);
+        vecConvBNDeduceOutput[i] = (vecGamma.pos_idx(i) * vecBarX).broadcast_add(vecBeta.pos_idx(i));
     }
-    set<feature> setConvBNDeduceOutput(setNetInput.size());
-    for(auto i=0; i<setNetInput.size(); ++i)
-    {
-        setConvBNDeduceOutput[i].init(setNetInput[i].size());
-        for(auto j=0; j<setNetInput[i].size(); ++j)
-        {
-            auto vecBarX = (setNetInput[i][j] - vecEX[j]).elem_cal_opt(DIV_DOM(vecVarX[j], dEpsilon).elem_cal_opt(0.5, MATRIX_ELEM_POW), MATRIX_ELEM_DIV);
-            setConvBNDeduceOutput[i][j] = (vecGamma.pos_idx(j) * vecBarX).broadcast_add(vecBeta.pos_idx(j));
-        }
-    }
-    return setConvBNDeduceOutput;
+    return vecConvBNDeduceOutput;
 }
 
 CONV_END

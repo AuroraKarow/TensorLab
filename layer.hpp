@@ -55,6 +55,16 @@ struct LayerAct : Layer
         default: return setGrad;
         }     
     }
+    template<typename T> T Deduce(T &vecInput)
+    {
+        switch (iLayerActFuncType)
+        {
+        case SIGMOID:   return sigmoid(vecInput);
+        case RELU:      return ReLU(vecInput);
+        case SOFTMAX:   return softmax(vecInput);
+        default: return vecInput;
+        }
+    }
     void Reset() {}
     ~LayerAct() { Reset(); }
 };
@@ -78,6 +88,8 @@ struct LayerActVect : LayerAct
         return LayerAct::ForwProp(setLayerInput);
     }
     set<vect> BackProp(set<vect> &setGrad, set<vect> &setOrigin = set<vect>()) { return LayerAct::BackProp(setLayerInput, setGrad, setOrigin); }
+    vect Deduce(vect &vecInput) { return LayerAct::Deduce(vecInput); }
+    ~LayerActVect() { setLayerInput.reset(); }
 };
 
 struct LayerActFt : LayerAct
@@ -99,6 +111,8 @@ struct LayerActFt : LayerAct
         return LayerAct::ForwProp(setLayerInput);
     }
     set<feature> BackProp(set<feature> &setGrad, set<feature> &setOrigin = set<feature>()) { return LayerAct::BackProp(setLayerInput, setGrad, setOrigin); }
+    feature Deduce(feature &vecInput) { return LayerAct::Deduce(vecInput); }
+    ~LayerActFt() { setLayerInput.reset(); }
 };
 
 struct LayerFC : Layer
@@ -151,6 +165,7 @@ struct LayerFC : Layer
         }
         else return false;
     }
+    vect Deduce(vect &vecInput) { return _FC Output(vecInput, vecLayerWeight); }
 
     void ResetAda()
     {
@@ -236,6 +251,7 @@ struct LayerFCBN : Layer
         }
         else return false;
     }
+    vect Deduce(vect &vecInput, BN_FC_PTR &pBNData, uint64_t iBatchSize = 0, uint64_t iBatchCnt = 0) { return _FC BNDeduce(vecInput, dBeta, dGamma, pBNData, iBatchSize, iBatchCnt, dEpsilon); }
 
     void ResetAda()
     {
@@ -318,6 +334,7 @@ struct LayerConv : Layer
         }
         else return false;
     }
+    feature Deduce(feature &vecInput) { return _CONV Conv(vecInput, tenKernel, iLayerLnStride, iLayerColStride, iLayerLnDilation, iLayerColDilation, iLayerInputPadTop, iLayerInputPadRight, iLayerInputPadBottom, iLayerInputPadLeft, iLayerLnDistance, iLayerColDistance); }
 
     void ResetAda()
     {
@@ -414,6 +431,7 @@ struct LayerConvBN : Layer
         }
         else return false;
     }
+    feature Deduce(feature &vecInput, BN_CONV_PTR &pBNData, uint64_t iBatchSize = 0, uint64_t iBatchCnt = 0) { _CONV BNDeduce(vecInput, vecBeta, vecGamma, pBNData, iBatchSize, iBatchCnt, dEpsilon); }
 
     void ResetAda()
     {
@@ -482,6 +500,7 @@ struct LayerPool : Layer
         return _CONV Pool(setLayerInput, iPoolType, true, set<feature>(), iLayerFilterLnCnt, iLayerFilterColCnt, iLayerLnStride, iLayerColStride, iLayerLnDilation, iLayerColDilation);
     }
     set<feature> BackProp(set<feature> &setGrad) { return _CONV Pool(setGrad, PoolUpType(iPoolType), false, setLayerInput, iLayerFilterLnCnt, iLayerFilterColCnt, iLayerLnStride, iLayerColStride, iLayerLnDilation, iLayerColDilation); }
+    feature Deduce(feature &vecInput) { return _CONV PoolDown(vecInput, iPoolType, iLayerFilterLnCnt, iLayerFilterColCnt, iLayerLnStride, iLayerColStride, iLayerLnDilation, iLayerColDilation); }
 
     void Reset() { setLayerInput.reset(); }
     ~LayerPool() { Reset(); }
@@ -511,10 +530,12 @@ struct LayerTrans : Layer
         return _FC FeatureTransform(setInput);
     }
     set<feature> BackProp(set<vect> &setGrad) {return _FC FeatureTransform(setGrad, iLnCnt, iColCnt);}
+    vect Deduce(feature &vecInput) { return _FC FeatureTransform(vecInput); }
     
     LayerTrans(uint64_t iChannLnCnt, uint64_t iChannColCnt) : Layer(TRANS, 0), iLnCnt(iChannLnCnt), iColCnt(iChannColCnt), bFeatToVec(false) {}
     set<feature> ForwProp(set<vect> &setInput) {return _FC FeatureTransform(setInput, iLnCnt, iColCnt);}
     set<vect> BackProp(set<feature> &setGrad) {return _FC FeatureTransform(setGrad);}
+    feature Deduce(vect &vecInput) { return _FC FeatureTransform(vecInput, iLnCnt, iColCnt); }
 
     void Reset() {}
     ~LayerTrans() {}

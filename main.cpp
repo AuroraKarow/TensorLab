@@ -13,7 +13,7 @@ using namespace layer;
 class NetBNMNIST final : public NetClassify
 {
 private:
-    NET_MAP<uint64_t, set<BN_PTR>> mapBNData;
+    NET_MAP<uint64_t, BN_PTR> mapBNData;
 
     set<vect> ForwProp(set<feature> &setInput)
     {
@@ -35,6 +35,7 @@ private:
             else return blank_vect_seq;
         case FC_BN:
             setOutput = INSTANCE_DERIVE<LAYER_FC_BN>(lsLayer[i]) -> ForwProp(setOutput);
+            
             if(setOutput.size()) break;
             else return blank_vect_seq;
         case CONV:
@@ -69,7 +70,7 @@ private:
         }
         return setOutput;
     }
-    bool BackProp(set<vect> &setOutput, set<vect> &Origin)
+    bool BackProp(set<vect> &setOutput, set<vect> &Origin, uint64_t iBatchIdx = 0)
     {
         set<vect> setGradVec;
         set<feature> setGradFt;
@@ -90,7 +91,16 @@ private:
             else return false;
         case FC_BN:
             setGradVec = INSTANCE_DERIVE<LAYER_FC_BN>(lsLayer[i]) -> BackProp(setGradVec);
-            if(setGradVec.size() && INSTANCE_DERIVE<LAYER_FC_BN>(lsLayer[i])->UpdatePara()) break;
+            if(setGradVec.size() && INSTANCE_DERIVE<LAYER_FC_BN>(lsLayer[i])->UpdatePara())
+            {
+                if(iBatchIdx)
+                {
+                    INSTANCE_DERIVE<BN_FC>(mapBNData[iBatchIdx])->vecMiuBeta += INSTANCE_DERIVE<LAYER_FC_BN>(lsLayer[i])->BNData.vecMiuBeta;
+                    INSTANCE_DERIVE<BN_FC>(mapBNData[iBatchIdx])->vecSigmaSqr += INSTANCE_DERIVE<LAYER_FC_BN>(lsLayer[i])->BNData.vecSigmaSqr;   
+                }
+                else INSTANCE_DERIVE<BN_FC>(mapBNData[iBatchIdx]) = std::make_shared<BN_FC>(std::move(INSTANCE_DERIVE<LAYER_FC_BN>(lsLayer[i])->BNData));
+                break;
+            }
             else return false;
         case CONV:
             setGradFt = INSTANCE_DERIVE<LAYER_CONV>(lsLayer[i]) -> BackProp(setGradFt);
@@ -98,7 +108,16 @@ private:
             else return false;
         case CONV_BN:
             setGradFt = INSTANCE_DERIVE<LAYER_CONV_BN>(lsLayer[i]) -> BackProp(setGradFt);
-            if(setGradFt.size() && INSTANCE_DERIVE<LAYER_CONV_BN>(lsLayer[i])->UpdatePara()) break;
+            if(setGradFt.size() && INSTANCE_DERIVE<LAYER_CONV_BN>(lsLayer[i])->UpdatePara())
+            {
+                if(iBatchIdx) for(auto j=0; j<setGradFt[IDX_ZERO].size(); ++j)
+                {
+                    INSTANCE_DERIVE<BN_CONV>(mapBNData[iBatchIdx])->vecMiuBeta[j] += INSTANCE_DERIVE<LAYER_CONV_BN>(lsLayer[i])->BNData.vecMiuBeta[j];
+                    INSTANCE_DERIVE<BN_CONV>(mapBNData[iBatchIdx])->vecSigmaSqr[j] += INSTANCE_DERIVE<LAYER_CONV_BN>(lsLayer[i])->BNData.vecSigmaSqr[j];   
+                }
+                else INSTANCE_DERIVE<BN_CONV>(mapBNData[iBatchIdx]) = std::make_shared<BN_CONV>(std::move(INSTANCE_DERIVE<LAYER_CONV_BN>(lsLayer[i])->BNData));
+                break;
+            }
             else return false;
         case POOL:
             setGradFt = INSTANCE_DERIVE<LAYER_POOL>(lsLayer[i]) -> BackProp(setGradFt);
@@ -165,9 +184,10 @@ public:
     */
     template<typename LayerType, typename ... Args,  typename = enable_if_t<is_base_of_v<Layer, LayerType>>> bool AddLayer(Args&& ... pacArgs)
     {
-        auto lyrCurrTemp = std::make_shared<LayerType>(pacArgs...);
-        if(lyrCurrTemp->iLayerType==FC_BN || lyrCurrTemp->iLayerType == CONV_BN) mapBNData.insert(lsLayer.size(), set<BN_PTR>());
-        return lsLayer.emplace_back(lyrCurrTemp);
+        auto iCurrLayerSize = lsLayer.size();
+        auto bAddFlag = lsLayer.emplace_back(std::make_shared<LayerType>(pacArgs...));
+        if(lsLayer[iCurrLayerSize]->iLayerType==FC_BN || lsLayer[iCurrLayerSize]->iLayerType==CONV_BN) mapBNData.insert(lsLayer.size(), std::make_shared<BN>());
+        return bAddFlag;
     }
     bool Run(MNIST &mnistDataset)
     {
