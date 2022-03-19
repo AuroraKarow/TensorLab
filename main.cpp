@@ -15,7 +15,7 @@ class NetBNMNIST final : public NetClassify
 private:
     NET_MAP<uint64_t, set<BN_PTR>> mapBNData;
 
-    set<vect> ForwProp(set<feature> &setInput, bool bResetAda = false)
+    set<vect> ForwProp(set<feature> &setInput)
     {
         set<vect> setOutput;
         set<feature> setTemp;
@@ -30,23 +30,19 @@ private:
             if(setTemp.size()) break;
             else return blank_vect_seq;
         case FC:
-            if(bResetAda) INSTANCE_DERIVE<LAYER_FC>(lsLayer[i]) -> ResetAda();
             setOutput = INSTANCE_DERIVE<LAYER_FC>(lsLayer[i]) -> ForwProp(setOutput);
             if(setOutput.size()) break;
             else return blank_vect_seq;
         case FC_BN:
-            if(bResetAda) INSTANCE_DERIVE<LAYER_FC_BN>(lsLayer[i]) -> ResetAda();
             setOutput = INSTANCE_DERIVE<LAYER_FC_BN>(lsLayer[i]) -> ForwProp(setOutput);
             if(setOutput.size()) break;
             else return blank_vect_seq;
         case CONV:
-            if(bResetAda) INSTANCE_DERIVE<LAYER_CONV>(lsLayer[i]) -> ResetAda();
             if(!i) setTemp = INSTANCE_DERIVE<LAYER_CONV>(lsLayer[i]) -> ForwProp(setInput);
             else setTemp = INSTANCE_DERIVE<LAYER_CONV>(lsLayer[i]) -> ForwProp(setTemp);
             if(setTemp.size()) break;
             else return blank_vect_seq;
         case CONV_BN:
-            if(bResetAda) INSTANCE_DERIVE<LAYER_CONV_BN>(lsLayer[i]) -> ResetAda();
             if(!i) INSTANCE_DERIVE<LAYER_CONV_BN>(lsLayer[i]) -> ForwProp(setInput);
             else setTemp = INSTANCE_DERIVE<LAYER_CONV_BN>(lsLayer[i]) -> ForwProp(setTemp);
             if(setTemp.size()) break;
@@ -73,7 +69,7 @@ private:
         }
         return setOutput;
     }
-    bool BackProp(set<vect> &setOutput, set<vect> &Origin, uint64_t iMiniBatchIdx = 0)
+    bool BackProp(set<vect> &setOutput, set<vect> &Origin)
     {
         set<vect> setGradVec;
         set<feature> setGradFt;
@@ -125,7 +121,22 @@ private:
         }
         return true;
     }
-    void ValueAssign(NetBNMNIST &netSrc) {}
+    NetClassfyInput GetCurrInput(set<feature> &setInput, set<vect> &setOrigin, uint64_t iCurrBatchIdx)
+    {
+        NetClassfyInput NetCurrInput;
+        auto setCurrBatchDatasetIdx = CurrBatchDatasetIdx(iCurrBatchIdx);
+        if(setCurrBatchDatasetIdx.size())
+        {
+            NetCurrInput.setInput = setInput.sub_queue(setCurrBatchDatasetIdx);
+            NetCurrInput.setOrigin = setOrigin.sub_queue(setCurrBatchDatasetIdx);
+        }
+        else
+        {
+            NetCurrInput.setInput = setInput;
+            NetCurrInput.setOrigin = setOrigin;
+        }
+        return NetCurrInput;
+    }
 public:
     void ValueCopy(NetBNMNIST &netSrc) { mapBNData = netSrc.mapBNData; }
     void ValueMove(NetBNMNIST &&netSrc) { mapBNData = move(netSrc.mapBNData); }
@@ -162,62 +173,32 @@ public:
     {
         if(mnistDataset.valid())
         {
-            if(!iNetMiniBatch) iNetMiniBatch = mnistDataset.size();
-            // Get origin vector of labels
-            auto setOrigin = mnistDataset.orgn();
-            // Batch size
-            auto iBatchCnt = mnistDataset.size() / iNetMiniBatch,
-                // Last bacth's size
-                iBatchSizeRear = mnistDataset.size() % iNetMiniBatch;
-            if(iBatchSizeRear) ++ iBatchCnt;
-            // Initial BN data sequence
-            for(auto i=0; i<mapBNData.size(); ++i) mapBNData.index(i).value.init(iBatchCnt);
-            // MNIST indexes set
-            set<uint64_t> setShuffleIdx;
-            if(iNetMiniBatch != mnistDataset.size())
-            {
-                setShuffleIdx.init(mnistDataset.size());
-                for(auto i=0; i<setShuffleIdx.size(); ++i) setShuffleIdx[i] = i;
-            }
-            auto iEpoch = 0, iBatchTrainCnt = 0;
+            InitDatasetIdx(mnistDataset.size());
+            auto setOrigin = mnistDataset.orgn();      
+            auto iEpoch = 0, dTestAcc = 0, iBatchTrainCnt = 0;
             do
             {
                 // Batch shuffling
-                if(setShuffleIdx.size()) setShuffleIdx.shuffle();
-                for(auto i=0; i<iBatchCnt; ++i)
-                { 
-                    // Current batch origin vector set
-                    set<vect> setCurrOrigin, setPreOutput;
-                    set<feature> setCurrInput;
-                    // bool bBatchIterFlag = false;
-                    if(setShuffleIdx.size())
-                    {
-                        auto iBatchSize = iNetMiniBatch;
-                        if(iBatchSizeRear && i+1==iBatchCnt) iBatchSize = iBatchSizeRear;
-                        // Dataset shuffled indexes for current batch
-                        auto setShuffleCurrIdx = setShuffleIdx.sub_queue(mtx_elem_pos(i, 0, iNetMiniBatch), mtx_elem_pos(i, iBatchSize-1, iNetMiniBatch));
-                        setCurrOrigin = setOrigin.sub_queue(setShuffleCurrIdx);
-                        setCurrInput = mnistDataset.elem.sub_queue(setShuffleCurrIdx);
-                    }
-                    else
-                    {
-                        setCurrOrigin = setOrigin;
-                        setCurrInput = mnistDataset.elem;
-                    }
-                    auto setCurrOutput = ForwProp(setCurrInput);
+                ShuffleIdx();
+                for(auto i=0; i<iNetBatchCnt; ++i)
+                {
+                    auto CurrInput = GetCurrInput(mnistDataset.elem, setOrigin, i);
+                    set<vect> setPreOutput;
+                    // Train
+                    auto setCurrOutput = ForwProp(CurrInput.setInput);
                     if(setCurrOutput.size())
                     {
-                        auto bBatchIterFlag = IterFlag(setCurrOutput, setCurrOrigin);
+                        auto bBatchIterFlag = IterFlag(setCurrOutput, CurrInput.setOrigin);
                         if(!bBatchIterFlag) ++ iBatchTrainCnt;
-                        if(bShowIterFlag) IterShow(setCurrOutput, setCurrOrigin);
+                        if(bShowIterFlag) IterShow(setCurrOutput, CurrInput.setOrigin);
                         std::cout << "[Epoch][" << iEpoch << "][Batch Index][" << i << ']' << std::endl;
-                        if(bBatchIterFlag) if(!BackProp(setCurrOutput, setCurrOrigin, i)) return false;
+                        if(bBatchIterFlag) if(!BackProp(setCurrOutput, CurrInput.setOrigin)) return false;
                     }
                     else return false;
                 }
                 ++ iEpoch;
             }
-            while(iBatchTrainCnt < iBatchCnt);
+            while(iBatchTrainCnt < iNetBatchCnt);
             return true;
         }
         else return false;    

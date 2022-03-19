@@ -4,13 +4,42 @@ class NetBase
 {
 protected:
     double dAcc = 1e-5;
-    uint64_t iNetMiniBatch = 0;
+    uint64_t iNetMiniBatch = 0, iNetBatchCnt = 0, iNetRearBatchSize = 0;
     NET_LIST<LAYER_PTR> lsLayer;
+    set<uint64_t> setDatasetIdx;
+    
+    void InitDatasetIdx(uint64_t iDataSize)
+    {
+        if(!iNetMiniBatch) iNetMiniBatch = iDataSize;
+        iNetBatchCnt = iDataSize / iNetMiniBatch;
+                // Last bacth's size
+        iNetRearBatchSize = iDataSize % iNetMiniBatch;
+        if(iNetRearBatchSize) ++ iNetBatchCnt;
+        if(iNetMiniBatch != iDataSize)
+        {
+            setDatasetIdx.init(iDataSize);
+            for(auto i=0; i<setDatasetIdx.size(); ++i) setDatasetIdx[i] = i;
+        }
+    }
+    void ShuffleIdx() { if(setDatasetIdx.size()) setDatasetIdx.shuffle(); }
+    set<uint64_t> CurrBatchDatasetIdx(uint64_t iCurrBatchIdx)
+    {
+        if(setDatasetIdx.size())
+        {
+            auto iBatchSize = iNetMiniBatch;
+            if(iNetRearBatchSize && iCurrBatchIdx+1==iNetBatchCnt) iBatchSize = iNetRearBatchSize;
+            // Dataset shuffled indexes for current batch
+            return setDatasetIdx.sub_queue(mtx::mtx_elem_pos(iCurrBatchIdx, 0, iNetMiniBatch), mtx::mtx_elem_pos(iCurrBatchIdx, iBatchSize-1, iNetMiniBatch));
+        }
+        else return set<uint64_t>::blank_queue();
+    }
 
     virtual void ValueAssign(NetBase &netSrc)
     {
         dAcc = netSrc.dAcc;
         iNetMiniBatch = netSrc.iNetMiniBatch;
+        iNetBatchCnt = netSrc.iNetBatchCnt;
+        iNetRearBatchSize = netSrc.iNetRearBatchSize;
     }
     void ShowIter() {}
     bool IterFlag() { return true; }
@@ -22,11 +51,13 @@ public:
     {
         ValueAssign(netSrc);
         lsLayer = netSrc.lsLayer;
+        setDatasetIdx = netSrc.setDatasetIdx;
     }
     virtual void ValueMove(NetBase &&netSrc)
     {
         ValueAssign(netSrc);
         lsLayer = std::move(netSrc.lsLayer);
+        setDatasetIdx = std::move(netSrc.setDatasetIdx);
     }
     NetBase(NetBase &netSrc) { ValueCopy(netSrc); }
     NetBase(NetBase &&netSrc) { ValueMove(std::move(netSrc)); }
@@ -37,6 +68,12 @@ public:
     template<typename LayerType, typename ... Args,  typename = std::enable_if_t<std::is_base_of_v<_LAYER Layer, LayerType>>> bool AddLayer(Args&& ... pacArgs) { return lsLayer.emplace_back(std::make_shared<LayerType>(pacArgs...)); }
     uint64_t Depth() { return lsLayer.size(); }
     bool Run() { return true; }
+    void Reset()
+    {
+        setDatasetIdx.reset();
+        lsLayer.reset();
+    }
+    ~NetBase() { Reset(); }
 };
 
 class NetClassify : public NetBase
@@ -89,6 +126,11 @@ protected:
         return false;
     }
 public:
+    struct NetClassfyInput
+    {
+        set<feature> setInput;
+        set<vect> setOrigin;
+    };
     virtual void ValueCopy(NetClassify &netSrc) { ValueAssign(netSrc); }
     virtual void ValueMove(NetClassify &&netSrc) { ValueAssign(netSrc); }
     NetClassify(NetClassify &netSrc) : NetBase(netSrc) { ValueCopy(netSrc); }
