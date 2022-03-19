@@ -50,8 +50,25 @@ bagrt::net_queue<std::string> parse_line_strings(std::string strings){
     }out.emplace_back(elem);
     return out;
 }
+bagrt::net_queue<std::string> line_header(std::initializer_list<std::string> header)
+{
+    bagrt::net_queue<std::string> header_set(header.size());
+    auto cnt = 0;
+    for(auto temp : header) header_set[cnt++] = temp;
+    return header_set;
+}
+bagrt::net_queue<bagrt::net_queue<std::string>> matrix_table(mtx::matrix &vector)
+{
+    bagrt::net_queue<bagrt::net_queue<std::string>> vec_tab(vector.LN_CNT);
+    for(auto i=0; i<vector.LN_CNT; ++i)
+    {
+        vec_tab[i].init(vector.COL_CNT);
+        for(auto j=0; j<vector.COL_CNT; ++j) vec_tab[i][j] = std::to_string(vector[i][j]);
+    }
+    return vec_tab;
+}
 // Output CSV file
-template <typename T> void output_table(bagrt::net_queue<bagrt::net_queue<T>>output_strings, std::string file_path){
+void output_table(bagrt::net_queue<bagrt::net_queue<std::string>>output_strings, std::string file_path){
     std::ofstream oFile;
     oFile.open(file_path,std::ios::out|std::ios::trunc);
     for(auto i=0; i<output_strings.size(); ++i){
