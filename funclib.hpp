@@ -145,12 +145,12 @@ template<typename T> set<T> softmax_cec_grad(set<T> &setSoftmaxOutput, set<T> &s
     else return set<T>::blank_queue();
 }
 
-vect hadamard_produc(vect &l_vec, vect &r_vec) { return l_vec.elem_cal_opt(r_vec, MATRIX_ELEM_MULT); }
+vect hadamard_product(vect &l_vec, vect &r_vec) { return l_vec.elem_cal_opt(r_vec, MATRIX_ELEM_MULT); }
 
-template<typename T> set<T> hadamard_produc(set<T> &l_set, set<T> &r_set)
+template<typename T> set<T> hadamard_product(set<T> &l_set, set<T> &r_set)
 {
     set<T> ans(l_set.size());
-    for(auto i=0; i<ans.size(); ++i) ans[i] = hadamard_produc(l_set[i], r_set[i]);
+    for(auto i=0; i<ans.size(); ++i) ans[i] = hadamard_product(l_set[i], r_set[i]);
     return ans;
 }
 

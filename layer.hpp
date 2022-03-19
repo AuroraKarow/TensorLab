@@ -49,8 +49,8 @@ struct LayerAct : Layer
     {
         switch (iLayerActFuncType)
         {
-        case SIGMOID:   return hadamard_produc(sigmoid_dv(setLayerInput), setGrad);
-        case RELU:      return hadamard_produc(ReLU_dv(setLayerInput), setGrad);
+        case SIGMOID:   return hadamard_product(sigmoid_dv(setLayerInput), setGrad);
+        case RELU:      return hadamard_product(ReLU_dv(setLayerInput), setGrad);
         case SOFTMAX:   return softmax_cec_grad(setGrad, setOrigin);
         default: return setGrad;
         }     
