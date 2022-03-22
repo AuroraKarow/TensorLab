@@ -108,7 +108,8 @@ protected:
     void IterShow(set<vect> &setCurrOutput, set<vect> &setOrigin)
     {
         for(auto i=0; i<setOrigin.size(); i++)
-        {std::cout << " [BarY]\t\t[Label]\t[Y]" << std::endl;
+        {
+            std::cout << " [BarY]\t\t[Label]\t[Y]" << std::endl;
             for(auto j=0; j<setCurrOutput[i].LN_CNT; ++j)
             {
                 if(setOrigin[i].pos_idx(j)) std::cout << '>';
@@ -119,6 +120,17 @@ protected:
             }
             std::cout << std::endl;
         }
+    }
+    uint64_t IterPass(set<vect> &setCurrOutput, set<vect> &setOrigin)
+    {
+        auto iPassCnt = 0;
+        for(auto i=0; i<setOrigin.size(); i++) for(auto j=0; j<setOrigin[i].LN_CNT; ++j)
+            if(setOrigin[i].pos_idx(j) && setCurrOutput[i].pos_idx(j) > (1-dAcc))
+            {
+                iPassCnt ++;
+                break;
+            }
+        return iPassCnt;
     }
     bool IterFlag(set<vect> &setCurrOutput, set<vect> &setOrigin)
     {

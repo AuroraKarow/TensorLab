@@ -2,7 +2,6 @@
 
 #include "dataset"
 #include "neunet"
-#include "thread_pool"
 
 using namespace std;
 using namespace mtx;
@@ -41,6 +40,11 @@ private:
         case CONV:
             if(!i) setTemp = INSTANCE_DERIVE<LAYER_CONV>(lsLayer[i]) -> ForwProp(setInput);
             else setTemp = INSTANCE_DERIVE<LAYER_CONV>(lsLayer[i]) -> ForwProp(setTemp);
+            if(setTemp.size()) break;
+            else return blank_vect_seq;
+        case CONV_IM2COL:
+            if(!i) setTemp = INSTANCE_DERIVE<LAYER_CONV_IM2COL>(lsLayer[i]) -> ForwProp(setInput);
+            else setTemp = INSTANCE_DERIVE<LAYER_CONV_IM2COL>(lsLayer[i]) -> ForwProp(setTemp);
             if(setTemp.size()) break;
             else return blank_vect_seq;
         case CONV_BN:
@@ -105,6 +109,10 @@ private:
         case CONV:
             setGradFt = INSTANCE_DERIVE<LAYER_CONV>(lsLayer[i]) -> BackProp(setGradFt);
             if(setGradFt.size() && INSTANCE_DERIVE<LAYER_CONV>(lsLayer[i])->UpdatePara()) break;
+            else return false;
+        case CONV_IM2COL:
+            setGradFt = INSTANCE_DERIVE<LAYER_CONV_IM2COL>(lsLayer[i]) -> BackProp(setGradFt);
+            if(setGradFt.size() && INSTANCE_DERIVE<LAYER_CONV_IM2COL>(lsLayer[i])->UpdatePara()) break;
             else return false;
         case CONV_BN:
             setGradFt = INSTANCE_DERIVE<LAYER_CONV_BN>(lsLayer[i]) -> BackProp(setGradFt);
@@ -195,30 +203,34 @@ public:
         {
             InitDatasetIdx(mnistDataset.size());
             auto setOrigin = mnistDataset.orgn();      
-            auto iEpoch = 0, dTestAcc = 0, iBatchTrainCnt = 0;
+            auto iEpoch = 0, iTestPassCnt = 0;;
             do
             {
                 // Batch shuffling
                 ShuffleIdx();
+                iTestPassCnt = 0;
+                CLOCK_BEGIN
                 for(auto i=0; i<iNetBatchCnt; ++i)
                 {
                     auto CurrInput = GetCurrInput(mnistDataset.elem, setOrigin, i);
-                    set<vect> setPreOutput;
                     // Train
                     auto setCurrOutput = ForwProp(CurrInput.setInput);
                     if(setCurrOutput.size())
                     {
-                        auto bBatchIterFlag = IterFlag(setCurrOutput, CurrInput.setOrigin);
-                        if(!bBatchIterFlag) ++ iBatchTrainCnt;
                         if(bShowIterFlag) IterShow(setCurrOutput, CurrInput.setOrigin);
-                        std::cout << "[Epoch][" << iEpoch << "][Batch Index][" << i << ']' << std::endl;
-                        if(bBatchIterFlag) if(!BackProp(setCurrOutput, CurrInput.setOrigin)) return false;
+                        auto iSglTestPassCnt = IterPass(setCurrOutput, CurrInput.setOrigin);
+                        if(IterFlag(setCurrOutput, CurrInput.setOrigin)) if(!BackProp(setCurrOutput, CurrInput.setOrigin)) return false;
+                        std::printf("\r[Epoch][%d][Batch Index][%d/%d][Accuracy][%.2f]", iEpoch+1, i+1, (int)iNetBatchCnt, iSglTestPassCnt*1.0/setCurrOutput.size());
+                        iTestPassCnt += iSglTestPassCnt;
                     }
                     else return false;
                 }
+                CLOCK_END
+                std::printf("\r[Epoch][%d][Accuracy][%lf]", iEpoch+1, iTestPassCnt*1.0/setOrigin.size());
+                std::cout << "[Duration][" << CLOCK_DURATION << ']' << std::endl;
                 ++ iEpoch;
             }
-            while(iBatchTrainCnt < iNetBatchCnt);
+            while(iTestPassCnt < mnistDataset.size());
             return true;
         }
         else return false;    
@@ -230,9 +242,9 @@ int main(int argc, char *argv[], char *envp[])
     cout << "hello, world." << endl;
     // MNIST demo
     string root_dir = "E:\\VS Code project data\\MNIST\\";
-    MNIST dataset(root_dir + "train-images.idx3-ubyte", root_dir + "train-labels.idx1-ubyte", {64});
+    MNIST dataset(root_dir + "train-images.idx3-ubyte", root_dir + "train-labels.idx1-ubyte");
     // dataset.output_bitmap("E:\\VS Code project data\\MNIST_out", BMIO_BMP);
-    NetBNMNIST LeNet(0.1, 32);
+    NetBNMNIST LeNet(0.1, 32, false);
     LeNet.AddLayer<LAYER_CONV>(20, 1, 5, 5, 1, 1);
     LeNet.AddLayer<LAYER_CONV_BN>(20);
     LeNet.AddLayer<LAYER_ACT_FT>(RELU);

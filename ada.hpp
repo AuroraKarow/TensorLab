@@ -209,15 +209,20 @@ tensor AdaDeltaUpdateKernel(tensor &tenKernel, tensor &tenGradLossToKernel, ada:
     if(tenKernel.size() == tenGradLossToKernel.size())
     {
         tensor tenUpdatedKernel(tenKernel.size());
+        thrd_pool::thread_pool t_p;
         for(auto i=0; i<tenKernel.size(); ++i)
             if(tenKernel[i].size() == tenGradLossToKernel[i].size())
             {
-                tenUpdatedKernel[i].init(tenKernel[i].size());
-                for(auto j=0; j<tenKernel[i].size(); ++j)
+                tenUpdatedKernel[i] = t_p.add_task([&]
                 {
-                    tenUpdatedKernel[i][j] = tenKernel[i][j] - advCurrDelta[i][j].Delta(tenGradLossToKernel[i][j]);
-                    if(!tenUpdatedKernel[i][j].is_matrix()) return blank_tensor;
-                }
+                    feature vecTemp(tenKernel[i].size());
+                    for(auto j=0; j<tenKernel[i].size(); ++j)
+                    {
+                        vecTemp[j] = tenKernel[i][j] - advCurrDelta[i][j].Delta(tenGradLossToKernel[i][j]);
+                        if(!vecTemp[j].is_matrix()) return blank_feature;
+                    }
+                    return vecTemp;
+                }).get();
             }
             else return blank_tensor;
         return tenUpdatedKernel;

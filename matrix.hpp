@@ -791,13 +791,30 @@ public:
         else return false;
     }
     bool shape_valid(matrix &mtx_src) { return shape_valid(mtx_src.info.ln_cnt, mtx_src.info.col_cnt); }
+    bool shape_as(uint64_t ln_cnt, uint64_t col_cnt)
+    {
+        auto elem_cnt = ln_cnt * col_cnt;
+        if(this->elem_cnt==elem_cnt)
+        {
+            info.ln_cnt = ln_cnt;
+            info.col_cnt = col_cnt;
+            return true;
+        }
+        else return false;
+    }
+    bool shape_as(matrix &m_val) { return shape_as(m_val.info.ln_cnt, m_val.info.col_cnt); }
     matrix reshape(uint64_t ln_cnt, uint64_t col_cnt)
     {
         auto elem_cnt = ln_cnt * col_cnt;
-        if(this->elem_cnt==elem_cnt && is_matrix()) return matrix(info.mtx_val, ln_cnt, col_cnt);
+        if(this->elem_cnt==elem_cnt && is_matrix())
+        {
+            auto vec_val = *this;
+            vec_val.shape_as(ln_cnt, col_cnt);
+            return vec_val;
+        }
         else return matrix();
     }
-    matrix reshape(matrix &as_val) { return reshape(as_val.info.ln_cnt, as_val.info.col_cnt); }
+    matrix reshape(matrix &m_val) { return reshape(m_val.info.ln_cnt, m_val.info.col_cnt); }
     double elem_sum(uint64_t from_ln, uint64_t to_ln, uint64_t from_col, uint64_t to_col, uint64_t ln_dilation = 0, uint64_t col_dilation = 0) { return mtx_sum(info.mtx_val, from_ln, to_ln, from_col, to_col, info.ln_cnt, info.col_cnt, ln_dilation, col_dilation); }
     double elem_sum() { return elem_sum(0, info.ln_cnt-1, 0, info.col_cnt-1); }
     matrix abs()

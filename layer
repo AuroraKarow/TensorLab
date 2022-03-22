@@ -25,6 +25,7 @@
 #define FC_BN               5
 #define CONV_BN             6
 #define TRANS               7
+#define CONV_IM2COL         8
 
 #define GD_BGD              0
 #define GD_MINIBATCH_SGD    1

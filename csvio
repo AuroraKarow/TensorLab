@@ -1,7 +1,6 @@
 #pragma once
 #include <fstream>
 #include <sstream>
-#include <string>
 #include "bagrt"
 
 #define CSVIO_BEGIN namespace csvio { 

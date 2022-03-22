@@ -14,9 +14,10 @@ tensor InitKernel(uint64_t iAmt, uint64_t iChannCnt, uint64_t iLnCnt, uint64_t i
 set<feature> Conv(set<feature> &setInput, tensor &tenKernel, uint64_t iLnStride, uint64_t iColStride, uint64_t iLnDilation = 0, uint64_t iColDilation = 0, uint64_t iInputPadTop = 0, uint64_t iInputPadRight = 0, uint64_t iInputPadBottom = 0, uint64_t iInputPadLeft = 0, uint64_t iLnDistance = 0, uint64_t iColDistance = 0)
 {
     set<feature> setOutput(setInput.size());
+    thrd_pool::thread_pool t_p;
     for(auto i=0; i<setInput.size(); ++i)
     {
-        setOutput[i] = Conv(setInput[i], tenKernel, iLnStride, iColStride, iLnDilation, iColDilation, iInputPadTop, iInputPadRight, iInputPadBottom, iInputPadLeft, iLnDistance, iColDistance);
+        setOutput[i] = t_p.add_task([&]{return Conv(setInput[i], tenKernel, iLnStride, iColStride, iLnDilation, iColDilation, iInputPadTop, iInputPadRight, iInputPadBottom, iInputPadLeft, iLnDistance, iColDistance);}).get();
         if(!setOutput[i].size()) return blank_ft_seq;
     }
     return setOutput;
@@ -38,21 +39,71 @@ tensor GradLossToKernel(set<feature> &setGradLossToOutput, set<feature> &setInpu
 set<feature> GradLossToInput(set<feature> &setGradLossToOutput, tensor &tenKernel, uint64_t iLnStride, uint64_t iColStride, uint64_t iLnDilation = 0, uint64_t iColDilation = 0, uint64_t iInputPadTop = 0, uint64_t iInputPadRight = 0, uint64_t iInputPadBottom = 0, uint64_t iInputPadLeft = 0, uint64_t iLnDistance = 0, uint64_t iColDistance = 0)
 {
     set<feature> setGradLossToInput(setGradLossToOutput.size());
+    thrd_pool::thread_pool t_p;
     for(auto i=0; i<setGradLossToOutput.size(); ++i)
     {
-        setGradLossToInput[i] = GradLossToInput(setGradLossToOutput[i], tenKernel, iLnStride, iColStride, iLnDilation, iColDilation, iInputPadTop, iInputPadRight, iInputPadBottom, iInputPadLeft, iLnDistance, iColDistance);
+        setGradLossToInput[i] = t_p.add_task([&]{ return GradLossToInput(setGradLossToOutput[i], tenKernel, iLnStride, iColStride, iLnDilation, iColDilation, iInputPadTop, iInputPadRight, iInputPadBottom, iInputPadLeft, iLnDistance, iColDistance); }).get();
         if(!setGradLossToInput[i].size()) return blank_ft_seq;
     }
     return setGradLossToInput;
 }
 
+vect InitKernelIm2Col(uint64_t iAmt, uint64_t iChannCnt, uint64_t iLnCnt, uint64_t iColCnt, double dRandBoundryFirst = 0, double dRandBoundrySecond = 0, double dRandAcc = 1e-5) { return vect(iLnCnt*iColCnt*iChannCnt, iAmt, true, dRandBoundryFirst, dRandBoundrySecond, dRandAcc); }
+
+set<vect> Im2ColOutputTransform(set<feature> setOutput)
+{
+    set<vect> setIm2ColOutput(setOutput.size());
+    for(auto i=0; i<setOutput.size(); ++i) setIm2ColOutput[i] = Im2ColOutputTransform(setOutput[i]);
+    return setIm2ColOutput;
+}
+
+set<vect> Im2ColInputTransform(set<feature> &setInput, uint64_t &iOutputLnCnt, uint64_t iFilterLnCnt, uint64_t iFilterColCnt, uint64_t iLnStride, uint64_t iColStride, uint64_t iLnDilation = 0, uint64_t iColDilation = 0, uint64_t iInputPadTop = 0, uint64_t iInputPadRight = 0, uint64_t iInputPadBottom = 0, uint64_t iInputPadLeft = 0, uint64_t iLnDistance = 0, uint64_t iColDistance = 0)
+{
+    set<vect> setAns(setInput.size());
+    for(auto i=0; i<setAns.size(); ++i) setAns[i] = Im2ColInputTransform(setInput[i], iOutputLnCnt, iFilterLnCnt, iFilterColCnt, iLnStride, iColStride, iLnDilation, iColDilation, iInputPadTop, iInputPadRight, iInputPadBottom, iInputPadLeft, iLnDistance, iColDistance);
+    return setAns;
+}
+
+set<feature> Im2ColInputTransform(set<vect> &setInput, uint64_t iOutputLnCnt, uint64_t iFilterLnCnt, uint64_t iFilterColCnt, uint64_t iLnStride, uint64_t iColStride, bool bGradFlag = true, uint64_t iLnDilation = 0, uint64_t iColDilation = 0, uint64_t iInputPadTop = 0, uint64_t iInputPadRight = 0, uint64_t iInputPadBottom = 0, uint64_t iInputPadLeft = 0, uint64_t iLnDistance = 0, uint64_t iColDistance = 0)
+{
+    set<feature> setAns(setInput.size());
+    for(auto i=0; i<setAns.size(); ++i) setAns[i] = Im2ColInputTransform(setInput[i], iOutputLnCnt, iFilterLnCnt, iFilterColCnt, iLnStride, iColStride, bGradFlag, iLnDilation, iColDilation, iInputPadTop, iInputPadRight, iInputPadBottom, iInputPadLeft, iLnDistance, iColDistance);
+    return setAns;
+}
+
+set<feature> ConvIm2Col(set<vect> &setIm2ColInput, vect &vecIm2ColKernel, uint64_t iOutputLnCnt)
+{
+    set<feature> setOutput(setIm2ColInput.size());
+    thrd_pool::thread_pool t_p;
+    for(auto i=0; i<setOutput.size(); ++i) setOutput[i] = t_p.add_task([&](){ return ConvIm2Col(setIm2ColInput[i], vecIm2ColKernel, iOutputLnCnt); }).get();
+    return setOutput;
+}
+
+set<feature> GradLossToInputIm2Col(set<vect> setIm2ColGradLossToOutput, vect &vecIm2ColKernel, uint64_t iOutputLnCnt, uint64_t iKernelLnCnt, uint64_t iKernelColCnt, uint64_t iLnStride, uint64_t iColStride, uint64_t iLnDilation = 0, uint64_t iColDilation = 0, uint64_t iInputPadTop = 0, uint64_t iInputPadRight = 0, uint64_t iInputPadBottom = 0, uint64_t iInputPadLeft = 0, uint64_t iLnDistance = 0, uint64_t iColDistance = 0)
+{
+    set<feature> setAns(setIm2ColGradLossToOutput.size());
+    thrd_pool::thread_pool t_p;
+    for(auto i=0; i<setAns.size(); ++i) setAns[i] = t_p.add_task([&](){ return GradLossToInputIm2Col(setIm2ColGradLossToOutput[i], vecIm2ColKernel, iOutputLnCnt, iKernelLnCnt, iKernelColCnt, iLnStride, iColStride, iLnDilation, iColDilation, iInputPadTop, iInputPadRight, iInputPadBottom, iInputPadLeft, iLnDistance, iColDistance); }).get();
+    return setAns;
+}
+
+vect GradLossToKernelIm2Col(set<vect> &setIm2ColGradLossToOutput, set<vect> &vecIm2ColInput)
+{
+    vect vecAns;
+    for(auto i=0; i<vecIm2ColInput.size(); ++i)
+        if(vecAns.is_matrix()) vecAns += GradLossToKernelIm2Col(setIm2ColGradLossToOutput[i], vecIm2ColInput[i]);
+        else vecAns = GradLossToKernelIm2Col(setIm2ColGradLossToOutput[i], vecIm2ColInput[i]);
+    return vecAns;
+}
+
 set<feature> Pool(set<feature> &vecInput, uint64_t iPoolType = POOL_DOWN_MAX, bool bDownSamp = true, set<feature> &setTraceInput = set<feature>(), uint64_t iFilterLnCnt = 0, uint64_t iFilterColCnt = 0, uint64_t iLnStride = 0, uint64_t iColStride = 0, uint64_t iLnDilation = 0, uint64_t iColDilation = 0)
 {
     set<feature> setOutput(vecInput.size());
+    thrd_pool::thread_pool t_p;
     for(auto i=0; i<vecInput.size(); ++i)
     {
-        if(bDownSamp) setOutput[i] = PoolDown(vecInput[i], iPoolType, iFilterLnCnt, iFilterColCnt, iLnStride, iColStride, iLnDilation, iColDilation);
-        else setOutput[i] = PoolUp(vecInput[i], iPoolType, setTraceInput[i], iFilterLnCnt, iFilterColCnt, iLnStride, iColStride, iLnDilation, iColDilation);
+        if(bDownSamp) setOutput[i] = t_p.add_task([&]{ return PoolDown(vecInput[i], iPoolType, iFilterLnCnt, iFilterColCnt, iLnStride, iColStride, iLnDilation, iColDilation); }).get();
+        else setOutput[i] = t_p.add_task([&]{ return PoolUp(vecInput[i], iPoolType, setTraceInput[i], iFilterLnCnt, iFilterColCnt, iLnStride, iColStride, iLnDilation, iColDilation); }).get();
         if(!setOutput[i].size()) return blank_ft_seq;
     }
     return setOutput;
