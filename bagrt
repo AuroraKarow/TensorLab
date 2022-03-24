@@ -3,7 +3,6 @@
 #include <chrono>
 #include <functional>
 #include <cmath>
-#include <string>
 
 #define BASEALGO_BEGIN  namespace bagrt {
 #define BASEALGO_END    }

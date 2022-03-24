@@ -126,17 +126,11 @@ struct LayerFC : Layer
     void ValueAssign(LayerFC &lyrSrc) {}
     void ValueCopy(LayerFC &lyrSrc)
     {
-        vecLayerWeight = lyrSrc.vecLayerWeight;
-        setLayerInput = lyrSrc.setLayerInput;
-        vecLayerGradWeight = lyrSrc.vecLayerGradWeight;
-        anvLayerMomt = lyrSrc.anvLayerMomt;
+        vecLayerWeight = lyrSrc.vecLayerWeight; setLayerInput = lyrSrc.setLayerInput; vecLayerGradWeight = lyrSrc.vecLayerGradWeight; anvLayerMomt = lyrSrc.anvLayerMomt;
     }
     void ValueMove(LayerFC &&lyrSrc)
     {
-        vecLayerWeight = std::move(lyrSrc.vecLayerWeight);
-        setLayerInput = std::move(lyrSrc.setLayerInput);
-        vecLayerGradWeight = std::move(lyrSrc.vecLayerGradWeight);
-        anvLayerMomt = std::move(lyrSrc.anvLayerMomt);
+        vecLayerWeight = std::move(lyrSrc.vecLayerWeight); setLayerInput = std::move(lyrSrc.setLayerInput); vecLayerGradWeight = std::move(lyrSrc.vecLayerGradWeight); anvLayerMomt = std::move(lyrSrc.anvLayerMomt);
     }
     LayerFC(LayerFC &lyrSrc) : Layer(lyrSrc) { ValueCopy(lyrSrc); }
     LayerFC(LayerFC &&lyrSrc) : Layer(lyrSrc) { ValueMove(std::move(lyrSrc)); }
@@ -167,18 +161,8 @@ struct LayerFC : Layer
     }
     vect Deduce(vect &vecInput) { return _FC Output(vecInput, vecLayerWeight); }
 
-    void ResetAda()
-    {
-        advLayerDelta.Reset();
-        anvLayerMomt.Reset();
-    }
-    void Reset()
-    {
-        vecLayerWeight.reset();
-        setLayerInput.reset();
-        vecLayerGradWeight.reset();
-        ResetAda();
-    }
+    void ResetAda() { advLayerDelta.Reset(); anvLayerMomt.Reset(); }
+    void Reset() { vecLayerWeight.reset(); setLayerInput.reset(); vecLayerGradWeight.reset(); ResetAda(); }
     ~LayerFC() { Reset(); }
 };
 
@@ -193,28 +177,10 @@ struct LayerFCBN : Layer
 
     void ValueAssign(LayerFCBN &lyrSrc)
     {
-        dBeta = lyrSrc.dBeta;
-        dGamma = lyrSrc.dGamma;
-        dEpsilon = lyrSrc.dEpsilon;
-        dGradBeta = lyrSrc.dGradBeta;
-        dGradGamma = lyrSrc.dGradGamma;
-        advBeta = lyrSrc.advBeta;
-        advGamma = lyrSrc.advGamma;
-        anvBeta = lyrSrc.anvBeta;
-        anvGamma = lyrSrc.anvGamma;
+        dBeta = lyrSrc.dBeta; dGamma = lyrSrc.dGamma; dEpsilon = lyrSrc.dEpsilon; dGradBeta = lyrSrc.dGradBeta; dGradGamma = lyrSrc.dGradGamma; advBeta = lyrSrc.advBeta; advGamma = lyrSrc.advGamma; anvBeta = lyrSrc.anvBeta; anvGamma = lyrSrc.anvGamma;
     }
-    void ValueCopy(LayerFCBN &lyrSrc)
-    {
-        ValueAssign(lyrSrc);
-        setLayerInput = lyrSrc.setLayerInput;
-        BNData = lyrSrc.BNData;
-    }
-    void ValueMove(LayerFCBN &&lyrSrc)
-    {
-        ValueAssign(lyrSrc);
-        setLayerInput = std::move(lyrSrc.setLayerInput);
-        BNData = std::move(lyrSrc.BNData);
-    }
+    void ValueCopy(LayerFCBN &lyrSrc) { ValueAssign(lyrSrc); setLayerInput = lyrSrc.setLayerInput; BNData = lyrSrc.BNData; }
+    void ValueMove(LayerFCBN &&lyrSrc) { ValueAssign(lyrSrc); setLayerInput = std::move(lyrSrc.setLayerInput); BNData = std::move(lyrSrc.BNData); }
     LayerFCBN(LayerFCBN &lyrSrc) : Layer(lyrSrc) { ValueCopy(lyrSrc); }
     LayerFCBN(LayerFCBN &&lyrSrc) : Layer(lyrSrc) { ValueMove(std::move(lyrSrc)); }
     void operator=(LayerFCBN &lyrSrc) { Layer::operator=(lyrSrc); ValueCopy(lyrSrc); }
@@ -253,18 +219,8 @@ struct LayerFCBN : Layer
     }
     vect Deduce(vect &vecInput, BN_FC_PTR &pBNData, uint64_t iBatchSize = 0, uint64_t iBatchCnt = 0) { return _FC BNDeduce(vecInput, dBeta, dGamma, pBNData, iBatchSize, iBatchCnt, dEpsilon); }
 
-    void ResetAda()
-    {
-        advBeta.Reset();
-        advGamma.Reset();
-        anvBeta.Reset();
-        anvGamma.Reset();
-    }
-    void Reset()
-    {
-        setLayerInput.reset();
-        BNData.reset();
-    }
+    void ResetAda() { advBeta.Reset(); advGamma.Reset(); anvBeta.Reset(); anvGamma.Reset(); }
+    void Reset() { setLayerInput.reset(); BNData.reset(); }
     ~LayerFCBN() { Reset(); }
 };
 
@@ -278,34 +234,15 @@ struct LayerConv : Layer
 
     void ValueAssign(LayerConv &lyrSrc)
     {
-        iLayerLnStride = lyrSrc.iLayerLnStride;
-        iLayerColStride = lyrSrc.iLayerColStride;
-        iLayerLnDilation = lyrSrc.iLayerLnDilation;
-        iLayerColDilation = lyrSrc.iLayerColDilation;
-        iLayerInputPadTop = lyrSrc.iLayerInputPadTop;
-        iLayerInputPadRight = lyrSrc.iLayerInputPadRight;
-        iLayerInputPadBottom = lyrSrc.iLayerInputPadBottom;
-        iLayerInputPadLeft = lyrSrc.iLayerInputPadLeft;
-        iLayerLnDistance = lyrSrc.iLayerLnDistance;
-        iLayerColDistance = lyrSrc.iLayerColDistance;
+        iLayerLnStride = lyrSrc.iLayerLnStride; iLayerColStride = lyrSrc.iLayerColStride; iLayerLnDilation = lyrSrc.iLayerLnDilation; iLayerColDilation = lyrSrc.iLayerColDilation; iLayerInputPadTop = lyrSrc.iLayerInputPadTop; iLayerInputPadRight = lyrSrc.iLayerInputPadRight; iLayerInputPadBottom = lyrSrc.iLayerInputPadBottom; iLayerInputPadLeft = lyrSrc.iLayerInputPadLeft; iLayerLnDistance = lyrSrc.iLayerLnDistance; iLayerColDistance = lyrSrc.iLayerColDistance;
     }
     void ValueCopy(LayerConv &lyrSrc)
     {
-        ValueAssign(lyrSrc);
-        tenKernel = lyrSrc.tenKernel;
-        setLayerInput = lyrSrc.setLayerInput;
-        tenGradKernel = lyrSrc.tenGradKernel;
-        advLayerDelta = lyrSrc.advLayerDelta;
-        anvLayerMomt = lyrSrc.anvLayerMomt;
+        ValueAssign(lyrSrc); tenKernel = lyrSrc.tenKernel; setLayerInput = lyrSrc.setLayerInput; tenGradKernel = lyrSrc.tenGradKernel; advLayerDelta = lyrSrc.advLayerDelta; anvLayerMomt = lyrSrc.anvLayerMomt;
     }
     void ValueMove(LayerConv &&lyrSrc)
     {
-        ValueAssign(lyrSrc);
-        tenKernel = std::move(lyrSrc.tenKernel);
-        setLayerInput = std::move(lyrSrc.setLayerInput);
-        tenGradKernel = std::move(lyrSrc.tenGradKernel);
-        advLayerDelta = std::move(lyrSrc.advLayerDelta);
-        anvLayerMomt = std::move(lyrSrc.anvLayerMomt);
+        ValueAssign(lyrSrc); tenKernel = std::move(lyrSrc.tenKernel); setLayerInput = std::move(lyrSrc.setLayerInput); tenGradKernel = std::move(lyrSrc.tenGradKernel); advLayerDelta = std::move(lyrSrc.advLayerDelta); anvLayerMomt = std::move(lyrSrc.anvLayerMomt);
     }
     LayerConv(LayerConv &lyrSrc) : Layer(lyrSrc) { ValueCopy(lyrSrc); }
     LayerConv(LayerConv &&lyrSrc) : Layer(lyrSrc) { ValueMove(std::move(lyrSrc)); }
@@ -336,95 +273,63 @@ struct LayerConv : Layer
     }
     feature Deduce(feature &vecInput) { return _CONV Conv(vecInput, tenKernel, iLayerLnStride, iLayerColStride, iLayerLnDilation, iLayerColDilation, iLayerInputPadTop, iLayerInputPadRight, iLayerInputPadBottom, iLayerInputPadLeft, iLayerLnDistance, iLayerColDistance); }
 
-    void ResetAda()
-    {
-        advLayerDelta.reset();
-        anvLayerMomt.reset();
-    }
-    void Reset()
-    {
-        setLayerInput.reset();
-        tenGradKernel.reset();
-        tenKernel.reset();
-        ResetAda();
-    }
+    void ResetAda() { advLayerDelta.reset(); anvLayerMomt.reset(); }
+    void Reset() { setLayerInput.reset(); tenGradKernel.reset(); tenKernel.reset(); ResetAda(); }
     ~LayerConv() { Reset(); }
 };
 
 struct LayerConvIm2Col : Layer
 {
-    uint64_t iLayerKernelLnCnt = 0, iLayerKernelColCnt = 0, iLayerOutputLnCnt = 0, iLayerLnStride = 0, iLayerColStride = 0, iLayerLnDilation = 0, iLayerColDilation = 0, iLayerInputPadTop = 0, iLayerInputPadRight = 0, iLayerInputPadBottom = 0, iLayerInputPadLeft = 0, iLayerLnDistance = 0, iLayerColDistance = 0;
-    vect vecIm2ColKernel, vecIm2ColGradKernel;
-    set<vect> setLayerIm2ColInput;
-    _ADA AdaNesterovVect anvLayerMomt;
-    _ADA AdaDeltaVect advLayerDelta;
+    uint64_t iLayerOutputLnCnt = 0, iLayerKernelLnCnt = 0, iLayerKernelColCnt = 0 ,iLayerLnStride = 0, iLayerColStride = 0, iLayerLnDilation = 0, iLayerColDilation = 0, iLayerInputPadTop = 0, iLayerInputPadRight = 0, iLayerInputPadBottom = 0, iLayerInputPadLeft = 0, iLayerLnDistance = 0, iLayerColDistance = 0;
+    set<vect> setPrepInput;
+    vect vecKernel, vecGradKernel, vecPrepInput;
+    _ADA AdaDeltaVect advKernel;
+    _ADA AdaNesterovVect anvKernel;
 
     void ValueAssign(LayerConvIm2Col &lyrSrc)
     {
-        iLayerOutputLnCnt = lyrSrc.iLayerOutputLnCnt;
-        iLayerKernelLnCnt = lyrSrc.iLayerKernelLnCnt;
-        iLayerKernelColCnt = lyrSrc.iLayerKernelColCnt;
-        iLayerLnStride = lyrSrc.iLayerLnStride;
-        iLayerColStride = lyrSrc.iLayerColStride;
-        iLayerLnDilation = lyrSrc.iLayerLnDilation;
-        iLayerColDilation = lyrSrc.iLayerColDilation;
-        iLayerInputPadTop = lyrSrc.iLayerInputPadTop;
-        iLayerInputPadRight = lyrSrc.iLayerInputPadRight;
-        iLayerInputPadBottom = lyrSrc.iLayerInputPadBottom;
-        iLayerInputPadLeft = lyrSrc.iLayerInputPadLeft;
-        iLayerLnDistance = lyrSrc.iLayerLnDistance;
-        iLayerColDistance = lyrSrc.iLayerColDistance;
+        iLayerOutputLnCnt = lyrSrc.iLayerOutputLnCnt; iLayerKernelLnCnt = lyrSrc.iLayerKernelLnCnt; iLayerKernelColCnt = lyrSrc.iLayerKernelColCnt; iLayerLnStride = lyrSrc.iLayerLnStride; iLayerColStride = lyrSrc.iLayerColStride; iLayerLnDilation = lyrSrc.iLayerLnDilation; iLayerColDilation = lyrSrc.iLayerColDilation; iLayerInputPadTop = lyrSrc.iLayerInputPadTop; iLayerInputPadRight = lyrSrc.iLayerInputPadRight; iLayerInputPadBottom = lyrSrc.iLayerInputPadBottom; iLayerInputPadLeft = lyrSrc.iLayerInputPadLeft; iLayerLnDistance = lyrSrc.iLayerLnDistance; iLayerColDistance = lyrSrc.iLayerColDistance;
     }
     void ValueCopy(LayerConvIm2Col &lyrSrc)
     {
-        ValueAssign(lyrSrc);
-        vecIm2ColKernel = lyrSrc.vecIm2ColKernel;
-        vecIm2ColGradKernel = lyrSrc.vecIm2ColGradKernel;
-        setLayerIm2ColInput = lyrSrc.setLayerIm2ColInput;
-        anvLayerMomt = lyrSrc.anvLayerMomt;
-        advLayerDelta = lyrSrc.advLayerDelta;
+        ValueAssign(lyrSrc); vecKernel = lyrSrc.vecKernel; setPrepInput = lyrSrc.setPrepInput; vecGradKernel = lyrSrc.vecGradKernel; vecPrepInput = lyrSrc.vecPrepInput; advKernel = lyrSrc.advKernel; anvKernel = lyrSrc.anvKernel;
     }
     void ValueMove(LayerConvIm2Col &&lyrSrc)
     {
-        ValueAssign(lyrSrc);
-        vecIm2ColKernel = std::move(lyrSrc.vecIm2ColKernel);
-        vecIm2ColGradKernel = std::move(lyrSrc.vecIm2ColGradKernel);
-        setLayerIm2ColInput = std::move(lyrSrc.setLayerIm2ColInput);
-        anvLayerMomt = std::move(lyrSrc.anvLayerMomt);
-        advLayerDelta = std::move(lyrSrc.advLayerDelta);
+        ValueAssign(lyrSrc); vecKernel = std::move(lyrSrc.vecKernel); setPrepInput = std::move(lyrSrc.setPrepInput); vecGradKernel = std::move(lyrSrc.vecGradKernel); vecPrepInput = std::move(lyrSrc.vecPrepInput); advKernel = std::move(lyrSrc.advKernel); anvKernel = std::move(lyrSrc.anvKernel);
     }
     LayerConvIm2Col(LayerConvIm2Col &lyrSrc) : Layer(lyrSrc) { ValueCopy(lyrSrc); }
     LayerConvIm2Col(LayerConvIm2Col &&lyrSrc) : Layer(lyrSrc) { ValueMove(std::move(lyrSrc)); }
     void operator=(LayerConvIm2Col &lyrSrc) { Layer::operator=(lyrSrc); ValueCopy(lyrSrc); }
     void operator=(LayerConvIm2Col &&lyrSrc) { Layer::operator=(std::move(lyrSrc)); ValueMove(std::move(lyrSrc)); }
 
-    LayerConvIm2Col(uint64_t iKernelAmt, uint64_t iKernelChannCnt, uint64_t iKernelLnCnt, uint64_t iKernelColCnt, uint64_t iLnStride, uint64_t iColStride, double dLearnRate = 0, double dRandBoundryFirst = 0, double dRandBoundrySecond = 0, double dRandBoundryAcc = 1e-5, uint64_t iLnDilation = 0, uint64_t iColDilation = 0, uint64_t iInputPadTop = 0, uint64_t iInputPadRight = 0, uint64_t iInputPadBottom = 0, uint64_t iInputPadLeft = 0, uint64_t iLnDistance = 0, uint64_t iColDistance = 0) : Layer(CONV_IM2COL, dLearnRate), iLayerKernelLnCnt(iKernelLnCnt), iLayerKernelColCnt(iKernelColCnt), iLayerLnStride(iLnStride), iLayerColStride(iColStride), iLayerLnDilation(iLnDilation), iLayerColDilation(iColDilation), iLayerInputPadTop(iInputPadTop), iLayerInputPadRight(iInputPadRight), iLayerInputPadBottom( iInputPadBottom), iLayerInputPadLeft(iInputPadLeft), iLayerLnDistance(iLnDistance), iLayerColDistance(iColDistance) { vecIm2ColKernel = _CONV InitKernelIm2Col(iKernelAmt, iKernelChannCnt, iKernelLnCnt, iKernelColCnt, dRandBoundryFirst, dRandBoundrySecond, dRandBoundryAcc); }
-    set<feature> ForwProp(set<feature> &setInput)
+    LayerConvIm2Col() : Layer(CONV_IM2COL) {}
+    LayerConvIm2Col(uint64_t iKernelAmt, uint64_t iKernelChannCnt, uint64_t iKernelLnCnt, uint64_t iKernelColCnt, uint64_t iLnStride, uint64_t iColStride, double dLearnRate = 0, uint64_t iLnDilation = 0, uint64_t iColDilation = 0, uint64_t iInputPadTop = 0, uint64_t iInputPadRight = 0, uint64_t iInputPadBottom = 0, uint64_t iInputPadLeft = 0, uint64_t iLnDistance = 0, uint64_t iColDistance = 0, double dRandBoundryFirst = 0, double dRandBoundrySecond = 0, double dRandBoundryAcc = 1e-5) : Layer(CONV, dLearnRate), iLayerKernelLnCnt(iKernelLnCnt), iLayerKernelColCnt(iKernelColCnt), iLayerLnStride(iLnStride), iLayerColStride(iColStride), iLayerLnDilation(iLnDilation), iLayerColDilation(iColDilation), iLayerInputPadTop(iInputPadTop), iLayerInputPadRight(iInputPadRight), iLayerInputPadBottom(iInputPadBottom), iLayerInputPadLeft(iInputPadLeft), iLayerLnDistance(iLnDistance), iLayerColDistance(iColDistance) { vecKernel = _CONV InitKernelIm2Col(iKernelAmt, iKernelChannCnt, iKernelLnCnt, iKernelColCnt, dRandBoundryFirst, dRandBoundrySecond, dRandBoundryAcc); }
+    set<vect> ForwProp(set<vect> &setInput, uint64_t iInputLnCnt)
     {
-        if(setInput.size())
-        {
-            setLayerIm2ColInput = _CONV Im2ColInputTransform(setInput, iLayerOutputLnCnt, iLayerKernelLnCnt, iLayerKernelColCnt, iLayerLnStride, iLayerColStride, iLayerLnDilation, iLayerColDilation, iLayerInputPadTop, iLayerInputPadRight, iLayerInputPadBottom, iLayerInputPadLeft, iLayerLnDistance, iLayerColDistance);
-        }
-        return _CONV ConvIm2Col(setLayerIm2ColInput, vecIm2ColKernel, iLayerOutputLnCnt);
+        setPrepInput = _CONV Im2ColInputTransform(setInput, iLayerOutputLnCnt, iInputLnCnt, iLayerKernelLnCnt, iLayerKernelColCnt, iLayerLnStride, iLayerColStride, iLayerLnDilation, iLayerColDilation, iLayerInputPadTop, iLayerInputPadRight, iLayerInputPadBottom, iLayerInputPadLeft, iLayerLnDistance, iLayerColDistance);
+        return _CONV ConvIm2Col(setPrepInput, vecKernel);
     }
-    set<feature> BackProp(set<feature> &setGrad)
+    set<vect> BackProp(set<vect> &setGrad)
     {
-        auto setIm2ColGrad = _CONV Im2ColOutputTransform(setGrad);
-        vecIm2ColGradKernel = _CONV GradLossToKernelIm2Col(setIm2ColGrad, setLayerIm2ColInput);
-        return _CONV GradLossToInputIm2Col(setIm2ColGrad, vecIm2ColKernel, iLayerOutputLnCnt, iLayerKernelLnCnt, iLayerKernelColCnt, iLayerLnStride, iLayerColStride, iLayerLnDilation, iLayerColDilation, iLayerInputPadTop, iLayerInputPadRight, iLayerInputPadBottom, iLayerInputPadLeft, iLayerLnDistance, iLayerColDistance);
+        vecGradKernel = _CONV GradLossToKernelIm2Col(setGrad, setPrepInput);
+        return _CONV GradLossToInputIm2Col(setGrad, vecKernel, iLayerOutputLnCnt, iLayerKernelLnCnt, iLayerKernelColCnt, iLayerLnStride, iLayerColStride, iLayerLnDilation, iLayerColDilation, iLayerInputPadTop, iLayerInputPadRight, iLayerInputPadBottom, iLayerInputPadLeft, iLayerLnDistance, iLayerColDistance);
     }
     bool UpdatePara()
     {
-        if(vecIm2ColGradKernel.is_matrix())
+        if(vecGradKernel.is_matrix())
         {
-            if(dLayerLearnRate) vecIm2ColKernel = _FC AdaNesterovUpdateWeight(vecIm2ColKernel, vecIm2ColGradKernel, dLayerLearnRate, anvLayerMomt);
-            else vecIm2ColKernel = _FC AdaDeltaUpdateWeight(vecIm2ColKernel, vecIm2ColGradKernel, advLayerDelta);
+            if(dLayerLearnRate) vecKernel = _FC AdaNesterovUpdateWeight(vecKernel, vecGradKernel, dLayerLearnRate, anvKernel);
+            else vecKernel = _FC AdaDeltaUpdateWeight(vecKernel, vecGradKernel, advKernel);
             return true;
         }
         else return false;
     }
-    feature Deduce(feature &vecInput) { return _CONV ConvIm2Col(_CONV Im2ColInputTransform(vecInput, iLayerOutputLnCnt, iLayerKernelLnCnt, iLayerKernelColCnt, iLayerLnStride, iLayerColStride, iLayerLnDilation, iLayerColDilation, iLayerInputPadTop, iLayerInputPadRight, iLayerInputPadBottom, iLayerInputPadLeft, iLayerLnDistance, iLayerColDistance), vecIm2ColKernel, iLayerOutputLnCnt); }
+    vect Deduce(vect &vecInput, uint64_t iInputLnCnt) { return _CONV ConvIm2Col(_CONV Im2ColInputTransform(vecInput, iLayerOutputLnCnt, iInputLnCnt, iLayerKernelLnCnt, iLayerKernelColCnt, iLayerLnStride, iLayerColStride, iLayerLnDilation, iLayerColDilation, iLayerInputPadTop, iLayerInputPadRight, iLayerInputPadBottom, iLayerInputPadLeft, iLayerLnDistance, iLayerColDistance), vecKernel); }
 
+    void ResetAda() { advKernel.Reset(); anvKernel.Reset(); }
+    void Reset() { setPrepInput.reset(); vecPrepInput.reset(); vecGradKernel.reset(); vecKernel.reset(); ResetAda(); }
+    ~LayerConvIm2Col() { Reset(); }
 };
 
 struct LayerConvBN : Layer
@@ -441,31 +346,11 @@ struct LayerConvBN : Layer
     void ValueAssign(LayerConvBN &lyrSrc) { dEpsilon = lyrSrc.dEpsilon;}
     void ValueCopy(LayerConvBN &lyrSrc)
     {
-        ValueAssign(lyrSrc);
-        vecBeta = lyrSrc.vecBeta;
-        vecGamma = lyrSrc.vecGamma;
-        setLayerInput = lyrSrc.setLayerInput;
-        advBeta = lyrSrc.advBeta;
-        advGamma = lyrSrc.advGamma;
-        anvBeta = lyrSrc.anvBeta;
-        anvGamma = lyrSrc.anvGamma;
-        BNData = lyrSrc.BNData;
-        vecGradBeta = lyrSrc.vecGradBeta;
-        vecGradGamma = lyrSrc.vecGradGamma;
+        ValueAssign(lyrSrc); vecBeta = lyrSrc.vecBeta; vecGamma = lyrSrc.vecGamma; setLayerInput = lyrSrc.setLayerInput; advBeta = lyrSrc.advBeta; advGamma = lyrSrc.advGamma; BNData = lyrSrc.BNData; vecGradBeta = lyrSrc.vecGradBeta; vecGradGamma = lyrSrc.vecGradGamma;
     }
     void ValueMove(LayerConvBN &&lyrSrc)
     {
-        ValueAssign(lyrSrc);
-        vecBeta = std::move(lyrSrc.vecBeta);
-        vecGamma = std::move(lyrSrc.vecGamma);
-        setLayerInput = std::move(lyrSrc.setLayerInput);
-        advBeta = std::move(lyrSrc.advBeta);
-        advGamma = std::move(lyrSrc.advGamma);
-        anvBeta = std::move(lyrSrc.anvBeta);
-        anvGamma = std::move(lyrSrc.anvGamma);
-        BNData = std::move(lyrSrc.BNData);
-        vecGradBeta = std::move(lyrSrc.vecGradBeta);
-        vecGradGamma = std::move(lyrSrc.vecGradGamma);
+        ValueAssign(lyrSrc); vecBeta = std::move(lyrSrc.vecBeta); vecGamma = std::move(lyrSrc.vecGamma); setLayerInput = std::move(lyrSrc.setLayerInput); advBeta = std::move(lyrSrc.advBeta); advGamma = std::move(lyrSrc.advGamma); anvBeta = std::move(lyrSrc.anvBeta); anvGamma = std::move(lyrSrc.anvGamma); BNData = std::move(lyrSrc.BNData); vecGradBeta = std::move(lyrSrc.vecGradBeta); vecGradGamma = std::move(lyrSrc.vecGradGamma);
     }
     LayerConvBN(LayerConvBN &lyrSrc) : Layer(lyrSrc) { ValueCopy(lyrSrc); }
     LayerConvBN(LayerConvBN &&lyrSrc) : Layer(lyrSrc) { ValueMove(std::move(lyrSrc)); }
@@ -509,24 +394,76 @@ struct LayerConvBN : Layer
     }
     feature Deduce(feature &vecInput, BN_CONV_PTR &pBNData, uint64_t iBatchSize = 0, uint64_t iBatchCnt = 0) { _CONV BNDeduce(vecInput, vecBeta, vecGamma, pBNData, iBatchSize, iBatchCnt, dEpsilon); }
 
-    void ResetAda()
-    {
-        advBeta.Reset();
-        advGamma.Reset();
-        anvBeta.Reset();
-        anvGamma.Reset();
-    }
-    void Reset()
-    {
-        vecBeta.reset();
-        vecGamma.reset();
-        setLayerInput.reset();
-        vecGradBeta.reset();
-        vecGradGamma.reset();
-        BNData.Reset();
-        ResetAda();
-    }
+    void ResetAda() { advBeta.Reset(); advGamma.Reset(); anvBeta.Reset(); anvGamma.Reset(); }
+    void Reset() { vecBeta.reset(); vecGamma.reset(); setLayerInput.reset(); vecGradBeta.reset(); vecGradGamma.reset(); BNData.Reset(); ResetAda(); }
     ~LayerConvBN() { Reset(); }
+};
+
+struct LayerConvBNIm2Col : Layer
+{
+    // Dominant
+    double dEpsilon = 1e-5;
+    // Shift, Scale
+    vect vecBeta, vecGamma, vecGradBeta, vecGradGamma;
+    set<vect> setLayerInput;
+    _ADA AdaDeltaVect advBeta, advGamma;
+    _ADA AdaNesterovVect anvBeta, anvGamma;
+    BN_CONV_IM2COL BNData;
+
+    void ValueAssign(LayerConvBNIm2Col &lyrSrc) { dEpsilon = lyrSrc.dEpsilon;}
+    void ValueCopy(LayerConvBNIm2Col &lyrSrc)
+    {
+        ValueAssign(lyrSrc); vecBeta = lyrSrc.vecBeta; vecGamma = lyrSrc.vecGamma; setLayerInput = lyrSrc.setLayerInput; advBeta = lyrSrc.advBeta; advGamma = lyrSrc.advGamma; anvBeta = lyrSrc.anvBeta; anvGamma = lyrSrc.anvGamma; BNData = lyrSrc.BNData; vecGradBeta = lyrSrc.vecGradBeta; vecGradGamma = lyrSrc.vecGradGamma;
+    }
+    void ValueMove(LayerConvBNIm2Col &&lyrSrc)
+    {
+        ValueAssign(lyrSrc); vecBeta = std::move(lyrSrc.vecBeta); vecGamma = std::move(lyrSrc.vecGamma); setLayerInput = std::move(lyrSrc.setLayerInput); advBeta = std::move(lyrSrc.advBeta); advGamma = std::move(lyrSrc.advGamma); BNData = std::move(lyrSrc.BNData); vecGradBeta = std::move(lyrSrc.vecGradBeta); vecGradGamma = std::move(lyrSrc.vecGradGamma);
+    }
+    LayerConvBNIm2Col(LayerConvBNIm2Col &lyrSrc) : Layer(lyrSrc) { ValueCopy(lyrSrc); }
+    LayerConvBNIm2Col(LayerConvBNIm2Col &&lyrSrc) : Layer(lyrSrc) { ValueMove(std::move(lyrSrc)); }
+    void operator=(LayerConvBNIm2Col &lyrSrc) { Layer::operator=(lyrSrc); ValueCopy(lyrSrc); }
+    void operator=(LayerConvBNIm2Col &&lyrSrc) { Layer::operator=(std::move(lyrSrc)); ValueMove(std::move(lyrSrc)); }
+
+    LayerConvBNIm2Col(uint64_t iChannCnt = 1, double dShift = 0, double dScale = 1, double dLearnRate = 0, double dDmt = 1e-10) : Layer(CONV_BN_IM2COL, dLearnRate), dEpsilon(dDmt)
+    {
+        vecBeta = _CONV BNInitScaleShift(iChannCnt, dShift);
+        vecGamma = _CONV BNInitScaleShift(iChannCnt, dScale);
+    }
+    set<vect> ForwProp(set<vect> &setInput)
+    {
+        if(setInput.size()) setLayerInput = std::move(setInput);
+        BNData = _CONV BNTrainIm2Col(setLayerInput, vecBeta, vecGamma, dEpsilon);
+        return BNData.setIm2ColY;
+    }
+    set<vect> BackProp(set<vect> &setGrad)
+    {
+        vecGradGamma = _CONV BNGradLossToScaleIm2Col(setGrad, BNData);
+        vecGradBeta = _CONV BNGradLossToShiftIm2Col(setGrad);
+        return _CONV BNGradLossToInputIm2Col(setGrad, BNData, setLayerInput, vecGamma, dEpsilon);
+    }
+    bool UpdatePara()
+    {
+        if(vecGradGamma.is_matrix() && vecGradBeta.is_matrix())
+        {
+            if(dLayerLearnRate)
+            {
+                vecGamma = _CONV BNAdaNesterovUpdateScaleShift(vecGamma, vecGradGamma, dLayerLearnRate, anvGamma);
+                vecBeta = _CONV BNAdaNesterovUpdateScaleShift(vecBeta, vecGradBeta, dLayerLearnRate, anvBeta);
+            }
+            else 
+            {
+                vecGamma = _CONV BNAdaDeltaUpdateScaleShift(vecGamma, vecGradGamma, advGamma);
+                vecBeta = _CONV BNAdaDeltaUpdateScaleShift(vecBeta, vecGradBeta, advBeta);
+            }
+            return true;
+        }
+        else return false;
+    }
+    vect Deduce(vect &vecInput, BN_CONV_IM2COL_PTR &pBNData, uint64_t iBatchSize = 0, uint64_t iBatchCnt = 0) { _CONV BNDeduceIm2Col(vecInput, vecBeta, vecGamma, pBNData, iBatchCnt, iBatchSize, dEpsilon); }
+
+    void ResetAda() { advBeta.Reset(); advGamma.Reset(); anvBeta.Reset(); anvGamma.Reset(); }
+    void Reset() { vecBeta.reset(); vecGamma.reset(); setLayerInput.reset(); vecGradBeta.reset(); vecGradGamma.reset(); BNData.Reset(); ResetAda(); }
+    ~LayerConvBNIm2Col() { Reset(); }
 };
 
 struct LayerPool : Layer
@@ -536,24 +473,10 @@ struct LayerPool : Layer
 
     void ValueAssign(LayerPool &lyrSrc)
     {
-        iPoolType = lyrSrc.iPoolType;
-        iLayerLnStride = lyrSrc.iLayerLnStride;
-        iLayerColStride = lyrSrc.iLayerColStride;
-        iLayerLnDilation = lyrSrc.iLayerLnDilation;
-        iLayerColDilation = lyrSrc.iLayerColDilation;
-        iLayerFilterLnCnt = lyrSrc.iLayerFilterLnCnt;
-        iLayerFilterColCnt = lyrSrc.iLayerFilterColCnt;
+        iPoolType = lyrSrc.iPoolType; iLayerLnStride = lyrSrc.iLayerLnStride; iLayerColStride = lyrSrc.iLayerColStride; iLayerLnDilation = lyrSrc.iLayerLnDilation; iLayerColDilation = lyrSrc.iLayerColDilation; iLayerFilterLnCnt = lyrSrc.iLayerFilterLnCnt; iLayerFilterColCnt = lyrSrc.iLayerFilterColCnt;
     }
-    void ValueCopy(LayerPool &lyrSrc)
-    {
-        ValueAssign(lyrSrc);
-        setLayerInput = lyrSrc.setLayerInput;
-    }
-    void ValueMove(LayerPool &&lyrSrc)
-    {
-        ValueAssign(lyrSrc);
-        setLayerInput = std::move(lyrSrc.setLayerInput);
-    }
+    void ValueCopy(LayerPool &lyrSrc) { ValueAssign(lyrSrc); setLayerInput = lyrSrc.setLayerInput; }
+    void ValueMove(LayerPool &&lyrSrc) { ValueAssign(lyrSrc); setLayerInput = std::move(lyrSrc.setLayerInput); }
     LayerPool(LayerPool &lyrSrc) : Layer(lyrSrc) { ValueCopy(lyrSrc); }
     LayerPool(LayerPool &&lyrSrc) : Layer(lyrSrc) { ValueMove(std::move(lyrSrc)); }
     void operator=(LayerPool &lyrSrc) { Layer::operator=(lyrSrc); ValueCopy(lyrSrc); }
@@ -582,17 +505,47 @@ struct LayerPool : Layer
     ~LayerPool() { Reset(); }
 };
 
+struct LayerPoolIm2Col : Layer
+{
+    uint64_t iPoolType = POOL_MAX_IM2COL, iLayerInputLnCnt = 0, iLayerInputColCnt = 0, iLayerOutputLnCnt = 0, iLayerFilterLnCnt = 0, iLayerFilterColCnt = 0, iLayerLnStride = 0, iLayerColStride = 0, iLayerLnDilation = 0, iLayerColDilation = 0, iLayerInputPadTop = 0, iLayerInputPadRight = 0, iLayerInputPadBottom = 0, iLayerInputPadLeft = 0, iLayerLnDistance = 0, iLayerColDistance = 0;
+    vect_t<bagrt::net_list<mtx::mtx_pos>> setInputMaxPosList;
+
+    void ValueAssign(LayerPoolIm2Col &lyrSrc)
+    {
+        iPoolType = lyrSrc.iPoolType; iLayerOutputLnCnt = lyrSrc.iLayerOutputLnCnt; iLayerLnStride = lyrSrc.iLayerLnStride; iLayerColStride = lyrSrc.iLayerColStride; iLayerLnDilation = lyrSrc.iLayerLnDilation; iLayerColDilation = lyrSrc.iLayerColDilation; iLayerFilterLnCnt = lyrSrc.iLayerFilterLnCnt; iLayerFilterColCnt = lyrSrc.iLayerFilterColCnt; iLayerInputPadTop = lyrSrc.iLayerInputPadTop; iLayerInputPadRight = lyrSrc.iLayerInputPadRight; iLayerInputPadBottom = lyrSrc.iLayerInputPadBottom; iLayerInputPadLeft = lyrSrc.iLayerInputPadLeft; iLayerLnDistance = lyrSrc.iLayerLnDistance; iLayerColDistance = lyrSrc.iLayerColDistance; iLayerInputLnCnt = lyrSrc.iLayerInputLnCnt; iLayerInputColCnt = lyrSrc.iLayerInputColCnt;
+    }
+    void ValueCopy(LayerPoolIm2Col &lyrSrc) { ValueAssign(lyrSrc); setInputMaxPosList = lyrSrc.setInputMaxPosList; }
+    void ValueMove(LayerPoolIm2Col &&lyrSrc) { ValueAssign(lyrSrc); setInputMaxPosList = std::move(lyrSrc.setInputMaxPosList); }
+    LayerPoolIm2Col(LayerPoolIm2Col &lyrSrc) : Layer(lyrSrc) { ValueCopy(lyrSrc); }
+    LayerPoolIm2Col(LayerPoolIm2Col &&lyrSrc) : Layer(lyrSrc) { ValueMove(std::move(lyrSrc)); }
+    void operator=(LayerPoolIm2Col &lyrSrc) { Layer::operator=(lyrSrc); ValueCopy(lyrSrc); }
+    void operator=(LayerPoolIm2Col &&lyrSrc) { Layer::operator=(std::move(lyrSrc)); ValueMove(std::move(lyrSrc)); }
+
+    LayerPoolIm2Col(uint64_t iPoolTypeVal = POOL_MAX_IM2COL, uint64_t iFilterLnCnt = 0, uint64_t iFilterColCnt = 0, uint64_t iLnStride = 0, uint64_t iColStride = 0, uint64_t iLnDilation = 0, uint64_t iColDilation = 0, uint64_t iInputPadTop = 0, uint64_t iInputPadRight = 0, uint64_t iInputPadBottom = 0, uint64_t iInputPadLeft = 0, uint64_t iLnDistance = 0, uint64_t iColDistance = 0) : Layer(POOL_IM2COL, 0), iPoolType(iPoolTypeVal), iLayerFilterLnCnt(iFilterLnCnt), iLayerFilterColCnt(iFilterColCnt), iLayerLnStride(iLnStride), iLayerColStride(iColStride), iLayerLnDilation(iLnDilation), iLayerColDilation(iColDilation), iLayerInputPadTop(iInputPadTop), iLayerInputPadRight(iInputPadRight), iLayerInputPadBottom(iInputPadBottom), iLayerInputPadLeft(iInputPadLeft), iLayerLnDistance(iLnDistance), iLayerColDistance(iColDistance) {}
+    set<vect> ForwProp(set<vect> &setInput, uint64_t iInputLnCnt)
+    {
+        iLayerInputLnCnt = iInputLnCnt;
+        iLayerInputColCnt = setInput[IDX_ZERO].LN_CNT / iLayerInputLnCnt;
+        return _CONV PoolIm2Col(iPoolType, setInput, setInputMaxPosList, iLayerOutputLnCnt, iLayerInputLnCnt, iLayerFilterLnCnt, iLayerFilterColCnt, iLayerLnStride, iLayerColStride, iLayerLnDilation, iLayerColDilation, iLayerInputPadTop, iLayerInputPadRight, iLayerInputPadBottom, iLayerInputPadLeft, iLayerLnDistance, iLayerColDistance);
+    }
+    set<vect> BackProp(set<vect> &setGrad) { return _CONV GradLossToPoolIm2ColInput(iPoolType, setGrad, setInputMaxPosList, iLayerOutputLnCnt, iLayerInputLnCnt, iLayerInputColCnt, iLayerFilterLnCnt, iLayerFilterColCnt, iLayerLnStride, iLayerColStride, iLayerLnDilation, iLayerColDilation, iLayerInputPadTop, iLayerInputPadRight, iLayerInputPadBottom, iLayerInputPadLeft, iLayerLnDistance, iLayerColDistance); }
+    vect Deduce(vect &vecInput, uint64_t iInputLnCnt)
+    {
+        set<bagrt::net_list<mtx::mtx_pos>> setTemp;
+        if(iPoolType == POOL_GAG_IM2COL) { iLayerOutputLnCnt = 1; return _CONV PoolGlbAvgIm2Col(vecInput); }
+        else return _CONV PoolMaxAvgIm2Col(iPoolType, vecInput, setTemp, iLayerOutputLnCnt, iInputLnCnt, iLayerFilterLnCnt, iLayerFilterColCnt, iLayerLnStride, iLayerColStride, iLayerLnDilation, iLayerColDilation, iLayerInputPadTop, iLayerInputPadRight, iLayerInputPadBottom, iLayerInputPadLeft, iLayerLnDistance, iLayerColDistance);
+    }
+
+    void Reset() { setInputMaxPosList.reset(); }
+    ~LayerPoolIm2Col() { Reset(); }
+};
+
 struct LayerTrans : Layer
 {
     uint64_t iLnCnt = 0, iColCnt = 0;
     bool bFeatToVec = true;
 
-    void ValueAssign(LayerTrans &lyrSrc)
-    {
-        iLnCnt = lyrSrc.iLnCnt;
-        iColCnt = lyrSrc.iColCnt;
-        bFeatToVec = lyrSrc.bFeatToVec;
-    }
+    void ValueAssign(LayerTrans &lyrSrc) { iLnCnt = lyrSrc.iLnCnt; iColCnt = lyrSrc.iColCnt; bFeatToVec = lyrSrc.bFeatToVec; }
     void ValueCopy(LayerTrans &lyrSrc) { ValueAssign(lyrSrc); }
     void ValueMove(LayerTrans &lyrSrc) {}
     LayerTrans(LayerTrans &lyrSrc) : Layer(lyrSrc) { ValueCopy(lyrSrc); }
@@ -615,6 +568,37 @@ struct LayerTrans : Layer
 
     void Reset() {}
     ~LayerTrans() {}
+};
+
+struct LayerTransIm2Col : Layer
+{
+    uint64_t iLnCnt = 0, iColCnt = 0;
+    bool bFeatToVec = true;
+
+    void ValueAssign(LayerTransIm2Col &lyrSrc) { iLnCnt = lyrSrc.iLnCnt; iColCnt = lyrSrc.iColCnt; bFeatToVec = lyrSrc.bFeatToVec; }
+    void ValueCopy(LayerTransIm2Col &lyrSrc) { ValueAssign(lyrSrc); }
+    void ValueMove(LayerTransIm2Col &lyrSrc) {}
+    LayerTransIm2Col(LayerTransIm2Col &lyrSrc) : Layer(lyrSrc) { ValueCopy(lyrSrc); }
+    void operator=(LayerTransIm2Col &lyrSrc) { Layer::operator=(lyrSrc); ValueCopy(lyrSrc); }
+
+    LayerTransIm2Col() : Layer(TRANS_IM2COL, 0) {}
+    set<vect> ForwProp(set<vect> &setInput, uint64_t iInputLnCnt)
+    {
+        iLnCnt = iInputLnCnt;
+        iColCnt = setInput[IDX_ZERO].LN_CNT / iLnCnt;
+        return _FC FeatureTransformIm2Col(setInput);
+    }
+    vect Deduce(vect &vecInput, uint64_t iInputLnCnt) { return _FC FeatureTransformIm2Col(vecInput); }
+
+    LayerTransIm2Col(uint64_t iChannLnCnt, uint64_t iChannColCnt) : Layer(TRANS_IM2COL, 0), iLnCnt(iChannLnCnt), iColCnt(iChannColCnt), bFeatToVec(false) {}
+    set<vect> ForwProp(set<vect> &setInput) {return _FC FeatureTransformIm2Col(setInput, iLnCnt, iColCnt);}
+    vect Deduce(vect &vecInput) { return _FC FeatureTransformIm2Col(vecInput, iLnCnt, iColCnt); }
+
+    set<vect> BackProp(set<vect> &setGrad)
+    {
+        if(bFeatToVec) return _FC FeatureTransformIm2Col(setGrad, iLnCnt, iColCnt);
+        else return _FC FeatureTransformIm2Col(setGrad);
+    }
 };
 
 LAYER_END

@@ -18,7 +18,6 @@
 
 #define LAYER_FC            layer::LayerFC
 #define LAYER_CONV          layer::LayerConv
-#define LAYER_CONV_IM2COL   layer::LayerConvIm2Col
 
 #define LAYER_POOL          layer::LayerPool
 

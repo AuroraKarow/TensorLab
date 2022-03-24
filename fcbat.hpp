@@ -63,6 +63,28 @@ set<feature> FeatureTransform(set<vect> &setInput, uint64_t iLnCnt, uint64_t iCo
     return setOuput;
 }
 
+set<vect> FeatureTransformIm2Col(set<vect> &setInput)
+{
+    set<vect> setOuput(setInput.size());
+    for(auto i=0; i<setInput.size(); ++i)
+    {
+        setOuput[i] = FeatureTransformIm2Col(setInput[i]);
+        if(!setOuput[i].is_matrix()) return blank_vect_seq;
+    }
+    return setOuput;
+}
+
+set<vect> FeatureTransformIm2Col(set<vect> &setInput, uint64_t iLnCnt, uint64_t iColCnt)
+{
+    set<vect> setOuput(setInput.size());
+    for(auto i=0; i<setInput.size(); ++i)
+    {
+        setOuput[i] = FeatureTransformIm2Col(setInput[i], iLnCnt, iColCnt);
+        if(!setOuput[i].is_matrix()) return blank_vect_seq;
+    }
+    return setOuput;
+}
+
 struct FCBN : BN
 {
     vect vecMiuBeta;

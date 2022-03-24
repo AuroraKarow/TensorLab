@@ -31,4 +31,12 @@ feature FeatureTransform(vect &vecInput, uint64_t iLnCnt, uint64_t iColCnt)
     return vecResTransForm;
 }
 
+vect FeatureTransformIm2Col(vect &vecIm2ColInput) { return vecIm2ColInput.reshape(vecIm2ColInput.ELEM_CNT, IDX_SGL); }
+
+vect FeatureTransformIm2Col(vect &vecIm2ColInput, uint64_t iLnCnt, uint64_t iColCnt)
+{
+    auto iElemCnt = iLnCnt * iColCnt;
+    return vecIm2ColInput.reshape(iElemCnt, vecIm2ColInput.LN_CNT/iElemCnt);
+}
+
 FC_END

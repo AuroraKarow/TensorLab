@@ -16,5 +16,9 @@
 #define POOL_UP_GAG         2
 #define POOL_UP_FIL         3
 
+#define POOL_MAX_IM2COL     0
+#define POOL_AVG_IM2COL     1
+#define POOL_GAG_IM2COL     2
+
 #include "fc.hpp"
 #include "conv.hpp"

@@ -26,6 +26,9 @@
 #define CONV_BN             6
 #define TRANS               7
 #define CONV_IM2COL         8
+#define CONV_BN_IM2COL      9
+#define POOL_IM2COL         10
+#define TRANS_IM2COL        11
 
 #define GD_BGD              0
 #define GD_MINIBATCH_SGD    1

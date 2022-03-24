@@ -6,6 +6,7 @@ public:
     /* Data sequence */
     // Element list of data
     set<feature> elem;
+    set<vect> elem_im2col;
     // Element index list of data, number sequence -> label value
     set<uint64_t> elem_lbl;
 private:
@@ -98,7 +99,8 @@ private:
         delete []dat_ptr;
         dat_ptr = nullptr;
         if(padding) vec_dat = vec_dat.pad(padding, padding, padding, padding);
-        return vec_dat;
+        if(im2col_flag) return vec_dat.reshape(dat_size, IDX_SGL);
+        else return vec_dat;
     }
     // Read label by current file stream pointer, calling once for getting a label with data unit synchronized.
     uint64_t read_curr_lbl()
@@ -125,7 +127,7 @@ private:
     // Origin vector dimension
     static const uint64_t ORGN_SIZE = 10;
     // Bool element flag
-    const bool is_bool;
+    const bool is_bool, im2col_flag;
     // Check collection
     bool check = true;
 public:
@@ -134,7 +136,7 @@ public:
      * @brief   Default constructor
      * @param   bool_preprocess [Input] Data unit's element bool signal
      */
-    MNIST(bool bool_preprocess = false) : is_bool(bool_preprocess) {}
+    MNIST(bool bool_preprocess = false, bool im2col = false) : is_bool(bool_preprocess), im2col_flag(im2col) {}
     void reset()
     {
         elem.reset();
@@ -193,13 +195,18 @@ public:
             set<uint64_t> lbl_data_stat;
             if(load_qnty) lbl_data_stat = bagrt::random_index(QNTY_STAT, load_qnty);
             else load_qnty = QNTY_STAT;
-            elem.init(load_qnty);
+            if(im2col_flag) elem_im2col.init(load_qnty);
+            else elem.init(load_qnty);
             elem_lbl.init(load_qnty);
             for(auto i=0,j=0; j<load_qnty; ++i)
                 if(i==lbl_data_stat[j] || !lbl_data_stat.size())
                 {
-                    elem[j].init();
-                    elem[j][IDX_ZERO] = read_curr_dat(true, padding);
+                    if(im2col_flag) elem_im2col[j] = read_curr_dat(true, padding, true);
+                    else
+                    {
+                        elem[j].init();
+                        elem[j][IDX_ZERO] = read_curr_dat(true, padding);
+                    }
                     elem_lbl[j] = read_curr_lbl();
                     ++ j;
                 }
@@ -242,15 +249,20 @@ public:
                 load_qnty = qnty_list_cnt.sum();
             }
             else pcdr_flag = false;
-            elem.init(load_qnty);
+            if(im2col_flag) elem_im2col.init(load_qnty);
+            else elem.init(load_qnty);
             elem_lbl.init(load_qnty);
             if(pcdr_flag) while(check)
             {
                 auto curr_lbl = read_curr_lbl();
                 if(((qnty_list_cnt[curr_lbl]<load_qnty)&&(qnty_list.size()==1)) || ((qnty_list_cnt[curr_lbl])&&(qnty_list.size()==ORGN_SIZE)))
                 {
-                    elem[elem_cnt].init();
-                    elem[elem_cnt][IDX_ZERO] = read_curr_dat(true, padding);
+                    if(im2col_flag) elem_im2col[elem_cnt] = read_curr_dat(true, padding, true);
+                    else
+                    {
+                        elem[elem_cnt].init();
+                        elem[elem_cnt][IDX_ZERO] = read_curr_dat(true, padding);
+                    }
                     elem_lbl[elem_cnt] = curr_lbl;
                     ++ elem_cnt;
                     if(qnty_list.size() == 1) ++ qnty_list_cnt[curr_lbl];
@@ -267,8 +279,8 @@ public:
         close_stream();
         return pcdr_flag;
     }
-    MNIST(std::string dat_dir, std::string lbl_dir, uint64_t qnty = 0, bool bool_preprocess = false, uint64_t padding = 0) : is_bool(bool_preprocess) { load_data(dat_dir, lbl_dir, qnty, padding); }
-    MNIST(std::string dat_dir, std::string lbl_dir, std::initializer_list<uint64_t> qnty_list, bool bool_preprocess = false, uint64_t padding = 0) : is_bool(bool_preprocess) { load_data(dat_dir, lbl_dir, qnty_list, padding); }
+    MNIST(std::string dat_dir, std::string lbl_dir, uint64_t qnty = 0, bool bool_preprocess = false, uint64_t padding = 0, bool im2col = false) : is_bool(bool_preprocess), im2col_flag(im2col) { load_data(dat_dir, lbl_dir, qnty, padding); }
+    MNIST(std::string dat_dir, std::string lbl_dir, std::initializer_list<uint64_t> qnty_list, bool bool_preprocess = false, uint64_t padding = 0, bool im2col = false) : is_bool(bool_preprocess), im2col_flag(im2col) { load_data(dat_dir, lbl_dir, qnty_list, padding); }
     /**
      * @brief   Save data as bitmap
      * @param	dir_root	[Quote]	Saving root directory, '\\' is used to seperate sub directory path
@@ -288,7 +300,8 @@ public:
             {
                 auto name = '[' + std::to_string(cnt++) + ']' + std::to_string(elem_lbl[i]);
                 bmio::bitmap img;
-                img.set_raw(elem[i][IDX_ZERO], elem[i][IDX_ZERO], elem[i][IDX_ZERO], elem[i][IDX_ZERO]);
+                if(im2col_flag) img.set_raw(elem_im2col[i].reshape(LN_CNT, COL_CNT), elem_im2col[i].reshape(LN_CNT, COL_CNT), elem_im2col[i].reshape(LN_CNT, COL_CNT), elem_im2col[i].reshape(LN_CNT, COL_CNT));
+                else img.set_raw(elem[i][IDX_ZERO], elem[i][IDX_ZERO], elem[i][IDX_ZERO], elem[i][IDX_ZERO]);
                 if(!img.save_img(dir_root, name, format)) return false;
             }
             return true;
