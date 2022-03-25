@@ -283,7 +283,7 @@ vect PoolMaxAvgIm2Col(uint64_t iPoolType, vect &vecInput, set<bagrt::net_list<mt
     auto iOutputColCnt = vecIm2ColPrepInput.LN_CNT / iOutputLnCnt,
         iFilterElemCnt = iFilterLnCnt * iFilterColCnt;
     vect vecAns(vecIm2ColPrepInput.LN_CNT, vecInput.COL_CNT);
-    setIm2ColInputPoolExtmPosList = set<bagrt::net_list<mtx::mtx_pos>>(vecAns.ELEM_CNT);
+    setIm2ColInputPoolExtmPosList.init(vecAns.ELEM_CNT);
     for(auto i=0; i<vecAns.ELEM_CNT; ++i)
     {
         auto posCurrDim = mtx::mtx_elem_pos(i, vecAns.COL_CNT);

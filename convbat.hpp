@@ -68,7 +68,7 @@ set<vect> Im2ColInputTransform(set<vect> &setIm2ColInput, uint64_t iFilterLnCnt,
 set<vect> ConvIm2Col(set<vect> &setIm2ColInput, vect &vecKernel)
 {
     set<vect> vecAns(setIm2ColInput.size());
-    for(auto i=0; i<vecAns.size(); ++i) vecAns[i] = ConvIm2Col(setIm2ColInput[i], vecKernel);
+    for(auto i=0; i<vecAns.size(); ++i) vecAns[i] = ConvIm2Col(setIm2ColInput[i], vecKernel); 
     return vecAns;
 }
 
@@ -106,11 +106,7 @@ set<vect> PoolIm2Col(uint64_t iPoolType, set<vect> &setInput, vect_t<bagrt::net_
     set<vect> setAns(setInput.size());
     for(auto i=0; i<setAns.size(); ++i)
         if(iPoolType == POOL_GAG_IM2COL) setAns[i] = PoolDownGlbAvg(setInput[i]);
-        else
-        {
-            if(!setIm2ColInputPoolExtmPosList.size()) setIm2ColInputPoolExtmPosList.init(setAns.size());
-            setAns[i] = PoolMaxAvgIm2Col(iPoolType, setInput[i], setIm2ColInputPoolExtmPosList[i], iOutputLnCnt, iInputLnCnt, iFilterLnCnt, iFilterColCnt, iLnStride, iColStride, iLnDilation, iColDilation, iInputPadTop, iInputPadRight, iInputPadBottom, iInputPadLeft, iLnDistance, iColDistance);
-        }
+        else setAns[i] = PoolMaxAvgIm2Col(iPoolType, setInput[i], setIm2ColInputPoolExtmPosList[i], iOutputLnCnt, iInputLnCnt, iFilterLnCnt, iFilterColCnt, iLnStride, iColStride, iLnDilation, iColDilation, iInputPadTop, iInputPadRight, iInputPadBottom, iInputPadLeft, iLnDistance, iColDistance);
     return setAns;
 }
 
@@ -377,7 +373,7 @@ vect BNGradLossToShiftIm2Col(set<vect> &setIm2ColGradLossToOutput)
     for(auto i=0; i<setIm2ColGradLossToOutput.size(); ++i) for(auto j=0; j<setIm2ColGradLossToOutput[i].ELEM_CNT; ++j)
     {
         auto iCurrChann = mtx::mtx_elem_pos(j, setIm2ColGradLossToOutput[i].COL_CNT).col;
-        if(!vecGradBeta.is_matrix()) vecGradBeta = vect(iCurrChann, IDX_SGL);
+        if(!vecGradBeta.is_matrix()) vecGradBeta = vect(setIm2ColGradLossToOutput[i].COL_CNT, IDX_SGL);
         vecGradBeta.pos_idx(iCurrChann) += setIm2ColGradLossToOutput[i].pos_idx(j);
     }
     return vecGradBeta;

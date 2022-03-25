@@ -430,20 +430,38 @@ MATRIX mtx_equation(MATRIX &coefficient, MATRIX &b, int dms)
     else return MATRIX_NULL;
 }
 
-MATRIX mtx_adjugate(MATRIX &mat_val, int ln, int col, int dms)
+MATRIX mtx_cofactor(MATRIX &mat_val, int ln, int col, int dms)
 {
-    auto ans_dms = dms - 1,
-        ln_cnt = 0;
+    auto ans_dms = dms - 1;
     auto ans = mtx_init(ans_dms, ans_dms);
-    for(auto i=0; i<dms; ++i) if(i != ln)
+    auto elem_cnt = dms * dms;
+    for(auto i=0; i<elem_cnt; ++i)
     {
-        auto col_cnt = 0;
-        for(auto j=0; j<dms; ++j) if(j != col)
+        auto curr_dim = mtx_elem_pos(i, dms);
+        auto curr_ln = curr_dim.ln, curr_col = curr_dim.col;
+        if(curr_ln!=ln && curr_col!=col)
         {
-            ans[mtx_elem_pos(ln_cnt, col_cnt, ans_dms)] = mat_val[mtx_elem_pos(i, j, dms)];
-            ++ col_cnt;
+            auto curr_ans_ln = curr_ln, curr_ans_col = curr_col;
+            if(curr_ln > ln) -- curr_ans_ln;
+            if(curr_col > col) -- curr_ans_col;
+            ans[mtx_elem_pos(curr_ans_ln, curr_ans_col, ans_dms)] = mat_val[i];
         }
-        ++ col_cnt;
+    }
+    return ans;
+}
+
+double mtx_algebraic_cofactor(MATRIX &mat_val, int ln, int col, int dms) { return mtx_det(mtx_cofactor(mat_val, ln, col, dms), dms-1); }
+
+MATRIX mtx_adjugate(MATRIX &mat_val, int dms)
+{
+    auto elem_cnt = dms * dms;
+    auto ans = mtx_init(elem_cnt);
+    for(auto i=0; i<elem_cnt; ++i)
+    {
+        auto curr_dim = mtx_elem_pos(i, dms);
+        auto coe = 1;
+        if((curr_dim.ln+curr_dim.col) % 2) coe = -1;
+        ans[mtx_elem_pos(curr_dim.col, curr_dim.ln, dms)] = coe * mtx_algebraic_cofactor(mat_val, curr_dim.ln, curr_dim.col, dms);
     }
     return ans;
 }
@@ -452,11 +470,11 @@ MATRIX mtx_inverser(MATRIX &mat_val, int dms)
 {
     if(mat_val && dms)
     {
-        auto ans = mtx_init(dms, dms);
+        auto elem_cnt = dms * dms;
+        auto ans = mtx_init(elem_cnt);
         auto val_det = mtx_det(mat_val, dms);
-        for(auto i=0; i<dms; ++i)
-            for(auto j=0; j<dms; ++j)
-                ans[mtx_elem_pos(i, j, dms)] = mtx_det(mtx_adjugate(mat_val, i, j, dms), dms-1) / val_det;
+        auto val_adj = mtx_adjugate(mat_val, dms);
+        for(auto i=0; i<elem_cnt; ++i) ans[i] = val_adj[i] / val_det;
         return ans;
     } return MATRIX_NULL;
 }
@@ -791,30 +809,13 @@ public:
         else return false;
     }
     bool shape_valid(matrix &mtx_src) { return shape_valid(mtx_src.info.ln_cnt, mtx_src.info.col_cnt); }
-    bool shape_as(uint64_t ln_cnt, uint64_t col_cnt)
-    {
-        auto elem_cnt = ln_cnt * col_cnt;
-        if(this->elem_cnt==elem_cnt)
-        {
-            info.ln_cnt = ln_cnt;
-            info.col_cnt = col_cnt;
-            return true;
-        }
-        else return false;
-    }
-    bool shape_as(matrix &m_val) { return shape_as(m_val.info.ln_cnt, m_val.info.col_cnt); }
     matrix reshape(uint64_t ln_cnt, uint64_t col_cnt)
     {
         auto elem_cnt = ln_cnt * col_cnt;
-        if(this->elem_cnt==elem_cnt && is_matrix())
-        {
-            auto vec_val = *this;
-            vec_val.shape_as(ln_cnt, col_cnt);
-            return vec_val;
-        }
+        if(this->elem_cnt==elem_cnt && is_matrix()) return matrix(info.mtx_val, ln_cnt, col_cnt);
         else return matrix();
     }
-    matrix reshape(matrix &m_val) { return reshape(m_val.info.ln_cnt, m_val.info.col_cnt); }
+    matrix reshape(matrix &as_val) { return reshape(as_val.info.ln_cnt, as_val.info.col_cnt); }
     double elem_sum(uint64_t from_ln, uint64_t to_ln, uint64_t from_col, uint64_t to_col, uint64_t ln_dilation = 0, uint64_t col_dilation = 0) { return mtx_sum(info.mtx_val, from_ln, to_ln, from_col, to_col, info.ln_cnt, info.col_cnt, ln_dilation, col_dilation); }
     double elem_sum() { return elem_sum(0, info.ln_cnt-1, 0, info.col_cnt-1); }
     matrix abs()
@@ -876,9 +877,9 @@ public:
         else return matrix();
     }
     matrix swap_dir_elem(uint64_t l_idx, uint64_t r_idx, bool is_ln = true) { return matrix(mtx_swap_elem(info.mtx_val, l_idx, r_idx, info.ln_cnt, info.col_cnt, is_ln), info.ln_cnt, info.col_cnt); }
-    matrix adjugate(uint64_t ln, uint64_t col)
+    matrix adjugate()
     {
-        if(info.col_cnt == info.ln_cnt) return matrix(mtx_adjugate(info.mtx_val, ln, col, info.ln_cnt), info.ln_cnt, info.col_cnt);
+        if(info.col_cnt == info.ln_cnt) return matrix(mtx_adjugate(info.mtx_val, info.ln_cnt), info.ln_cnt, info.col_cnt);
         else return blank_matrix();
     }
     uint64_t rank() { return mtx_rank(info.mtx_val, info.ln_cnt, info.col_cnt); }

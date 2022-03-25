@@ -20,10 +20,9 @@ set<vect> Output(set<vect> &setInput, vect &vecWeight)
 set<vect> GradLossToInput(set<vect> &setGradLossToOutput, vect &vecWeight)
 {
     set<vect> setGradLossToInput(setGradLossToOutput.size());
-    thrd_pool::thread_pool t_p;
     for(auto i=0; i<setGradLossToOutput.size(); ++i)
     {
-        setGradLossToInput[i] = t_p.add_task([&]{ return GradLossToInput(setGradLossToOutput[i], vecWeight); }).get();
+        setGradLossToInput[i] = GradLossToInput(setGradLossToOutput[i], vecWeight);
         if(!setGradLossToInput[i].is_matrix()) return blank_vect_seq;
     }
     return setGradLossToInput;

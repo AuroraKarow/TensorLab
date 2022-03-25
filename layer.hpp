@@ -304,10 +304,10 @@ struct LayerConvIm2Col : Layer
     void operator=(LayerConvIm2Col &&lyrSrc) { Layer::operator=(std::move(lyrSrc)); ValueMove(std::move(lyrSrc)); }
 
     LayerConvIm2Col() : Layer(CONV_IM2COL) {}
-    LayerConvIm2Col(uint64_t iKernelAmt, uint64_t iKernelChannCnt, uint64_t iKernelLnCnt, uint64_t iKernelColCnt, uint64_t iLnStride, uint64_t iColStride, double dLearnRate = 0, uint64_t iLnDilation = 0, uint64_t iColDilation = 0, uint64_t iInputPadTop = 0, uint64_t iInputPadRight = 0, uint64_t iInputPadBottom = 0, uint64_t iInputPadLeft = 0, uint64_t iLnDistance = 0, uint64_t iColDistance = 0, double dRandBoundryFirst = 0, double dRandBoundrySecond = 0, double dRandBoundryAcc = 1e-5) : Layer(CONV, dLearnRate), iLayerKernelLnCnt(iKernelLnCnt), iLayerKernelColCnt(iKernelColCnt), iLayerLnStride(iLnStride), iLayerColStride(iColStride), iLayerLnDilation(iLnDilation), iLayerColDilation(iColDilation), iLayerInputPadTop(iInputPadTop), iLayerInputPadRight(iInputPadRight), iLayerInputPadBottom(iInputPadBottom), iLayerInputPadLeft(iInputPadLeft), iLayerLnDistance(iLnDistance), iLayerColDistance(iColDistance) { vecKernel = _CONV InitKernelIm2Col(iKernelAmt, iKernelChannCnt, iKernelLnCnt, iKernelColCnt, dRandBoundryFirst, dRandBoundrySecond, dRandBoundryAcc); }
+    LayerConvIm2Col(uint64_t iKernelAmt, uint64_t iKernelChannCnt, uint64_t iKernelLnCnt, uint64_t iKernelColCnt, uint64_t iLnStride, uint64_t iColStride, double dLearnRate = 0, uint64_t iLnDilation = 0, uint64_t iColDilation = 0, uint64_t iInputPadTop = 0, uint64_t iInputPadRight = 0, uint64_t iInputPadBottom = 0, uint64_t iInputPadLeft = 0, uint64_t iLnDistance = 0, uint64_t iColDistance = 0, double dRandBoundryFirst = 0, double dRandBoundrySecond = 0, double dRandBoundryAcc = 1e-5) : Layer(CONV_IM2COL, dLearnRate), iLayerKernelLnCnt(iKernelLnCnt), iLayerKernelColCnt(iKernelColCnt), iLayerLnStride(iLnStride), iLayerColStride(iColStride), iLayerLnDilation(iLnDilation), iLayerColDilation(iColDilation), iLayerInputPadTop(iInputPadTop), iLayerInputPadRight(iInputPadRight), iLayerInputPadBottom(iInputPadBottom), iLayerInputPadLeft(iInputPadLeft), iLayerLnDistance(iLnDistance), iLayerColDistance(iColDistance) { vecKernel = _CONV InitKernelIm2Col(iKernelAmt, iKernelChannCnt, iKernelLnCnt, iKernelColCnt, dRandBoundryFirst, dRandBoundrySecond, dRandBoundryAcc); }
     set<vect> ForwProp(set<vect> &setInput, uint64_t iInputLnCnt)
     {
-        setPrepInput = _CONV Im2ColInputTransform(setInput, iLayerOutputLnCnt, iInputLnCnt, iLayerKernelLnCnt, iLayerKernelColCnt, iLayerLnStride, iLayerColStride, iLayerLnDilation, iLayerColDilation, iLayerInputPadTop, iLayerInputPadRight, iLayerInputPadBottom, iLayerInputPadLeft, iLayerLnDistance, iLayerColDistance);
+        if(setInput.size()) setPrepInput = _CONV Im2ColInputTransform(setInput, iLayerOutputLnCnt, iInputLnCnt, iLayerKernelLnCnt, iLayerKernelColCnt, iLayerLnStride, iLayerColStride, iLayerLnDilation, iLayerColDilation, iLayerInputPadTop, iLayerInputPadRight, iLayerInputPadBottom, iLayerInputPadLeft, iLayerLnDistance, iLayerColDistance);
         return _CONV ConvIm2Col(setPrepInput, vecKernel);
     }
     set<vect> BackProp(set<vect> &setGrad)
@@ -526,14 +526,14 @@ struct LayerPoolIm2Col : Layer
     {
         iLayerInputLnCnt = iInputLnCnt;
         iLayerInputColCnt = setInput[IDX_ZERO].LN_CNT / iLayerInputLnCnt;
+        setInputMaxPosList.init(setInput.size()); 
         return _CONV PoolIm2Col(iPoolType, setInput, setInputMaxPosList, iLayerOutputLnCnt, iLayerInputLnCnt, iLayerFilterLnCnt, iLayerFilterColCnt, iLayerLnStride, iLayerColStride, iLayerLnDilation, iLayerColDilation, iLayerInputPadTop, iLayerInputPadRight, iLayerInputPadBottom, iLayerInputPadLeft, iLayerLnDistance, iLayerColDistance);
     }
     set<vect> BackProp(set<vect> &setGrad) { return _CONV GradLossToPoolIm2ColInput(iPoolType, setGrad, setInputMaxPosList, iLayerOutputLnCnt, iLayerInputLnCnt, iLayerInputColCnt, iLayerFilterLnCnt, iLayerFilterColCnt, iLayerLnStride, iLayerColStride, iLayerLnDilation, iLayerColDilation, iLayerInputPadTop, iLayerInputPadRight, iLayerInputPadBottom, iLayerInputPadLeft, iLayerLnDistance, iLayerColDistance); }
     vect Deduce(vect &vecInput, uint64_t iInputLnCnt)
     {
-        set<bagrt::net_list<mtx::mtx_pos>> setTemp;
         if(iPoolType == POOL_GAG_IM2COL) { iLayerOutputLnCnt = 1; return _CONV PoolGlbAvgIm2Col(vecInput); }
-        else return _CONV PoolMaxAvgIm2Col(iPoolType, vecInput, setTemp, iLayerOutputLnCnt, iInputLnCnt, iLayerFilterLnCnt, iLayerFilterColCnt, iLayerLnStride, iLayerColStride, iLayerLnDilation, iLayerColDilation, iLayerInputPadTop, iLayerInputPadRight, iLayerInputPadBottom, iLayerInputPadLeft, iLayerLnDistance, iLayerColDistance);
+        else return _CONV PoolMaxAvgIm2Col(iPoolType, vecInput, set<bagrt::net_list<mtx::mtx_pos>>(), iLayerOutputLnCnt, iInputLnCnt, iLayerFilterLnCnt, iLayerFilterColCnt, iLayerLnStride, iLayerColStride, iLayerLnDilation, iLayerColDilation, iLayerInputPadTop, iLayerInputPadRight, iLayerInputPadBottom, iLayerInputPadLeft, iLayerLnDistance, iLayerColDistance);
     }
 
     void Reset() { setInputMaxPosList.reset(); }
@@ -588,16 +588,19 @@ struct LayerTransIm2Col : Layer
         iColCnt = setInput[IDX_ZERO].LN_CNT / iLnCnt;
         return _FC FeatureTransformIm2Col(setInput);
     }
-    vect Deduce(vect &vecInput, uint64_t iInputLnCnt) { return _FC FeatureTransformIm2Col(vecInput); }
 
     LayerTransIm2Col(uint64_t iChannLnCnt, uint64_t iChannColCnt) : Layer(TRANS_IM2COL, 0), iLnCnt(iChannLnCnt), iColCnt(iChannColCnt), bFeatToVec(false) {}
     set<vect> ForwProp(set<vect> &setInput) {return _FC FeatureTransformIm2Col(setInput, iLnCnt, iColCnt);}
-    vect Deduce(vect &vecInput) { return _FC FeatureTransformIm2Col(vecInput, iLnCnt, iColCnt); }
-
+    
     set<vect> BackProp(set<vect> &setGrad)
     {
         if(bFeatToVec) return _FC FeatureTransformIm2Col(setGrad, iLnCnt, iColCnt);
         else return _FC FeatureTransformIm2Col(setGrad);
+    }
+    vect Deduce(vect &vecInput)
+    {
+        if(bFeatToVec) return _FC FeatureTransformIm2Col(vecInput);
+        else return _FC FeatureTransformIm2Col(vecInput, iLnCnt, iColCnt);
     }
 };
 

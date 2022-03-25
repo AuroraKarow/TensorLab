@@ -85,16 +85,15 @@ private:
         if(w_flag)
         {
             vec_dat = vect(LN_CNT, COL_CNT);
-            for(auto i=0; i<LN_CNT; ++i)
-                for(auto j=0; j<COL_CNT; ++j)
-                {
-                    int curr_pt = dat_ptr[i*LN_CNT + j];
-                    if(curr_pt)
-                        if(is_bool) vec_dat[i][j] = 1;
-                        else if(gray) vec_dat[i][j] = 255;
-                        else vec_dat[i][j] = curr_pt;
-                    else vec_dat[i][j] = 0;
-                }
+            for(auto i=0; i<dat_size; ++i)
+            {
+                int curr_pt = dat_ptr[i];
+                if(curr_pt)
+                    if(is_bool) vec_dat.pos_idx(i) = 1;
+                    else if(gray) vec_dat.pos_idx(i) = 255;
+                    else vec_dat.pos_idx(i) = curr_pt;
+                else vec_dat.pos_idx(i) = 0;
+            }
         }
         delete []dat_ptr;
         dat_ptr = nullptr;
@@ -140,11 +139,20 @@ public:
     void reset()
     {
         elem.reset();
+        elem_im2col.reset();
         elem_lbl.reset();
     }
-    bool valid() { return (elem.size() == elem_lbl.size()); }
+    bool valid()
+    {
+        if(im2col_flag) return (elem_im2col.size() == elem_lbl.size());
+        else return (elem.size() == elem_lbl.size());
+    }
     // Data size
-    uint64_t size() { return elem.size(); }
+    uint64_t size()
+    {
+        if(im2col_flag) return elem_im2col.size();
+        else return elem.size();
+    }
     // Column line per-data
     uint64_t ln_cnt() {return LN_CNT;}
     // Column count per-data
@@ -201,7 +209,7 @@ public:
             for(auto i=0,j=0; j<load_qnty; ++i)
                 if(i==lbl_data_stat[j] || !lbl_data_stat.size())
                 {
-                    if(im2col_flag) elem_im2col[j] = read_curr_dat(true, padding, true);
+                    if(im2col_flag) elem_im2col[j] = read_curr_dat(true, padding);
                     else
                     {
                         elem[j].init();
@@ -249,29 +257,32 @@ public:
                 load_qnty = qnty_list_cnt.sum();
             }
             else pcdr_flag = false;
-            if(im2col_flag) elem_im2col.init(load_qnty);
-            else elem.init(load_qnty);
-            elem_lbl.init(load_qnty);
-            if(pcdr_flag) while(check)
+            if(pcdr_flag)
             {
-                auto curr_lbl = read_curr_lbl();
-                if(((qnty_list_cnt[curr_lbl]<load_qnty)&&(qnty_list.size()==1)) || ((qnty_list_cnt[curr_lbl])&&(qnty_list.size()==ORGN_SIZE)))
+                if(im2col_flag) elem_im2col.init(load_qnty);
+                else elem.init(load_qnty);
+                elem_lbl.init(load_qnty);
+                while(check)
                 {
-                    if(im2col_flag) elem_im2col[elem_cnt] = read_curr_dat(true, padding, true);
-                    else
+                    auto curr_lbl = read_curr_lbl();
+                    if(((qnty_list_cnt[curr_lbl]<load_qnty)&&(qnty_list.size()==1)) || ((qnty_list_cnt[curr_lbl])&&(qnty_list.size()==ORGN_SIZE)))
                     {
-                        elem[elem_cnt].init();
-                        elem[elem_cnt][IDX_ZERO] = read_curr_dat(true, padding);
+                        if(im2col_flag) elem_im2col[elem_cnt] = read_curr_dat(true, padding, true);
+                        else
+                        {
+                            elem[elem_cnt].init();
+                            elem[elem_cnt][IDX_ZERO] = read_curr_dat(true, padding);
+                        }
+                        elem_lbl[elem_cnt] = curr_lbl;
+                        ++ elem_cnt;
+                        if(qnty_list.size() == 1) ++ qnty_list_cnt[curr_lbl];
+                        else if(qnty_list.size()==ORGN_SIZE) -- qnty_list_cnt[curr_lbl];
                     }
-                    elem_lbl[elem_cnt] = curr_lbl;
-                    ++ elem_cnt;
-                    if(qnty_list.size() == 1) ++ qnty_list_cnt[curr_lbl];
-                    else if(qnty_list.size()==ORGN_SIZE) -- qnty_list_cnt[curr_lbl];
+                    else read_curr_dat(false);
+                    auto check_cnt = 0;
+                    for(check_cnt=0; check_cnt<ORGN_SIZE; ++check_cnt) if((qnty_list_cnt[check_cnt]<load_qnty)&&(qnty_list.size()==1) || ((qnty_list_cnt[check_cnt]>0)&&(qnty_list.size()==ORGN_SIZE))) break;
+                    check = check_cnt != ORGN_SIZE;
                 }
-                else read_curr_dat(false);
-                auto check_cnt = 0;
-                for(check_cnt=0; check_cnt<ORGN_SIZE; ++check_cnt) if((qnty_list_cnt[check_cnt]<load_qnty)&&(qnty_list.size()==1) || ((qnty_list_cnt[check_cnt]>0)&&(qnty_list.size()==ORGN_SIZE))) break;
-                check = check_cnt != ORGN_SIZE;
             }
             else pcdr_flag = false;
         }
@@ -279,8 +290,8 @@ public:
         close_stream();
         return pcdr_flag;
     }
-    MNIST(std::string dat_dir, std::string lbl_dir, uint64_t qnty = 0, bool bool_preprocess = false, uint64_t padding = 0, bool im2col = false) : is_bool(bool_preprocess), im2col_flag(im2col) { load_data(dat_dir, lbl_dir, qnty, padding); }
-    MNIST(std::string dat_dir, std::string lbl_dir, std::initializer_list<uint64_t> qnty_list, bool bool_preprocess = false, uint64_t padding = 0, bool im2col = false) : is_bool(bool_preprocess), im2col_flag(im2col) { load_data(dat_dir, lbl_dir, qnty_list, padding); }
+    MNIST(std::string dat_dir, std::string lbl_dir, bool im2col, uint64_t qnty = 0, bool bool_preprocess = false, uint64_t padding = 0) : is_bool(bool_preprocess), im2col_flag(im2col) { load_data(dat_dir, lbl_dir, qnty, padding); }
+    MNIST(std::string dat_dir, std::string lbl_dir, bool im2col, std::initializer_list<uint64_t> qnty_list, bool bool_preprocess = false, uint64_t padding = 0) : is_bool(bool_preprocess), im2col_flag(im2col) { load_data(dat_dir, lbl_dir, qnty_list, padding); }
     /**
      * @brief   Save data as bitmap
      * @param	dir_root	[Quote]	Saving root directory, '\\' is used to seperate sub directory path

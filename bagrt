@@ -14,12 +14,12 @@ struct
 {
     long begin;
     long end;
-    double dur;
+    long dur;
 } CLK_NOTE;
 
 #define CLOCK_BEGIN     {CLK_NOTE.begin = clock();}
 #define CLOCK_END       {CLK_NOTE.end = clock(); \
-                        CLK_NOTE.dur = (double)((CLK_NOTE.end - CLK_NOTE.begin) * 1000 / CLOCKS_PER_SEC);}
+                        CLK_NOTE.dur = (CLK_NOTE.end - CLK_NOTE.begin) * 1000 / CLOCKS_PER_SEC;}
 #define CLOCK_DURATION  (std::to_string(CLK_NOTE.dur) + std::string("ms"))
 
 #include "bagrt.hpp"

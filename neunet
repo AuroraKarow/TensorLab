@@ -11,20 +11,25 @@
 
 // Layer
 
-#define LAYER_PTR           std::shared_ptr<layer::Layer>
+#define LAYER_PTR               std::shared_ptr<layer::Layer>
 
-#define LAYER_ACT_VT        layer::LayerActVect
-#define LAYER_ACT_FT        layer::LayerActFt
+#define LAYER_ACT_VT            layer::LayerActVect
+#define LAYER_ACT_FT            layer::LayerActFt
 
-#define LAYER_FC            layer::LayerFC
-#define LAYER_CONV          layer::LayerConv
+#define LAYER_FC                layer::LayerFC
+#define LAYER_CONV              layer::LayerConv
+#define LAYER_CONV_IM2COL       layer::LayerConvIm2Col
 
-#define LAYER_POOL          layer::LayerPool
+#define LAYER_POOL              layer::LayerPool
+#define LAYER_POOL_IM2COL       layer::LayerPoolIm2Col
 
-#define LAYER_FC_BN         layer::LayerFCBN
-#define LAYER_CONV_BN       layer::LayerConvBN
+#define LAYER_FC_BN             layer::LayerFCBN
+#define LAYER_CONV_BN           layer::LayerConvBN
+#define LAYER_CONV_BN_IM2COL    layer::LayerConvBNIm2Col
 
-#define LAYER_TRANS         layer::LayerTrans
-#define _LAYER              layer::
+#define LAYER_TRANS             layer::LayerTrans
+#define LAYER_TRANS_IM2COL      layer::LayerTransIm2Col
+
+#define _LAYER                  layer::
 
 #include "neunet.hpp"
