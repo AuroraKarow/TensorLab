@@ -3,6 +3,8 @@
 #include "dataset"
 #include "neunet"
 
+#include "Iomp.h"
+
 class NetMNISTIm2Col final : public neunet::NetBase
 {
 private:
@@ -249,8 +251,15 @@ using namespace layer;
 int main(int argc, char *argv[], char *envp[])
 {
     cout << "hello, world." << endl;
+
+    
+    //// this only works in visual stdio
+    //cout << "max can use thead cnt:" << omps::Iomp::getMaxCanUseThreadCnt() << endl
+    //     << "max processor cnt on this machine:" << omps::Iomp::getMaxProcessorCnt() << endl;
+    //
+
     // MNIST demo
-    string root_dir = "E:\\VS Code project data\\MNIST\\";
+    string root_dir = "D:\\code\\cpp\\mnist\\";
     MNIST dataset(root_dir + "train-images.idx3-ubyte", root_dir + "train-labels.idx1-ubyte", true);
     // dataset.output_bitmap("E:\\VS Code project data\\MNIST_out\\train", BMIO_BMP);
     // MNIST testset(root_dir + "t10k-images.idx3-ubyte", root_dir + "t10k-labels.idx1-ubyte");

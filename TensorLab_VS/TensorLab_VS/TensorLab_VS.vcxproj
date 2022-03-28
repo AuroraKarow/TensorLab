@@ -139,6 +139,7 @@
       <ForceConformanceInForLoopScope>false</ForceConformanceInForLoopScope>
       <BufferSecurityCheck>true</BufferSecurityCheck>
       <OpenMPSupport>true</OpenMPSupport>
+      <AdditionalOptions>/Qpar %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -179,6 +180,7 @@
     <ClInclude Include="..\..\fc.hpp" />
     <ClInclude Include="..\..\fcbat.hpp" />
     <ClInclude Include="..\..\funclib.hpp" />
+    <ClInclude Include="..\..\Iomp.h" />
     <ClInclude Include="..\..\layer.hpp" />
     <ClInclude Include="..\..\matrix.hpp" />
     <ClInclude Include="..\..\neunet.hpp" />
@@ -228,6 +230,7 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\imop.cpp" />
     <ClCompile Include="..\..\main.cpp" />
   </ItemGroup>
   <ItemGroup>

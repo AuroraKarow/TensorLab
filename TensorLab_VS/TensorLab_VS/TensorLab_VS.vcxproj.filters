@@ -13,6 +13,12 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="头文件\omp">
+      <UniqueIdentifier>{496940e2-23a8-47aa-94fe-8583aff72b5f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源文件\iomp">
+      <UniqueIdentifier>{50e4020a-3f3e-4dc2-bca9-23587efa7c2c}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\ada.hpp">
@@ -90,10 +96,16 @@
     <ClInclude Include="..\..\thread_pool">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\Iomp.h">
+      <Filter>头文件\omp</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\main.cpp">
       <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\imop.cpp">
+      <Filter>源文件\iomp</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
