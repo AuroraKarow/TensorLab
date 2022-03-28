@@ -97,7 +97,7 @@ private:
         default: return false;
         }
     }
-    bool refresh_chann() {return (refresh_chann(BMIO_R) && refresh_chann(BMIO_G) && refresh_chann(BMIO_B) && refresh_chann(BMIO_A));}
+    bool refresh_chann() { return (refresh_chann(BMIO_R) && refresh_chann(BMIO_G) && refresh_chann(BMIO_B) && refresh_chann(BMIO_A)); }
 public:
     bitmap() {}
     bool set_size(uint64_t ln_cnt, uint64_t col_cnt) { return init_chann(ln_cnt, col_cnt); }
