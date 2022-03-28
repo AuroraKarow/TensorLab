@@ -1,0 +1,351 @@
+﻿  main.cpp
+D:\code\cpp\TensorLab\bagrt.hpp(705,42): warning C4244: “参数”: 从“uint64_t”转换到“const size_t”，可能丢失数据
+D:\code\cpp\TensorLab\bagrt.hpp(854,59): warning C4244: “*=”: 从“_Ty”转换到“int”，可能丢失数据
+          with
+          [
+              _Ty=uint64_t
+          ]
+D:\code\cpp\TensorLab\bagrt.hpp(863,59): warning C4244: “*=”: 从“_Ty”转换到“int”，可能丢失数据
+          with
+          [
+              _Ty=uint64_t
+          ]
+D:\code\cpp\TensorLab\matrix.hpp(48,47): warning C4244: “参数”: 从“uint64_t”转换到“const size_t”，可能丢失数据
+D:\code\cpp\TensorLab\matrix.hpp(58,45): warning C4244: “参数”: 从“uint64_t”转换到“size_t”，可能丢失数据
+D:\code\cpp\TensorLab\matrix.hpp(88,46): warning C4244: “参数”: 从“uint64_t”转换到“size_t”，可能丢失数据
+D:\code\cpp\TensorLab\matrix.hpp(88,94): warning C4244: “参数”: 从“uint64_t”转换到“size_t”，可能丢失数据
+D:\code\cpp\TensorLab\matrix.hpp(154,44): warning C4244: “参数”: 从“uint64_t”转换到“size_t”，可能丢失数据
+D:\code\cpp\TensorLab\matrix.hpp(162,39): warning C4244: “参数”: 从“uint64_t”转换到“size_t”，可能丢失数据
+D:\code\cpp\TensorLab\matrix.hpp(162,85): warning C4244: “参数”: 从“uint64_t”转换到“size_t”，可能丢失数据
+D:\code\cpp\TensorLab\matrix.hpp(164,44): warning C4244: “参数”: 从“uint64_t”转换到“size_t”，可能丢失数据
+D:\code\cpp\TensorLab\matrix.hpp(168,33): warning C4244: “参数”: 从“uint64_t”转换到“size_t”，可能丢失数据
+D:\code\cpp\TensorLab\matrix.hpp(211,23): warning C4018: “<”: 有符号/无符号不匹配
+D:\code\cpp\TensorLab\matrix.hpp(223,39): warning C4244: “参数”: 从“uint64_t”转换到“size_t”，可能丢失数据
+D:\code\cpp\TensorLab\matrix.hpp(223,77): warning C4244: “参数”: 从“uint64_t”转换到“size_t”，可能丢失数据
+D:\code\cpp\TensorLab\matrix.hpp(232,48): error C3447: 条件运算符 ?: 的 第二操作数 属于类型 "void"，但 第三操作数 既不是 throw 表达式也不属于类型 "void"
+D:\code\cpp\TensorLab\matrix.hpp(236,34): warning C4244: “=”: 从“uint64_t”转换到“int”，可能丢失数据
+D:\code\cpp\TensorLab\matrix.hpp(237,37): warning C4244: “=”: 从“uint64_t”转换到“int”，可能丢失数据
+D:\code\cpp\TensorLab\matrix.hpp(239,25): warning C4244: “参数”: 从“uint64_t”转换到“size_t”，可能丢失数据
+D:\code\cpp\TensorLab\matrix.hpp(239,64): warning C4244: “参数”: 从“uint64_t”转换到“size_t”，可能丢失数据
+D:\code\cpp\TensorLab\matrix.hpp(244,35): warning C4244: “=”: 从“uint64_t”转换到“int”，可能丢失数据
+D:\code\cpp\TensorLab\matrix.hpp(245,38): warning C4244: “=”: 从“uint64_t”转换到“int”，可能丢失数据
+D:\code\cpp\TensorLab\matrix.hpp(247,25): warning C4244: “参数”: 从“uint64_t”转换到“size_t”，可能丢失数据
+D:\code\cpp\TensorLab\matrix.hpp(247,64): warning C4244: “参数”: 从“uint64_t”转换到“size_t”，可能丢失数据
+D:\code\cpp\TensorLab\matrix.hpp(276,46): warning C4244: “参数”: 从“uint64_t”转换到“size_t”，可能丢失数据
+D:\code\cpp\TensorLab\matrix.hpp(276,85): warning C4244: “参数”: 从“uint64_t”转换到“size_t”，可能丢失数据
+D:\code\cpp\TensorLab\matrix.hpp(277,37): warning C4244: “参数”: 从“uint64_t”转换到“size_t”，可能丢失数据
+D:\code\cpp\TensorLab\matrix.hpp(384,64): warning C4244: “参数”: 从“uint64_t”转换到“size_t”，可能丢失数据
+D:\code\cpp\TensorLab\matrix.hpp(384,103): warning C4244: “参数”: 从“uint64_t”转换到“size_t”，可能丢失数据
+D:\code\cpp\TensorLab\matrix.hpp(384,133): warning C4244: “参数”: 从“uint64_t”转换到“size_t”，可能丢失数据
+D:\code\cpp\TensorLab\matrix.hpp(385,61): warning C4244: “参数”: 从“uint64_t”转换到“size_t”，可能丢失数据
+D:\code\cpp\TensorLab\matrix.hpp(385,102): warning C4244: “参数”: 从“uint64_t”转换到“size_t”，可能丢失数据
+D:\code\cpp\TensorLab\matrix.hpp(386,62): warning C4244: “参数”: 从“uint64_t”转换到“size_t”，可能丢失数据
+D:\code\cpp\TensorLab\matrix.hpp(386,103): warning C4244: “参数”: 从“uint64_t”转换到“size_t”，可能丢失数据
+D:\code\cpp\TensorLab\matrix.hpp(393,32): warning C4244: “参数”: 从“uint64_t”转换到“size_t”，可能丢失数据
+D:\code\cpp\TensorLab\matrix.hpp(393,61): warning C4244: “参数”: 从“uint64_t”转换到“size_t”，可能丢失数据
+D:\code\cpp\TensorLab\matrix.hpp(410,43): warning C4244: “参数”: 从“uint64_t”转换到“size_t”，可能丢失数据
+D:\code\cpp\TensorLab\matrix.hpp(410,73): warning C4244: “参数”: 从“uint64_t”转换到“size_t”，可能丢失数据
+D:\code\cpp\TensorLab\matrix.hpp(411,36): warning C4244: “参数”: 从“uint64_t”转换到“size_t”，可能丢失数据
+D:\code\cpp\TensorLab\matrix.hpp(411,66): warning C4244: “参数”: 从“uint64_t”转换到“size_t”，可能丢失数据
+D:\code\cpp\TensorLab\matrix.hpp(416,68): warning C4244: “参数”: 从“uint64_t”转换到“size_t”，可能丢失数据
+D:\code\cpp\TensorLab\matrix.hpp(423,65): warning C4244: “参数”: 从“uint64_t”转换到“size_t”，可能丢失数据
+D:\code\cpp\TensorLab\matrix.hpp(424,54): warning C4244: “参数”: 从“uint64_t”转换到“size_t”，可能丢失数据
+D:\code\cpp\TensorLab\matrix.hpp(426,50): warning C4244: “参数”: 从“uint64_t”转换到“size_t”，可能丢失数据
+D:\code\cpp\TensorLab\matrix.hpp(447,29): warning C4244: “参数”: 从“uint64_t”转换到“size_t”，可能丢失数据
+D:\code\cpp\TensorLab\matrix.hpp(453,133): error C2664: “double mtx::mtx_det(std::unique_ptr<double [],std::default_delete<double []>> &,int)”: 无法将参数 1 从“std::unique_ptr<double [],std::default_delete<double []>>”转换为“std::unique_ptr<double [],std::default_delete<double []>> &”
+D:\code\cpp\TensorLab\matrix.hpp(453,103): message : 非常量引用只能绑定到左值
+D:\code\cpp\TensorLab\matrix.hpp(121,8): message : 参见“mtx::mtx_det”的声明
+D:\code\cpp\TensorLab\matrix.hpp(464,25): warning C4244: “参数”: 从“uint64_t”转换到“size_t”，可能丢失数据
+D:\code\cpp\TensorLab\matrix.hpp(464,120): warning C4244: “参数”: 从“uint64_t”转换到“int”，可能丢失数据
+D:\code\cpp\TensorLab\matrix.hpp(464,107): warning C4244: “参数”: 从“uint64_t”转换到“int”，可能丢失数据
+D:\code\cpp\TensorLab\matrix.hpp(525,82): warning C4244: “参数”: 从“uint64_t”转换到“size_t”，可能丢失数据
+D:\code\cpp\TensorLab\matrix.hpp(526,62): warning C4244: “参数”: 从“uint64_t”转换到“size_t”，可能丢失数据
+D:\code\cpp\TensorLab\matrix.hpp(542,49): warning C4244: “参数”: 从“uint64_t”转换到“size_t”，可能丢失数据
+D:\code\cpp\TensorLab\matrix.hpp(542,96): warning C4244: “参数”: 从“uint64_t”转换到“size_t”，可能丢失数据
+D:\code\cpp\TensorLab\matrix.hpp(543,38): warning C4244: “参数”: 从“uint64_t”转换到“size_t”，可能丢失数据
+D:\code\cpp\TensorLab\matrix.hpp(543,86): warning C4244: “参数”: 从“uint64_t”转换到“size_t”，可能丢失数据
+D:\code\cpp\TensorLab\matrix.hpp(554,49): warning C4244: “参数”: 从“uint64_t”转换到“size_t”，可能丢失数据
+D:\code\cpp\TensorLab\matrix.hpp(554,88): warning C4244: “参数”: 从“uint64_t”转换到“size_t”，可能丢失数据
+D:\code\cpp\TensorLab\matrix.hpp(559,49): warning C4244: “参数”: 从“uint64_t”转换到“size_t”，可能丢失数据
+D:\code\cpp\TensorLab\matrix.hpp(559,88): warning C4244: “参数”: 从“uint64_t”转换到“size_t”，可能丢失数据
+D:\code\cpp\TensorLab\matrix.hpp(581,49): warning C4244: “参数”: 从“uint64_t”转换到“size_t”，可能丢失数据
+D:\code\cpp\TensorLab\matrix.hpp(586,89): warning C4244: “参数”: 从“uint64_t”转换到“size_t”，可能丢失数据
+D:\code\cpp\TensorLab\matrix.hpp(591,72): warning C4244: “参数”: 从“uint64_t”转换到“size_t”，可能丢失数据
+D:\code\cpp\TensorLab\matrix.hpp(591,108): warning C4244: “参数”: 从“uint64_t”转换到“size_t”，可能丢失数据
+D:\code\cpp\TensorLab\matrix.hpp(598,17): warning C4244: “return”: 从“float”转换到“uint64_t”，可能丢失数据
+D:\code\cpp\TensorLab\matrix.hpp(615,33): warning C4244: “参数”: 从“uint64_t”转换到“size_t”，可能丢失数据
+D:\code\cpp\TensorLab\matrix.hpp(615,56): warning C4244: “参数”: 从“uint64_t”转换到“size_t”，可能丢失数据
+D:\code\cpp\TensorLab\matrix.hpp(635,33): warning C4244: “参数”: 从“uint64_t”转换到“size_t”，可能丢失数据
+D:\code\cpp\TensorLab\matrix.hpp(635,56): warning C4244: “参数”: 从“uint64_t”转换到“size_t”，可能丢失数据
+D:\code\cpp\TensorLab\matrix.hpp(772,74): warning C4244: “参数”: 从“uint64_t”转换到“int”，可能丢失数据
+D:\code\cpp\TensorLab\matrix.hpp(777,86): warning C4244: “参数”: 从“uint64_t”转换到“int”，可能丢失数据
+D:\code\cpp\TensorLab\matrix.hpp(798,86): warning C4244: “参数”: 从“uint64_t”转换到“int”，可能丢失数据
+D:\code\cpp\TensorLab\matrix.hpp(798,73): warning C4244: “参数”: 从“uint64_t”转换到“int”，可能丢失数据
+D:\code\cpp\TensorLab\matrix.hpp(869,95): warning C4244: “参数”: 从“uint64_t”转换到“int”，可能丢失数据
+D:\code\cpp\TensorLab\matrix.hpp(875,89): warning C4244: “参数”: 从“uint64_t”转换到“int”，可能丢失数据
+D:\code\cpp\TensorLab\matrix.hpp(876,89): warning C4244: “参数”: 从“uint64_t”转换到“int”，可能丢失数据
+D:\code\cpp\TensorLab\matrix.hpp(882,86): warning C4244: “参数”: 从“uint64_t”转换到“int”，可能丢失数据
+D:\code\cpp\TensorLab\matrix.hpp(886,57): warning C4244: “参数”: 从“uint64_t”转换到“size_t”，可能丢失数据
+D:\code\cpp\TensorLab\bmio.hpp(65,32): warning C4018: “<”: 有符号/无符号不匹配
+D:\code\cpp\TensorLab\bmio.hpp(130,40): warning C4244: “参数”: 从“uint64_t”转换到“INT”，可能丢失数据
+D:\code\cpp\TensorLab\bmio.hpp(130,37): warning C4244: “参数”: 从“uint64_t”转换到“INT”，可能丢失数据
+D:\code\cpp\TensorLab\bmio.hpp(155,38): warning C4244: “参数”: 从“uint64_t”转换到“INT”，可能丢失数据
+D:\code\cpp\TensorLab\bmio.hpp(155,31): warning C4244: “参数”: 从“uint64_t”转换到“INT”，可能丢失数据
+D:\code\cpp\TensorLab\bmio.hpp(201,99): warning C4244: “参数”: 从“double”转换到“BYTE”，可能丢失数据
+D:\code\cpp\TensorLab\bmio.hpp(201,90): warning C4244: “参数”: 从“double”转换到“BYTE”，可能丢失数据
+D:\code\cpp\TensorLab\bmio.hpp(201,81): warning C4244: “参数”: 从“double”转换到“BYTE”，可能丢失数据
+D:\code\cpp\TensorLab\bmio.hpp(201,72): warning C4244: “参数”: 从“double”转换到“BYTE”，可能丢失数据
+D:\code\cpp\TensorLab\bmio.hpp(201): error C2102: “&”要求左值
+D:\code\cpp\TensorLab\bmio.hpp(202,86): warning C4244: “参数”: 从“double”转换到“BYTE”，可能丢失数据
+D:\code\cpp\TensorLab\bmio.hpp(202,77): warning C4244: “参数”: 从“double”转换到“BYTE”，可能丢失数据
+D:\code\cpp\TensorLab\bmio.hpp(202,68): warning C4244: “参数”: 从“double”转换到“BYTE”，可能丢失数据
+D:\code\cpp\TensorLab\bmio.hpp(202): error C2102: “&”要求左值
+D:\code\cpp\TensorLab\bmio.hpp(213,1): error C2678: 二进制“+”: 没有找到接受“mtx::matrix”类型的左操作数的运算符(或没有可接受的转换)
+D:\code\cpp\TensorLab\matrix.hpp(887,12): message : 可能是“mtx::matrix mtx::matrix::operator +(mtx::matrix &)”
+C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.29.30133\include\comutil.h(454,16): message : 或    “_bstr_t operator +(const wchar_t *,const _bstr_t &)”
+C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.29.30133\include\comutil.h(444,16): message : 或    “_bstr_t operator +(const char *,const _bstr_t &)”
+D:\code\cpp\TensorLab\bmio.hpp(213,1): message : 尝试匹配参数列表“(mtx::matrix, mtx::matrix)”时
+D:\code\cpp\TensorLab\csvio.hpp(39,19): warning C4018: “<”: 有符号/无符号不匹配
+D:\code\cpp\TensorLab\dataset.hpp(82,34): warning C4244: “初始化”: 从“uint64_t”转换到“unsigned int”，可能丢失数据
+D:\code\cpp\TensorLab\dataset.hpp(252,50): warning C4244: “=”: 从“_Elem”转换到“int”，可能丢失数据
+          with
+          [
+              _Elem=uint64_t
+          ]
+D:\code\cpp\TensorLab\dataset.hpp(257,46): warning C4244: “=”: 从“_Ty”转换到“int”，可能丢失数据
+          with
+          [
+              _Ty=uint64_t
+          ]
+D:\code\cpp\TensorLab\dataset.hpp(314,1): error C2664: “bool bmio::bitmap::set_raw(mtx::matrix &,mtx::matrix &,mtx::matrix &,mtx::matrix &,bool)”: 无法将参数 1 从“mtx::matrix”转换为“mtx::matrix &”
+D:\code\cpp\TensorLab\dataset.hpp(314,67): message : 非常量引用只能绑定到左值
+D:\code\cpp\TensorLab\bmio.hpp(104,10): message : 参见“bmio::bitmap::set_raw”的声明
+D:\code\cpp\TensorLab\fc.hpp(7,120): error C2678: 二进制“*”: 没有找到接受“mtx::matrix”类型的左操作数的运算符(或没有可接受的转换)
+D:\code\cpp\TensorLab\matrix.hpp(893,12): message : 可能是“mtx::matrix mtx::matrix::operator *(double)”
+D:\code\cpp\TensorLab\matrix.hpp(891,12): message : 或    “mtx::matrix mtx::matrix::operator *(mtx::matrix &)”
+D:\code\cpp\TensorLab\matrix.hpp(895,19): message : 或    “mtx::matrix mtx::operator *(double,mtx::matrix &)”[使用参数相关的查找找到]
+D:\code\cpp\TensorLab\fc.hpp(7,120): message : 尝试匹配参数列表“(mtx::matrix, mtx::matrix)”时
+D:\code\cpp\TensorLab\conv.hpp(224,151): error C2440: “默认参数”: 无法从“mtx::matrix”转换为“mtx::matrix &”
+D:\code\cpp\TensorLab\conv.hpp(224,149): message : 非常量引用只能绑定到左值
+D:\code\cpp\TensorLab\conv.hpp(229,37): warning C4244: “=”: 从“uint64_t”转换到“int”，可能丢失数据
+D:\code\cpp\TensorLab\conv.hpp(230,39): warning C4244: “=”: 从“uint64_t”转换到“int”，可能丢失数据
+D:\code\cpp\TensorLab\conv.hpp(234,42): warning C4244: “=”: 从“uint64_t”转换到“int”，可能丢失数据
+D:\code\cpp\TensorLab\conv.hpp(235,44): warning C4244: “=”: 从“uint64_t”转换到“int”，可能丢失数据
+D:\code\cpp\TensorLab\conv.hpp(253,103): error C2440: “默认参数”: 无法从“bagrt::net_queue<mtx::matrix>”转换为“bagrt::net_queue<mtx::matrix> &”
+D:\code\cpp\TensorLab\conv.hpp(253,101): message : 非常量引用只能绑定到左值
+D:\code\cpp\TensorLab\ada.hpp(40,1): error C2679: 二元“*”: 没有找到接受“mtx::matrix”类型的右操作数的运算符(或没有可接受的转换)
+D:\code\cpp\TensorLab\matrix.hpp(895,19): message : 可能是“mtx::matrix mtx::operator *(double,mtx::matrix &)”[通过使用参数相关的查找找到]
+D:\code\cpp\TensorLab\ada.hpp(40,1): message : 尝试匹配参数列表“(double, mtx::matrix)”时
+D:\code\cpp\TensorLab\ada.hpp(44,1): error C2679: 二元“*”: 没有找到接受“mtx::matrix”类型的右操作数的运算符(或没有可接受的转换)
+D:\code\cpp\TensorLab\matrix.hpp(895,19): message : 可能是“mtx::matrix mtx::operator *(double,mtx::matrix &)”[通过使用参数相关的查找找到]
+D:\code\cpp\TensorLab\ada.hpp(44,1): message : 尝试匹配参数列表“(double, mtx::matrix)”时
+D:\code\cpp\TensorLab\ada.hpp(129,1): error C2678: 二进制“+”: 没有找到接受“mtx::matrix”类型的左操作数的运算符(或没有可接受的转换)
+D:\code\cpp\TensorLab\matrix.hpp(887,12): message : 可能是“mtx::matrix mtx::matrix::operator +(mtx::matrix &)”
+C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.29.30133\include\comutil.h(454,16): message : 或    “_bstr_t operator +(const wchar_t *,const _bstr_t &)”
+C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.29.30133\include\comutil.h(444,16): message : 或    “_bstr_t operator +(const char *,const _bstr_t &)”
+D:\code\cpp\TensorLab\ada.hpp(129,1): message : 尝试匹配参数列表“(mtx::matrix, mtx::matrix)”时
+D:\code\cpp\TensorLab\ada.hpp(130,1): error C2679: 二元“*”: 没有找到接受“mtx::matrix”类型的右操作数的运算符(或没有可接受的转换)
+D:\code\cpp\TensorLab\matrix.hpp(895,19): message : 可能是“mtx::matrix mtx::operator *(double,mtx::matrix &)”[通过使用参数相关的查找找到]
+D:\code\cpp\TensorLab\ada.hpp(130,1): message : 尝试匹配参数列表“(double, mtx::matrix)”时
+D:\code\cpp\TensorLab\ada.hpp(133,1): error C2678: 二进制“+”: 没有找到接受“mtx::matrix”类型的左操作数的运算符(或没有可接受的转换)
+D:\code\cpp\TensorLab\matrix.hpp(887,12): message : 可能是“mtx::matrix mtx::matrix::operator +(mtx::matrix &)”
+C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.29.30133\include\comutil.h(454,16): message : 或    “_bstr_t operator +(const wchar_t *,const _bstr_t &)”
+C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.29.30133\include\comutil.h(444,16): message : 或    “_bstr_t operator +(const char *,const _bstr_t &)”
+D:\code\cpp\TensorLab\ada.hpp(133,1): message : 尝试匹配参数列表“(mtx::matrix, mtx::matrix)”时
+D:\code\cpp\TensorLab\ada.hpp(221,1): error C2679: 二元“-”: 没有找到接受“mtx::matrix”类型的右操作数的运算符(或没有可接受的转换)
+D:\code\cpp\TensorLab\matrix.hpp(888,12): message : 可能是“mtx::matrix mtx::matrix::operator -(mtx::matrix &)”
+D:\code\cpp\TensorLab\ada.hpp(221,1): message : 尝试匹配参数列表“(_Ty, mtx::matrix)”时
+          with
+          [
+              _Ty=mtx::matrix
+          ]
+D:\code\cpp\TensorLab\ada.hpp(235,124): error C2679: 二元“-”: 没有找到接受“mtx::matrix”类型的右操作数的运算符(或没有可接受的转换)
+D:\code\cpp\TensorLab\matrix.hpp(888,12): message : 可能是“mtx::matrix mtx::matrix::operator -(mtx::matrix &)”
+D:\code\cpp\TensorLab\ada.hpp(235,124): message : 尝试匹配参数列表“(mtx::matrix, mtx::matrix)”时
+D:\code\cpp\TensorLab\ada.hpp(250,129): error C2679: 二元“-”: 没有找到接受“mtx::matrix”类型的右操作数的运算符(或没有可接受的转换)
+D:\code\cpp\TensorLab\matrix.hpp(888,12): message : 可能是“mtx::matrix mtx::matrix::operator -(mtx::matrix &)”
+D:\code\cpp\TensorLab\ada.hpp(250,129): message : 尝试匹配参数列表“(_Ty, mtx::matrix)”时
+          with
+          [
+              _Ty=mtx::matrix
+          ]
+D:\code\cpp\TensorLab\ada.hpp(262,138): error C2679: 二元“-”: 没有找到接受“mtx::matrix”类型的右操作数的运算符(或没有可接受的转换)
+D:\code\cpp\TensorLab\matrix.hpp(888,12): message : 可能是“mtx::matrix mtx::matrix::operator -(mtx::matrix &)”
+D:\code\cpp\TensorLab\ada.hpp(262,138): message : 尝试匹配参数列表“(mtx::matrix, mtx::matrix)”时
+D:\code\cpp\TensorLab\fcbat.hpp(36,121): error C2679: 二元“+=”: 没有找到接受“mtx::matrix”类型的右操作数的运算符(或没有可接受的转换)
+D:\code\cpp\TensorLab\matrix.hpp(889,10): message : 可能是“void mtx::matrix::operator +=(mtx::matrix &)”
+D:\code\cpp\TensorLab\fcbat.hpp(36,121): message : 尝试匹配参数列表“(mtx::matrix, mtx::matrix)”时
+D:\code\cpp\TensorLab\fcbat.hpp(128,73): warning C4244: “参数”: 从“uint64_t”转换到“double”，可能丢失数据
+D:\code\cpp\TensorLab\fcbat.hpp(136,75): warning C4244: “参数”: 从“uint64_t”转换到“double”，可能丢失数据
+D:\code\cpp\TensorLab\fcbat.hpp(140,171): error C2664: “mtx::matrix mtx::matrix::elem_cal_opt(mtx::matrix &,uint64_t)”: 无法将参数 1 从“mtx::matrix”转换为“mtx::matrix &”
+D:\code\cpp\TensorLab\fcbat.hpp(140,132): message : 非常量引用只能绑定到左值
+D:\code\cpp\TensorLab\matrix.hpp(827,12): message : 参见“mtx::matrix::elem_cal_opt”的声明
+D:\code\cpp\TensorLab\fcbat.hpp(157,165): error C2664: “mtx::matrix mtx::matrix::elem_cal_opt(mtx::matrix &,uint64_t)”: 无法将参数 1 从“mtx::matrix”转换为“mtx::matrix &”
+D:\code\cpp\TensorLab\fcbat.hpp(157,122): message : 非常量引用只能绑定到左值
+D:\code\cpp\TensorLab\matrix.hpp(827,12): message : 参见“mtx::matrix::elem_cal_opt”的声明
+D:\code\cpp\TensorLab\fcbat.hpp(157,235): error C2679: 二元“*”: 没有找到接受“mtx::matrix”类型的右操作数的运算符(或没有可接受的转换)
+D:\code\cpp\TensorLab\matrix.hpp(895,19): message : 可能是“mtx::matrix mtx::operator *(double,mtx::matrix &)”[通过使用参数相关的查找找到]
+D:\code\cpp\TensorLab\fcbat.hpp(157,235): message : 尝试匹配参数列表“(int, mtx::matrix)”时
+D:\code\cpp\TensorLab\fcbat.hpp(160,138): error C2679: 二元“*”: 没有找到接受“mtx::matrix”类型的右操作数的运算符(或没有可接受的转换)
+D:\code\cpp\TensorLab\matrix.hpp(895,19): message : 可能是“mtx::matrix mtx::operator *(double,mtx::matrix &)”[通过使用参数相关的查找找到]
+D:\code\cpp\TensorLab\fcbat.hpp(160,138): message : 尝试匹配参数列表“(int, mtx::matrix)”时
+D:\code\cpp\TensorLab\fcbat.hpp(162,104): error C2679: 二元“*”: 没有找到接受“mtx::matrix”类型的右操作数的运算符(或没有可接受的转换)
+D:\code\cpp\TensorLab\matrix.hpp(895,19): message : 可能是“mtx::matrix mtx::operator *(double,mtx::matrix &)”[通过使用参数相关的查找找到]
+D:\code\cpp\TensorLab\fcbat.hpp(162,104): message : 尝试匹配参数列表“(int, mtx::matrix)”时
+D:\code\cpp\TensorLab\fcbat.hpp(163,61): warning C4244: “参数”: 从“uint64_t”转换到“double”，可能丢失数据
+D:\code\cpp\TensorLab\fcbat.hpp(164,97): error C2679: 二元“+=”: 没有找到接受“mtx::matrix”类型的右操作数的运算符(或没有可接受的转换)
+D:\code\cpp\TensorLab\matrix.hpp(889,10): message : 可能是“void mtx::matrix::operator +=(mtx::matrix &)”
+D:\code\cpp\TensorLab\fcbat.hpp(164,97): message : 尝试匹配参数列表“(mtx::matrix, mtx::matrix)”时
+D:\code\cpp\TensorLab\fcbat.hpp(168,198): error C2679: 二元“*”: 没有找到接受“mtx::matrix”类型的右操作数的运算符(或没有可接受的转换)
+D:\code\cpp\TensorLab\matrix.hpp(895,19): message : 可能是“mtx::matrix mtx::operator *(double,mtx::matrix &)”[通过使用参数相关的查找找到]
+D:\code\cpp\TensorLab\fcbat.hpp(168,198): message : 尝试匹配参数列表“(double, mtx::matrix)”时
+D:\code\cpp\TensorLab\fcbat.hpp(168,268): warning C4244: “参数”: 从“uint64_t”转换到“double”，可能丢失数据
+D:\code\cpp\TensorLab\fcbat.hpp(197,139): error C2679: 二元“*”: 没有找到接受“mtx::matrix”类型的右操作数的运算符(或没有可接受的转换)
+D:\code\cpp\TensorLab\matrix.hpp(895,19): message : 可能是“mtx::matrix mtx::operator *(double,mtx::matrix &)”[通过使用参数相关的查找找到]
+D:\code\cpp\TensorLab\fcbat.hpp(197,139): message : 尝试匹配参数列表“(uint64_t, mtx::matrix)”时
+D:\code\cpp\TensorLab\fcbat.hpp(200,157): error C2664: “mtx::matrix mtx::matrix::elem_cal_opt(mtx::matrix &,uint64_t)”: 无法将参数 1 从“mtx::matrix”转换为“mtx::matrix &”
+D:\code\cpp\TensorLab\fcbat.hpp(200,118): message : 非常量引用只能绑定到左值
+D:\code\cpp\TensorLab\matrix.hpp(827,12): message : 参见“mtx::matrix::elem_cal_opt”的声明
+D:\code\cpp\TensorLab\fcbat.hpp(201,29): error C3536: “vecBarX”: 初始化之前无法使用
+D:\code\cpp\TensorLab\convbat.hpp(86,107): error C2679: 二元“+=”: 没有找到接受“mtx::matrix”类型的右操作数的运算符(或没有可接受的转换)
+D:\code\cpp\TensorLab\matrix.hpp(889,10): message : 可能是“void mtx::matrix::operator +=(mtx::matrix &)”
+D:\code\cpp\TensorLab\convbat.hpp(86,107): message : 尝试匹配参数列表“(mtx::matrix, mtx::matrix)”时
+D:\code\cpp\TensorLab\convbat.hpp(91,146): error C2440: “默认参数”: 无法从“bagrt::net_queue<bagrt::net_queue<mtx::matrix>>”转换为“bagrt::net_queue<bagrt::net_queue<mtx::matrix>> &”
+D:\code\cpp\TensorLab\convbat.hpp(91,144): message : 非常量引用只能绑定到左值
+D:\code\cpp\TensorLab\convbat.hpp(175,83): warning C4244: “参数”: 从“uint64_t”转换到“double”，可能丢失数据
+D:\code\cpp\TensorLab\convbat.hpp(182,85): warning C4244: “参数”: 从“uint64_t”转换到“double”，可能丢失数据
+D:\code\cpp\TensorLab\convbat.hpp(190,224): error C2664: “mtx::matrix mtx::matrix::elem_cal_opt(mtx::matrix &,uint64_t)”: 无法将参数 1 从“mtx::matrix”转换为“mtx::matrix &”
+D:\code\cpp\TensorLab\convbat.hpp(190,185): message : 非常量引用只能绑定到左值
+D:\code\cpp\TensorLab\matrix.hpp(827,12): message : 参见“mtx::matrix::elem_cal_opt”的声明
+D:\code\cpp\TensorLab\convbat.hpp(217,149): error C2664: “mtx::matrix mtx::matrix::elem_cal_opt(mtx::matrix &,uint64_t)”: 无法将参数 1 从“mtx::matrix”转换为“mtx::matrix &”
+D:\code\cpp\TensorLab\convbat.hpp(217,102): message : 非常量引用只能绑定到左值
+D:\code\cpp\TensorLab\matrix.hpp(827,12): message : 参见“mtx::matrix::elem_cal_opt”的声明
+D:\code\cpp\TensorLab\convbat.hpp(217,222): error C2679: 二元“*”: 没有找到接受“mtx::matrix”类型的右操作数的运算符(或没有可接受的转换)
+D:\code\cpp\TensorLab\matrix.hpp(895,19): message : 可能是“mtx::matrix mtx::operator *(double,mtx::matrix &)”[通过使用参数相关的查找找到]
+D:\code\cpp\TensorLab\convbat.hpp(217,222): message : 尝试匹配参数列表“(int, mtx::matrix)”时
+D:\code\cpp\TensorLab\convbat.hpp(218,102): error C3536: “vecSglGradLossToSigmaSqr”: 初始化之前无法使用
+D:\code\cpp\TensorLab\convbat.hpp(218,102): error C2679: 二元“+=”: 没有找到接受“int”类型的右操作数的运算符(或没有可接受的转换)
+D:\code\cpp\TensorLab\matrix.hpp(889,10): message : 可能是“void mtx::matrix::operator +=(mtx::matrix &)”
+D:\code\cpp\TensorLab\convbat.hpp(218,102): message : 尝试匹配参数列表“(_Ty, int)”时
+          with
+          [
+              _Ty=mtx::matrix
+          ]
+D:\code\cpp\TensorLab\convbat.hpp(229,113): error C2679: 二元“*”: 没有找到接受“mtx::matrix”类型的右操作数的运算符(或没有可接受的转换)
+D:\code\cpp\TensorLab\matrix.hpp(895,19): message : 可能是“mtx::matrix mtx::operator *(double,mtx::matrix &)”[通过使用参数相关的查找找到]
+D:\code\cpp\TensorLab\convbat.hpp(229,113): message : 尝试匹配参数列表“(int, mtx::matrix)”时
+D:\code\cpp\TensorLab\convbat.hpp(230,76): error C3536: “vecSglDistribute”: 初始化之前无法使用
+D:\code\cpp\TensorLab\convbat.hpp(230,76): error C2679: 二元“+=”: 没有找到接受“int”类型的右操作数的运算符(或没有可接受的转换)
+D:\code\cpp\TensorLab\matrix.hpp(889,10): message : 可能是“void mtx::matrix::operator +=(mtx::matrix &)”
+D:\code\cpp\TensorLab\convbat.hpp(230,76): message : 尝试匹配参数列表“(mtx::matrix, int)”时
+D:\code\cpp\TensorLab\convbat.hpp(232,87): error C2679: 二元“*”: 没有找到接受“mtx::matrix”类型的右操作数的运算符(或没有可接受的转换)
+D:\code\cpp\TensorLab\matrix.hpp(895,19): message : 可能是“mtx::matrix mtx::operator *(double,mtx::matrix &)”[通过使用参数相关的查找找到]
+D:\code\cpp\TensorLab\convbat.hpp(232,87): message : 尝试匹配参数列表“(int, mtx::matrix)”时
+D:\code\cpp\TensorLab\convbat.hpp(233,70): error C3536: “vecSglDistance”: 初始化之前无法使用
+D:\code\cpp\TensorLab\convbat.hpp(233,70): error C2679: 二元“+=”: 没有找到接受“int”类型的右操作数的运算符(或没有可接受的转换)
+D:\code\cpp\TensorLab\matrix.hpp(889,10): message : 可能是“void mtx::matrix::operator +=(mtx::matrix &)”
+D:\code\cpp\TensorLab\convbat.hpp(233,70): message : 尝试匹配参数列表“(mtx::matrix, int)”时
+D:\code\cpp\TensorLab\convbat.hpp(236,127): warning C4244: “参数”: 从“uint64_t”转换到“double”，可能丢失数据
+D:\code\cpp\TensorLab\convbat.hpp(236,165): error C2664: “mtx::matrix mtx::matrix::elem_cal_opt(mtx::matrix &,uint64_t)”: 无法将参数 1 从“mtx::matrix”转换为“mtx::matrix &”
+D:\code\cpp\TensorLab\convbat.hpp(236,113): message : 非常量引用只能绑定到左值
+D:\code\cpp\TensorLab\matrix.hpp(827,12): message : 参见“mtx::matrix::elem_cal_opt”的声明
+D:\code\cpp\TensorLab\convbat.hpp(243,274): error C2664: “mtx::matrix mtx::matrix::elem_cal_opt(mtx::matrix &,uint64_t)”: 无法将参数 1 从“mtx::matrix”转换为“mtx::matrix &”
+D:\code\cpp\TensorLab\convbat.hpp(243,227): message : 非常量引用只能绑定到左值
+D:\code\cpp\TensorLab\matrix.hpp(827,12): message : 参见“mtx::matrix::elem_cal_opt”的声明
+D:\code\cpp\TensorLab\convbat.hpp(243,328): warning C4244: “参数”: 从“uint64_t”转换到“double”，可能丢失数据
+D:\code\cpp\TensorLab\convbat.hpp(272,70): warning C4244: “参数”: 从“uint64_t”转换到“double”，可能丢失数据
+D:\code\cpp\TensorLab\convbat.hpp(273,114): warning C4244: “参数”: 从“uint64_t”转换到“double”，可能丢失数据
+D:\code\cpp\TensorLab\convbat.hpp(273,145): error C2679: 二元“*”: 没有找到接受“mtx::matrix”类型的右操作数的运算符(或没有可接受的转换)
+D:\code\cpp\TensorLab\matrix.hpp(895,19): message : 可能是“mtx::matrix mtx::operator *(double,mtx::matrix &)”[通过使用参数相关的查找找到]
+D:\code\cpp\TensorLab\convbat.hpp(273,145): message : 尝试匹配参数列表“(uint64_t, mtx::matrix)”时
+D:\code\cpp\TensorLab\convbat.hpp(278,170): error C2664: “mtx::matrix mtx::matrix::elem_cal_opt(mtx::matrix &,uint64_t)”: 无法将参数 1 从“mtx::matrix”转换为“mtx::matrix &”
+D:\code\cpp\TensorLab\convbat.hpp(278,131): message : 非常量引用只能绑定到左值
+D:\code\cpp\TensorLab\matrix.hpp(827,12): message : 参见“mtx::matrix::elem_cal_opt”的声明
+D:\code\cpp\TensorLab\convbat.hpp(279,66): error C3536: “vecBarX”: 初始化之前无法使用
+D:\code\cpp\TensorLab\convbat.hpp(322,82): error C2679: 二元“*”: 没有找到接受“_Ty”类型的右操作数的运算符(或没有可接受的转换)
+          with
+          [
+              _Ty=mtx::matrix
+          ]
+D:\code\cpp\TensorLab\matrix.hpp(895,19): message : 可能是“mtx::matrix mtx::operator *(double,mtx::matrix &)”[通过使用参数相关的查找找到]
+D:\code\cpp\TensorLab\convbat.hpp(322,82): message : 尝试匹配参数列表“(double, _Ty)”时
+          with
+          [
+              _Ty=mtx::matrix
+          ]
+D:\code\cpp\TensorLab\convbat.hpp(325,161): error C2679: 二元“+=”: 没有找到接受“mtx::matrix”类型的右操作数的运算符(或没有可接受的转换)
+D:\code\cpp\TensorLab\matrix.hpp(889,10): message : 可能是“void mtx::matrix::operator +=(mtx::matrix &)”
+D:\code\cpp\TensorLab\convbat.hpp(325,161): message : 尝试匹配参数列表“(mtx::matrix, mtx::matrix)”时
+D:\code\cpp\TensorLab\convbat.hpp(353,168): error C2664: “mtx::matrix mtx::matrix::elem_cal_opt(mtx::matrix &,uint64_t)”: 无法将参数 1 从“mtx::matrix”转换为“mtx::matrix &”
+D:\code\cpp\TensorLab\convbat.hpp(353,114): message : 非常量引用只能绑定到左值
+D:\code\cpp\TensorLab\matrix.hpp(827,12): message : 参见“mtx::matrix::elem_cal_opt”的声明
+D:\code\cpp\TensorLab\convbat.hpp(356,123): error C2679: 二元“+=”: 没有找到接受“mtx::matrix”类型的右操作数的运算符(或没有可接受的转换)
+D:\code\cpp\TensorLab\matrix.hpp(889,10): message : 可能是“void mtx::matrix::operator +=(mtx::matrix &)”
+D:\code\cpp\TensorLab\convbat.hpp(356,123): message : 尝试匹配参数列表“(mtx::matrix, mtx::matrix)”时
+D:\code\cpp\TensorLab\convbat.hpp(357,91): error C2679: 二元“*”: 没有找到接受“mtx::matrix”类型的右操作数的运算符(或没有可接受的转换)
+D:\code\cpp\TensorLab\matrix.hpp(895,19): message : 可能是“mtx::matrix mtx::operator *(double,mtx::matrix &)”[通过使用参数相关的查找找到]
+D:\code\cpp\TensorLab\convbat.hpp(357,91): message : 尝试匹配参数列表“(int, mtx::matrix)”时
+D:\code\cpp\TensorLab\convbat.hpp(357,188): error C2679: 二元“*”: 没有找到接受“mtx::matrix”类型的右操作数的运算符(或没有可接受的转换)
+D:\code\cpp\TensorLab\matrix.hpp(895,19): message : 可能是“mtx::matrix mtx::operator *(double,mtx::matrix &)”[通过使用参数相关的查找找到]
+D:\code\cpp\TensorLab\convbat.hpp(357,188): message : 尝试匹配参数列表“(double, mtx::matrix)”时
+D:\code\cpp\TensorLab\convbat.hpp(359,257): error C2664: “mtx::matrix mtx::matrix::elem_cal_opt(mtx::matrix &,uint64_t)”: 无法将参数 1 从“mtx::matrix”转换为“mtx::matrix &”
+D:\code\cpp\TensorLab\convbat.hpp(359,203): message : 非常量引用只能绑定到左值
+D:\code\cpp\TensorLab\matrix.hpp(827,12): message : 参见“mtx::matrix::elem_cal_opt”的声明
+D:\code\cpp\TensorLab\convbat.hpp(386,86): warning C4244: “参数”: 从“uint64_t”转换到“double”，可能丢失数据
+D:\code\cpp\TensorLab\convbat.hpp(387,90): warning C4244: “参数”: 从“uint64_t”转换到“double”，可能丢失数据
+D:\code\cpp\TensorLab\convbat.hpp(390,185): error C2664: “mtx::matrix mtx::matrix::elem_cal_opt(mtx::matrix &,uint64_t)”: 无法将参数 1 从“mtx::matrix”转换为“mtx::matrix &”
+D:\code\cpp\TensorLab\convbat.hpp(390,146): message : 非常量引用只能绑定到左值
+D:\code\cpp\TensorLab\matrix.hpp(827,12): message : 参见“mtx::matrix::elem_cal_opt”的声明
+D:\code\cpp\TensorLab\layer.hpp(90,65): error C2440: “默认参数”: 无法从“bagrt::net_queue<mtx::matrix>”转换为“bagrt::net_queue<mtx::matrix> &”
+D:\code\cpp\TensorLab\layer.hpp(90,65): message : 非常量引用只能绑定到左值
+D:\code\cpp\TensorLab\layer.hpp(113,74): error C2440: “默认参数”: 无法从“bagrt::net_queue<bagrt::net_queue<mtx::matrix>>”转换为“bagrt::net_queue<bagrt::net_queue<mtx::matrix>> &”
+D:\code\cpp\TensorLab\layer.hpp(113,74): message : 非常量引用只能绑定到左值
+D:\code\cpp\TensorLab\layer.hpp(138,38): error C2664: “void layer::Layer::operator =(layer::Layer &)”: 无法将参数 1 从“layer::LayerFC”转换为“layer::Layer &”
+D:\code\cpp\TensorLab\layer.hpp(138,66): message : 非常量引用只能绑定到左值
+D:\code\cpp\TensorLab\layer.hpp(16,10): message : 参见“layer::Layer::operator =”的声明
+D:\code\cpp\TensorLab\layer.hpp(187,40): error C2664: “void layer::Layer::operator =(layer::Layer &)”: 无法将参数 1 从“layer::LayerFCBN”转换为“layer::Layer &”
+D:\code\cpp\TensorLab\layer.hpp(187,68): message : 非常量引用只能绑定到左值
+D:\code\cpp\TensorLab\layer.hpp(16,10): message : 参见“layer::Layer::operator =”的声明
+D:\code\cpp\TensorLab\layer.hpp(220,170): warning C4244: “参数”: 从“uint64_t”转换到“double”，可能丢失数据
+D:\code\cpp\TensorLab\layer.hpp(250,40): error C2664: “void layer::Layer::operator =(layer::Layer &)”: 无法将参数 1 从“layer::LayerConv”转换为“layer::Layer &”
+D:\code\cpp\TensorLab\layer.hpp(250,68): message : 非常量引用只能绑定到左值
+D:\code\cpp\TensorLab\layer.hpp(16,10): message : 参见“layer::Layer::operator =”的声明
+D:\code\cpp\TensorLab\layer.hpp(304,46): error C2664: “void layer::Layer::operator =(layer::Layer &)”: 无法将参数 1 从“layer::LayerConvIm2Col”转换为“layer::Layer &”
+D:\code\cpp\TensorLab\layer.hpp(304,74): message : 非常量引用只能绑定到左值
+D:\code\cpp\TensorLab\layer.hpp(16,10): message : 参见“layer::Layer::operator =”的声明
+D:\code\cpp\TensorLab\layer.hpp(328,55): error C2665: “conv::ConvIm2Col”: 2 个重载中没有一个可以转换所有参数类型
+D:\code\cpp\TensorLab\convbat.hpp(68,11): message : 可能是“bagrt::net_queue<mtx::matrix> conv::ConvIm2Col(bagrt::net_queue<mtx::matrix> &,mtx::matrix &)”
+D:\code\cpp\TensorLab\conv.hpp(167,6): message : 或    “mtx::matrix conv::ConvIm2Col(mtx::matrix &,mtx::matrix &)”
+D:\code\cpp\TensorLab\layer.hpp(328,55): message : 尝试匹配参数列表“(mtx::matrix, mtx::matrix)”时
+D:\code\cpp\TensorLab\layer.hpp(358,42): error C2664: “void layer::Layer::operator =(layer::Layer &)”: 无法将参数 1 从“layer::LayerConvBN”转换为“layer::Layer &”
+D:\code\cpp\TensorLab\layer.hpp(358,70): message : 非常量引用只能绑定到左值
+D:\code\cpp\TensorLab\layer.hpp(16,10): message : 参见“layer::Layer::operator =”的声明
+D:\code\cpp\TensorLab\layer.hpp(425,48): error C2664: “void layer::Layer::operator =(layer::Layer &)”: 无法将参数 1 从“layer::LayerConvBNIm2Col”转换为“layer::Layer &”
+D:\code\cpp\TensorLab\layer.hpp(425,76): message : 非常量引用只能绑定到左值
+D:\code\cpp\TensorLab\layer.hpp(16,10): message : 参见“layer::Layer::operator =”的声明
+D:\code\cpp\TensorLab\layer.hpp(483,40): error C2664: “void layer::Layer::operator =(layer::Layer &)”: 无法将参数 1 从“layer::LayerPool”转换为“layer::Layer &”
+D:\code\cpp\TensorLab\layer.hpp(483,68): message : 非常量引用只能绑定到左值
+D:\code\cpp\TensorLab\layer.hpp(16,10): message : 参见“layer::Layer::operator =”的声明
+D:\code\cpp\TensorLab\layer.hpp(499,1): error C2664: “bagrt::net_queue<bagrt::net_queue<mtx::matrix>> conv::Pool(bagrt::net_queue<bagrt::net_queue<mtx::matrix>> &,uint64_t,bool,bagrt::net_queue<bagrt::net_queue<mtx::matrix>> &,uint64_t,uint64_t,uint64_t,uint64_t,uint64_t,uint64_t)”: 无法将参数 4 从“bagrt::net_queue<bagrt::net_queue<mtx::matrix>>”转换为“bagrt::net_queue<bagrt::net_queue<mtx::matrix>> &”
+D:\code\cpp\TensorLab\layer.hpp(499,71): message : 非常量引用只能绑定到左值
+D:\code\cpp\TensorLab\convbat.hpp(91,14): message : 参见“conv::Pool”的声明
+D:\code\cpp\TensorLab\layer.hpp(522,46): error C2664: “void layer::Layer::operator =(layer::Layer &)”: 无法将参数 1 从“layer::LayerPoolIm2Col”转换为“layer::Layer &”
+D:\code\cpp\TensorLab\layer.hpp(522,74): message : 非常量引用只能绑定到左值
+D:\code\cpp\TensorLab\layer.hpp(16,10): message : 参见“layer::Layer::operator =”的声明
+D:\code\cpp\TensorLab\layer.hpp(536,1): error C2664: “mtx::matrix conv::PoolMaxAvgIm2Col(uint64_t,mtx::matrix &,bagrt::net_queue<bagrt::net_list<mtx::mtx_pos>> &,uint64_t &,uint64_t,uint64_t,uint64_t,uint64_t,uint64_t,uint64_t,uint64_t,uint64_t,uint64_t,uint64_t,uint64_t,uint64_t,uint64_t)”: 无法将参数 3 从“bagrt::net_queue<bagrt::net_list<mtx::mtx_pos>>”转换为“bagrt::net_queue<bagrt::net_list<mtx::mtx_pos>> &”
+D:\code\cpp\TensorLab\layer.hpp(536,99): message : 非常量引用只能绑定到左值
+D:\code\cpp\TensorLab\conv.hpp(280,6): message : 参见“conv::PoolMaxAvgIm2Col”的声明
+D:\code\cpp\TensorLab\neunet.hpp(359,1): warning C4244: “+=”: 从“uint64_t”转换到“int”，可能丢失数据
+D:\code\cpp\TensorLab\main.cpp(112,1): error C2664: “mtx::matrix layer::LayerFCBN::Deduce(mtx::matrix &,std::shared_ptr<fc::FCBN> &,uint64_t,uint64_t)”: 无法将参数 2 从“std::shared_ptr<fc::FCBN>”转换为“std::shared_ptr<fc::FCBN> &”
+D:\code\cpp\TensorLab\main.cpp(112,125): message : 非常量引用只能绑定到左值
+D:\code\cpp\TensorLab\layer.hpp(220,10): message : 参见“layer::LayerFCBN::Deduce”的声明
+D:\code\cpp\TensorLab\main.cpp(113,1): error C2664: “mtx::matrix layer::LayerFCBN::Deduce(mtx::matrix &,std::shared_ptr<fc::FCBN> &,uint64_t,uint64_t)”: 无法将参数 2 从“std::shared_ptr<fc::FCBN>”转换为“std::shared_ptr<fc::FCBN> &”
+D:\code\cpp\TensorLab\main.cpp(113,124): message : 非常量引用只能绑定到左值
+D:\code\cpp\TensorLab\layer.hpp(220,10): message : 参见“layer::LayerFCBN::Deduce”的声明
+D:\code\cpp\TensorLab\main.cpp(120,1): error C2664: “mtx::matrix layer::LayerConvBNIm2Col::Deduce(mtx::matrix &,std::shared_ptr<conv::ConvBNIm2Col> &,uint64_t,uint64_t)”: 无法将参数 2 从“std::shared_ptr<conv::ConvBNIm2Col>”转换为“std::shared_ptr<conv::ConvBNIm2Col> &”
+D:\code\cpp\TensorLab\main.cpp(120,143): message : 非常量引用只能绑定到左值
+D:\code\cpp\TensorLab\layer.hpp(462,10): message : 参见“layer::LayerConvBNIm2Col::Deduce”的声明
+D:\code\cpp\TensorLab\main.cpp(121,1): error C2664: “mtx::matrix layer::LayerConvBNIm2Col::Deduce(mtx::matrix &,std::shared_ptr<conv::ConvBNIm2Col> &,uint64_t,uint64_t)”: 无法将参数 2 从“std::shared_ptr<conv::ConvBNIm2Col>”转换为“std::shared_ptr<conv::ConvBNIm2Col> &”
+D:\code\cpp\TensorLab\main.cpp(121,142): message : 非常量引用只能绑定到左值
+D:\code\cpp\TensorLab\layer.hpp(462,10): message : 参见“layer::LayerConvBNIm2Col::Deduce”的声明
+D:\code\cpp\TensorLab\main.cpp(230,1): warning C4244: “+=”: 从“uint64_t”转换到“int”，可能丢失数据
