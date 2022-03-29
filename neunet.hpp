@@ -230,11 +230,13 @@ private:
             else return false;
         case FC:
             setGradVec = INSTANCE_DERIVE<LAYER_FC>(lsLayer[i]) -> BackProp(setGradVec);
-            if(setGradVec.size() && INSTANCE_DERIVE<LAYER_FC>(lsLayer[i])->UpdatePara()) break;
+            INSTANCE_DERIVE<LAYER_FC>(lsLayer[i])->UpdatePara();
+            if(setGradVec.size()) break;
             else return false;
         case FC_BN:
             setGradVec = INSTANCE_DERIVE<LAYER_FC_BN>(lsLayer[i]) -> BackProp(setGradVec);
-            if(setGradVec.size() && INSTANCE_DERIVE<LAYER_FC_BN>(lsLayer[i])->UpdatePara())
+            INSTANCE_DERIVE<LAYER_FC_BN>(lsLayer[i])->UpdatePara();
+            if(setGradVec.size())
             {
                 if(iBatchIdx)
                 {
@@ -247,11 +249,13 @@ private:
             else return false;
         case CONV:
             setGradFt = INSTANCE_DERIVE<LAYER_CONV>(lsLayer[i]) -> BackProp(setGradFt);
-            if(setGradFt.size() && INSTANCE_DERIVE<LAYER_CONV>(lsLayer[i])->UpdatePara()) break;
+            INSTANCE_DERIVE<LAYER_CONV>(lsLayer[i])->UpdatePara();
+            if(setGradFt.size()) break;
             else return false;
         case CONV_BN:
             setGradFt = INSTANCE_DERIVE<LAYER_CONV_BN>(lsLayer[i]) -> BackProp(setGradFt);
-            if(setGradFt.size() && INSTANCE_DERIVE<LAYER_CONV_BN>(lsLayer[i])->UpdatePara())
+            INSTANCE_DERIVE<LAYER_CONV_BN>(lsLayer[i])->UpdatePara();
+            if(setGradFt.size())
             {
                 if(iBatchIdx) for(auto j=0; j<setGradFt[IDX_ZERO].size(); ++j)
                 {
@@ -370,6 +374,263 @@ public:
         }
         else return false;    
     }
+};
+
+class NetMNISTIm2Col : public neunet::NetBase
+{
+protected:
+    set<vect> ForwProp(uint64_t iInputLnCnt)
+    {
+        set<vect> setOutput = std::move(setCurrBatchInput);
+        for(auto i=0ui64; i<lsLayer.size(); ++i)
+        {
+            switch (lsLayer[i] -> iLayerType)
+            {
+            case ACT_VT:
+                setOutput = INSTANCE_DERIVE<LAYER_ACT_VT>(lsLayer[i]) -> ForwProp(setOutput);
+                break;
+            case FC:
+                setOutput = INSTANCE_DERIVE<LAYER_FC>(lsLayer[i]) -> ForwProp(setOutput);
+                break;
+            case FC_BN:
+                setOutput = INSTANCE_DERIVE<LAYER_FC_BN>(lsLayer[i]) -> ForwProp(setOutput);
+                break;
+            case CONV_IM2COL:
+                setOutput = INSTANCE_DERIVE<LAYER_CONV_IM2COL>(lsLayer[i]) -> ForwProp(setOutput, iInputLnCnt);
+                iInputLnCnt = INSTANCE_DERIVE<LAYER_CONV_IM2COL>(lsLayer[i]) -> iLayerOutputLnCnt;
+                break;
+            case CONV_BN_IM2COL:
+                setOutput = INSTANCE_DERIVE<LAYER_CONV_BN_IM2COL>(lsLayer[i]) -> ForwProp(setOutput);
+                break;
+            case POOL_IM2COL:
+                setOutput = INSTANCE_DERIVE<LAYER_POOL_IM2COL>(lsLayer[i]) -> ForwProp(setOutput, iInputLnCnt);
+                iInputLnCnt = INSTANCE_DERIVE<LAYER_POOL_IM2COL>(lsLayer[i]) -> iLayerOutputLnCnt;
+                break;
+            case TRANS_IM2COL:
+                if(INSTANCE_DERIVE<LAYER_TRANS_IM2COL>(lsLayer[i]) -> bFeatToVec) setOutput = INSTANCE_DERIVE<LAYER_TRANS_IM2COL>(lsLayer[i]) -> ForwProp(setOutput, iInputLnCnt);
+                else setOutput = INSTANCE_DERIVE<LAYER_TRANS_IM2COL>(lsLayer[i]) -> ForwProp(setOutput);
+                break;
+            default: return blank_vect_seq;
+            }
+            if(!setOutput.size())  return blank_vect_seq;
+        }
+        return setOutput;
+    }
+    bool BackProp(set<vect> &setOutput, uint64_t iCurrBatchIdx = 0)
+    {
+        set<vect> setGrad = std::move(setOutput);
+        for(int j=lsLayer.size()-1; j>=0; --j)
+        {
+            uint64_t i = j;
+            switch (lsLayer[i] -> iLayerType)
+            {
+            case ACT_VT:
+                setGrad = INSTANCE_DERIVE<LAYER_ACT_VT>(lsLayer[i]) -> BackProp(setGrad, setCurrBatchOrigin);
+                break;
+            case FC:
+                setGrad = INSTANCE_DERIVE<LAYER_FC>(lsLayer[i]) -> BackProp(setGrad);
+                INSTANCE_DERIVE<LAYER_FC>(lsLayer[i]) -> UpdatePara();
+                break;
+            case FC_BN:
+                setGrad = INSTANCE_DERIVE<LAYER_FC_BN>(lsLayer[i]) -> BackProp(setGrad);
+                INSTANCE_DERIVE<LAYER_FC_BN>(lsLayer[i]) -> UpdatePara();
+                if(iCurrBatchIdx)
+                {
+                    INSTANCE_DERIVE<BN_FC>(mapBNData[i])->vecMiuBeta += INSTANCE_DERIVE<LAYER_FC_BN>(lsLayer[i])->BNData.vecMiuBeta;
+                    INSTANCE_DERIVE<BN_FC>(mapBNData[i])->vecSigmaSqr += INSTANCE_DERIVE<LAYER_FC_BN>(lsLayer[i])->BNData.vecSigmaSqr;
+                }
+                else mapBNData[i] = std::make_shared<BN_FC>(std::move(INSTANCE_DERIVE<LAYER_FC_BN>(lsLayer[i])->BNData));
+                break;
+            case CONV_IM2COL:
+                setGrad = INSTANCE_DERIVE<LAYER_CONV_IM2COL>(lsLayer[i]) -> BackProp(setGrad);
+                INSTANCE_DERIVE<LAYER_CONV_IM2COL>(lsLayer[i])->UpdatePara();
+                break;
+            case CONV_BN_IM2COL:
+                setGrad = INSTANCE_DERIVE<LAYER_CONV_BN_IM2COL>(lsLayer[i]) -> BackProp(setGrad);
+                INSTANCE_DERIVE<LAYER_CONV_BN_IM2COL>(lsLayer[i]) -> UpdatePara();
+                if(iCurrBatchIdx)
+                {
+                    INSTANCE_DERIVE<BN_CONV_IM2COL>(mapBNData[i])->vecIm2ColMuBeta += INSTANCE_DERIVE<LAYER_CONV_BN_IM2COL>(lsLayer[i])->BNData.vecIm2ColMuBeta;
+                    INSTANCE_DERIVE<BN_CONV_IM2COL>(mapBNData[i])->vecIm2ColSigmaSqr += INSTANCE_DERIVE<LAYER_CONV_BN_IM2COL>(lsLayer[i])->BNData.vecIm2ColSigmaSqr;
+                }
+                else mapBNData[i] = std::make_shared<BN_CONV_IM2COL>(std::move(INSTANCE_DERIVE<LAYER_CONV_BN_IM2COL>(lsLayer[i])->BNData));
+                break;
+            case POOL_IM2COL:
+                setGrad = INSTANCE_DERIVE<LAYER_POOL_IM2COL>(lsLayer[i]) -> BackProp(setGrad);
+                break;
+            case TRANS_IM2COL:
+                setGrad = INSTANCE_DERIVE<LAYER_TRANS_IM2COL>(lsLayer[i]) -> BackProp(setGrad);
+                break;
+            default: return false;
+            }
+            if(!setGrad.size()) return false;
+        }
+        return true;
+    }
+    set<vect> Deduce(set<vect> &setInput, uint64_t iInputLnCnt)
+    {
+        set<vect> setOutput(setInput.size());
+        for(auto i=0ui64; i<setInput.size(); ++i) 
+        {
+            setOutput[i] = setInput[i];
+            for(auto j=0; j<lsLayer.size(); ++j) switch (lsLayer[i] -> iLayerType)
+            {
+            case ACT_VT:
+                setOutput[i] = INSTANCE_DERIVE<LAYER_ACT_VT>(lsLayer[i]) -> Deduce(setOutput[i]);
+                break;
+            case FC:
+                setOutput[i] = INSTANCE_DERIVE<LAYER_FC>(lsLayer[i]) -> Deduce(setOutput[i]);
+                break;
+            case FC_BN:
+                if(i) setOutput[i] = INSTANCE_DERIVE<LAYER_FC_BN>(lsLayer[i]) -> Deduce(setOutput[i], INSTANCE_DERIVE<BN_FC>(mapBNData[i]));
+                else setOutput[i] = INSTANCE_DERIVE<LAYER_FC_BN>(lsLayer[i]) -> Deduce(setOutput[i], INSTANCE_DERIVE<BN_FC>(mapBNData[i]), iNetMiniBatch, iNetBatchCnt);
+                break;
+            case CONV_IM2COL:
+                setOutput[i] = INSTANCE_DERIVE<LAYER_CONV_IM2COL>(lsLayer[i]) -> Deduce(setOutput[i], iInputLnCnt);
+                iInputLnCnt = INSTANCE_DERIVE<LAYER_CONV_IM2COL>(lsLayer[i]) -> iLayerOutputLnCnt;
+                break;
+            case CONV_BN_IM2COL:
+                if(i) setOutput[i] = INSTANCE_DERIVE<LAYER_CONV_BN_IM2COL>(lsLayer[i]) -> Deduce(setOutput[i], INSTANCE_DERIVE<BN_CONV_IM2COL>(mapBNData[i]));
+                else setOutput[i] = INSTANCE_DERIVE<LAYER_CONV_BN_IM2COL>(lsLayer[i]) -> Deduce(setOutput[i], INSTANCE_DERIVE<BN_CONV_IM2COL>(mapBNData[i]), iNetMiniBatch, iNetBatchCnt);
+                break;
+            case POOL_IM2COL:
+                setOutput[i] = INSTANCE_DERIVE<LAYER_POOL_IM2COL>(lsLayer[i]) -> Deduce(setOutput[i], iInputLnCnt);
+                iInputLnCnt = INSTANCE_DERIVE<LAYER_POOL_IM2COL>(lsLayer[i]) -> iLayerOutputLnCnt;
+                break;
+            case TRANS_IM2COL:
+                setOutput[i] = INSTANCE_DERIVE<LAYER_TRANS_IM2COL>(lsLayer[i]) -> Deduce(setOutput[i]);
+                break;
+            default: return blank_vect_seq;
+            }
+            if(!setOutput[i].is_matrix()) return blank_vect_seq;
+        }
+        return setOutput;
+    }
+    void InitCurrBatchTrainSet(set<vect> &setInput, set<vect> &setOrigin, uint64_t iCurrBatchIdx)
+    {
+        auto setCurrBatchDatasetIdx = CurrBatchDatasetIdx(iCurrBatchIdx);
+        if(setCurrBatchDatasetIdx.size())
+        {
+            setCurrBatchInput = setInput.sub_queue(setCurrBatchDatasetIdx);
+            setCurrBatchOrigin = setOrigin.sub_queue(setCurrBatchDatasetIdx);
+        }
+        else
+        {
+            setCurrBatchInput = setInput;
+            setCurrBatchOrigin = setOrigin;
+        }
+    }
+    uint64_t CurrBatchSize(uint64_t iCurrBatchIdx)
+    {
+        if(iCurrBatchIdx+1==iNetBatchCnt && iNetRearBatchSize) return iNetRearBatchSize;
+        else return iNetMiniBatch;
+    }
+    uint64_t IterPass(set<vect> &setCurrOutput)
+    {
+        auto iPassCnt = 0;
+        for(auto i=0; i<setCurrBatchOrigin.size(); i++) for(auto j=0; j<setCurrBatchOrigin[i].LN_CNT; ++j)
+            if(setCurrBatchOrigin[i].pos_idx(j) && setCurrOutput[i].pos_idx(j) > (1-dAcc))
+            {
+                iPassCnt ++;
+                break;
+            }
+        return iPassCnt;
+    }
+    void IterShow(set<vect> &setCurrOutput)
+    {
+        for(auto i=0; i<setCurrBatchOrigin.size(); i++)
+        {
+            std::cout << " [BarY]\t\t[Label]\t[Y]" << std::endl;
+            for(auto j=0; j<setCurrOutput[i].LN_CNT; ++j)
+            {
+                if(setCurrBatchOrigin[i].pos_idx(j)) std::cout << '>';
+                else std::cout << ' ';
+                std::cout << setCurrOutput[i].pos_idx(j) << '\t';
+                std::cout << j << '\t';
+                std::cout << setCurrBatchOrigin[i].pos_idx(j) << std::endl;
+            }
+            std::cout << std::endl;
+        }
+    }
+    void ValueAssign(NetMNISTIm2Col &netSrc) { bMonitorFlag = netSrc.bMonitorFlag; }
+
+    NET_MAP<uint64_t, BN_PTR> mapBNData;
+    set<vect> setCurrBatchInput, setCurrBatchOrigin;
+    bool bMonitorFlag = false;
+public:
+    void ValueCopy(NetMNISTIm2Col &netSrc)
+    {
+        NetBase::ValueCopy(netSrc);
+        ValueAssign(netSrc);
+        mapBNData = netSrc.mapBNData;
+        setCurrBatchInput = netSrc.setCurrBatchInput;
+        setCurrBatchOrigin = netSrc.setCurrBatchOrigin;
+    }
+    void ValueMove(NetMNISTIm2Col &&netSrc)
+    {
+        NetBase::ValueMove(std::move(netSrc));
+        ValueAssign(netSrc);
+        mapBNData = std::move(netSrc.mapBNData);
+        setCurrBatchInput = std::move(netSrc.setCurrBatchInput);
+        setCurrBatchOrigin = std::move(netSrc.setCurrBatchOrigin);
+    }
+    NetMNISTIm2Col(NetMNISTIm2Col &netSrc) : NetBase(netSrc) { ValueCopy(netSrc); }
+    NetMNISTIm2Col(NetMNISTIm2Col &&netSrc) : NetBase(std::move(netSrc)) { ValueMove(std::move(netSrc)); }
+    void operator=(NetMNISTIm2Col &netSrc) { NetBase::operator=(netSrc); ValueCopy(netSrc); }
+    void operator=(NetMNISTIm2Col &&netSrc) { NetBase::operator=(std::move(netSrc)); ValueMove(std::move(netSrc)); }
+
+    NetMNISTIm2Col(double dNetAcc = 1e-5, uint64_t iMinibatch = 0, bool bMonitor = true) : NetBase(dNetAcc, iMinibatch), bMonitorFlag(bMonitor) {}
+    template<typename LayerType, typename ... Args,  typename = enable_if_t<is_base_of_v<Layer, LayerType>>> bool AddLayer(Args&& ... pacArgs)
+    {
+        auto iCurrLayerSize = lsLayer.size();
+        auto bAddFlag = lsLayer.emplace_back(std::make_shared<LayerType>(pacArgs...));
+        if(lsLayer[iCurrLayerSize]->iLayerType==FC_BN || lsLayer[iCurrLayerSize]->iLayerType==CONV_BN_IM2COL) mapBNData.insert(iCurrLayerSize, std::make_shared<BN>());
+        return bAddFlag;
+    }
+    bool Run(dataset::MNIST &mnistTrainSet/*, dataset::MNIST &mnistTestSet*/)
+    {
+        if(mnistTrainSet.valid())
+        {
+            InitDatasetIdx(mnistTrainSet.size());
+            auto setOrigin = mnistTrainSet.orgn();
+            auto iEpoch = 0, iTestPassCnt = 0;
+            do
+            {
+                ShuffleIdx();
+                iTestPassCnt = 0;
+                for(auto i=0; i<iNetBatchCnt; ++i)
+                {
+                    InitCurrBatchTrainSet(mnistTrainSet.elem_im2col, setOrigin, i);
+                    CLOCK_BEGIN
+                    auto setCurrOutput = ForwProp(mnistTrainSet.ln_cnt());
+                    if(setCurrOutput.size())
+                    {
+                        auto iSglTestPassCnt = IterPass(setCurrOutput);
+                        if(bMonitorFlag) IterShow(setCurrOutput);
+                        else std::printf("\r[Epoch][%d][Batch Index][%d/%d][Accuracy][%.2f]", iEpoch+1, i+1, (int)iNetBatchCnt, iSglTestPassCnt*1.0/setCurrOutput.size());
+                        if(iSglTestPassCnt != setCurrOutput.size()) if(!BackProp(setCurrOutput, i)) return false;
+                        CLOCK_END
+                        std::cout << "[Duration][" << CLOCK_DURATION << ']';
+                        iTestPassCnt += iSglTestPassCnt;
+                    }
+                    else return false;
+                }
+                std::printf("\r[Epoch][%d][Accuracy][%lf]\n", iEpoch+1, iTestPassCnt*1.0/setOrigin.size());
+                ++ iEpoch;
+            } while (iTestPassCnt < mnistTrainSet.size());
+            return true;
+        }
+        else return false;
+    }
+
+    void Reset()
+    {
+        NetBase::Reset();
+        mapBNData.reset();
+        setCurrBatchInput.reset();
+        setCurrBatchOrigin.reset();
+    }
+    ~NetMNISTIm2Col() { Reset(); }
 };
 
 NEUNET_END

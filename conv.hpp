@@ -145,10 +145,9 @@ vect Im2ColInputTransform(vect &vecInput, uint64_t &iOutputLnCnt, uint64_t iInpu
 // [iInputLnCnt][iInputColCnt] could be blank for gradient calculation otherwise should be relay with [iOutputLnCnt]
 vect Im2ColInputTransform(vect &vecIm2ColInput, uint64_t iFilterLnCnt, uint64_t iFilterColCnt, uint64_t iLnStride, uint64_t iColStride, uint64_t iOutputLnCnt, uint64_t iInputLnCnt, uint64_t iInputColCnt, bool bGradFlag, uint64_t iLnDilation, uint64_t iColDilation, uint64_t iInputPadTop, uint64_t iInputPadRight, uint64_t iInputPadBottom, uint64_t iInputPadLeft, uint64_t iLnDistance, uint64_t iColDistance)
 {
-    uint64_t iFilterElemCnt = iFilterLnCnt * iFilterColCnt, iOutputColCnt = 0;
+    uint64_t iFilterElemCnt = iFilterLnCnt * iFilterColCnt, iOutputColCnt = vecIm2ColInput.LN_CNT / iOutputLnCnt;
     if(bGradFlag)
     {
-        iOutputColCnt = vecIm2ColInput.LN_CNT / iOutputLnCnt;
         iInputLnCnt = SAMP_INPUT_DIR_CNT(iOutputLnCnt, iFilterLnCnt, iLnStride, iLnDilation);
         iInputColCnt = SAMP_INPUT_DIR_CNT(iOutputColCnt, iFilterColCnt, iColStride, iColDilation);
     }
@@ -283,7 +282,6 @@ vect PoolMaxAvgIm2Col(uint64_t iPoolType, vect &vecInput, set<bagrt::net_list<mt
     auto iOutputColCnt = vecIm2ColPrepInput.LN_CNT / iOutputLnCnt,
         iFilterElemCnt = iFilterLnCnt * iFilterColCnt;
     vect vecAns(vecIm2ColPrepInput.LN_CNT, vecInput.COL_CNT);
-    setIm2ColInputPoolExtmPosList.init(vecAns.ELEM_CNT);
     for(auto i=0; i<vecAns.ELEM_CNT; ++i)
     {
         auto posCurrDim = mtx::mtx_elem_pos(i, vecAns.COL_CNT);
@@ -295,6 +293,7 @@ vect PoolMaxAvgIm2Col(uint64_t iPoolType, vect &vecInput, set<bagrt::net_list<mt
         }
         else if(iPoolType == POOL_MAX_IM2COL)
         {
+            if(!setIm2ColInputPoolExtmPosList.size()) setIm2ColInputPoolExtmPosList.init(vecAns.ELEM_CNT);
             auto iExtmTemp = vecIm2ColPrepInput.extremum(posCurrDim.ln,posCurrDim.ln,iCurrChannBeginCol,iCurrChannBeginCol+iFilterElemCnt-1);
             iCurrVal = iExtmTemp.val;
             setIm2ColInputPoolExtmPosList[i] = std::move(iExtmTemp.pos_list);

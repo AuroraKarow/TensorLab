@@ -12,8 +12,5 @@
 #define SAMP_VALID          samp_valid
 
 #define DIV_DOM             divisor_dominate
-#define ACT                 activate
-#define DV                  derivative
-#define MRG_CHANN           merge_channel
 
 #define INSTANCE_DERIVE     std::dynamic_pointer_cast

@@ -14,10 +14,9 @@ tensor InitKernel(uint64_t iAmt, uint64_t iChannCnt, uint64_t iLnCnt, uint64_t i
 set<feature> Conv(set<feature> &setInput, tensor &tenKernel, uint64_t iLnStride, uint64_t iColStride, uint64_t iLnDilation = 0, uint64_t iColDilation = 0, uint64_t iInputPadTop = 0, uint64_t iInputPadRight = 0, uint64_t iInputPadBottom = 0, uint64_t iInputPadLeft = 0, uint64_t iLnDistance = 0, uint64_t iColDistance = 0)
 {
     set<feature> setOutput(setInput.size());
-    thrd_pool::thread_pool t_p;
     for(auto i=0; i<setInput.size(); ++i)
     {
-        setOutput[i] = t_p.add_task([&]{return Conv(setInput[i], tenKernel, iLnStride, iColStride, iLnDilation, iColDilation, iInputPadTop, iInputPadRight, iInputPadBottom, iInputPadLeft, iLnDistance, iColDistance);}).get();
+        setOutput[i] = Conv(setInput[i], tenKernel, iLnStride, iColStride, iLnDilation, iColDilation, iInputPadTop, iInputPadRight, iInputPadBottom, iInputPadLeft, iLnDistance, iColDistance);
         if(!setOutput[i].size()) return blank_ft_seq;
     }
     return setOutput;
@@ -39,10 +38,9 @@ tensor GradLossToKernel(set<feature> &setGradLossToOutput, set<feature> &setInpu
 set<feature> GradLossToInput(set<feature> &setGradLossToOutput, tensor &tenKernel, uint64_t iLnStride, uint64_t iColStride, uint64_t iLnDilation = 0, uint64_t iColDilation = 0, uint64_t iInputPadTop = 0, uint64_t iInputPadRight = 0, uint64_t iInputPadBottom = 0, uint64_t iInputPadLeft = 0, uint64_t iLnDistance = 0, uint64_t iColDistance = 0)
 {
     set<feature> setGradLossToInput(setGradLossToOutput.size());
-    thrd_pool::thread_pool t_p;
     for(auto i=0; i<setGradLossToOutput.size(); ++i)
     {
-        setGradLossToInput[i] = t_p.add_task([&]{ return GradLossToInput(setGradLossToOutput[i], tenKernel, iLnStride, iColStride, iLnDilation, iColDilation, iInputPadTop, iInputPadRight, iInputPadBottom, iInputPadLeft, iLnDistance, iColDistance); }).get();
+        setGradLossToInput[i] = GradLossToInput(setGradLossToOutput[i], tenKernel, iLnStride, iColStride, iLnDilation, iColDilation, iInputPadTop, iInputPadRight, iInputPadBottom, iInputPadLeft, iLnDistance, iColDistance);
         if(!setGradLossToInput[i].size()) return blank_ft_seq;
     }
     return setGradLossToInput;
@@ -91,11 +89,10 @@ vect GradLossToKernelIm2Col(set<vect> &setGradLossToOutput, set<vect> &vecIm2Col
 set<feature> Pool(set<feature> &vecInput, uint64_t iPoolType = POOL_DOWN_MAX, bool bDownSamp = true, set<feature> &setTraceInput = set<feature>(), uint64_t iFilterLnCnt = 0, uint64_t iFilterColCnt = 0, uint64_t iLnStride = 0, uint64_t iColStride = 0, uint64_t iLnDilation = 0, uint64_t iColDilation = 0)
 {
     set<feature> setOutput(vecInput.size());
-    thrd_pool::thread_pool t_p;
     for(auto i=0; i<vecInput.size(); ++i)
     {
-        if(bDownSamp) setOutput[i] = t_p.add_task([&]{ return PoolDown(vecInput[i], iPoolType, iFilterLnCnt, iFilterColCnt, iLnStride, iColStride, iLnDilation, iColDilation); }).get();
-        else setOutput[i] = t_p.add_task([&]{ return PoolUp(vecInput[i], iPoolType, setTraceInput[i], iFilterLnCnt, iFilterColCnt, iLnStride, iColStride, iLnDilation, iColDilation); }).get();
+        if(bDownSamp) setOutput[i] = PoolDown(vecInput[i], iPoolType, iFilterLnCnt, iFilterColCnt, iLnStride, iColStride, iLnDilation, iColDilation);
+        else setOutput[i] = PoolUp(vecInput[i], iPoolType, setTraceInput[i], iFilterLnCnt, iFilterColCnt, iLnStride, iColStride, iLnDilation, iColDilation);
         if(!setOutput[i].size()) return blank_ft_seq;
     }
     return setOutput;

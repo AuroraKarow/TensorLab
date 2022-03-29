@@ -161,6 +161,9 @@
       <ForceConformanceInForLoopScope>false</ForceConformanceInForLoopScope>
       <BufferSecurityCheck>true</BufferSecurityCheck>
       <OpenMPSupport>true</OpenMPSupport>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <EnableParallelCodeGeneration>true</EnableParallelCodeGeneration>
+      <AdditionalOptions>/Qpar-report:2 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -182,6 +185,7 @@
     <ClInclude Include="..\..\funclib.hpp" />
     <ClInclude Include="..\..\Iomp.h" />
     <ClInclude Include="..\..\layer.hpp" />
+    <ClInclude Include="..\..\lock.hpp" />
     <ClInclude Include="..\..\matrix.hpp" />
     <ClInclude Include="..\..\neunet.hpp" />
     <ClInclude Include="..\..\thread_pool.hpp" />
@@ -235,6 +239,9 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\.gitignore" />
+    <ClInclude Include="..\..\lock">
+      <FileType>Document</FileType>
+    </ClInclude>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

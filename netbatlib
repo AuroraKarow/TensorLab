@@ -1,5 +1,4 @@
 #include "netbaslib"
-#include "thread_pool"
 
 #define ADA_BEGIN       namespace ada {
 #define ADA_END         }

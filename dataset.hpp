@@ -9,6 +9,8 @@ public:
     set<vect> elem_im2col;
     // Element index list of data, number sequence -> label value
     set<uint64_t> elem_lbl;
+    set<vect> origin, curr_input_im2col, curr_orgn;
+    set<feature> curr_input;
 private:
     /* Magic number */
     // Data
@@ -123,12 +125,27 @@ private:
         }
         return false;
     }
+    set<uint64_t> curr_input_idx_set(uint64_t curr_batch_idx)
+    {
+        if(idx_set.size())
+        {
+            auto curr_batch_size = set_batch_size;
+            if(set_batch_rear_size && curr_batch_idx+1==set_batch_cnt) curr_batch_size = set_batch_rear_size;
+            // Dataset shuffled indexes for current batch
+            return idx_set.sub_queue(mtx::mtx_elem_pos(curr_batch_idx, 0, set_batch_size), mtx::mtx_elem_pos(curr_batch_idx, curr_batch_size-1, set_batch_size));
+        }
+        else return set<uint64_t>::blank_queue();
+    }
     // Origin vector dimension
     static const uint64_t ORGN_SIZE = 10;
     // Bool element flag
     const bool is_bool, im2col_flag;
     // Check collection
     bool check = true;
+    // Set index
+    set<uint64_t> idx_set;
+    // Batch info
+    uint64_t set_batch_size = 0, set_batch_cnt = 0, set_batch_rear_size = 0;
 public:
     /* Function */
     /**
@@ -141,6 +158,37 @@ public:
         elem.reset();
         elem_im2col.reset();
         elem_lbl.reset();
+    }
+    void init_batch(uint64_t _batch_size = 0)
+    {
+        if(!_batch_size) set_batch_size = size();
+        set_batch_cnt = size() / set_batch_size;
+                // Last bacth's size
+        set_batch_rear_size = size() % set_batch_size;
+        if(set_batch_rear_size) ++ set_batch_cnt;
+        if(set_batch_size != size())
+        {
+            idx_set.init(size());
+            for(auto i=0; i<idx_set.size(); ++i) idx_set[i] = i;
+        }
+        origin = orgn();
+    }
+    void shuffle_batch() { if(idx_set.size()) idx_set.shuffle(); }
+    void init_curr_input_orgn(uint64_t curr_batch_idx)
+    {
+        auto curr_idx_set = curr_input_idx_set(curr_batch_idx);
+        if(curr_idx_set.size())
+        {
+            if(elem.size()) curr_input = elem.sub_queue(curr_idx_set);
+            else curr_input_im2col = elem_im2col.sub_queue(curr_idx_set);
+            curr_orgn = origin.sub_queue(curr_idx_set);
+        }
+        else
+        {
+            if(elem.size()) curr_input = elem;
+            else curr_input_im2col = elem_im2col;
+            curr_orgn = origin;
+        }
     }
     bool valid()
     {

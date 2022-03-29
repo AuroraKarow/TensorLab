@@ -668,7 +668,7 @@ public:
         bagrt::reset_ptr(info.mtx_val);
     }
     static matrix blank_matrix() { return matrix(); }
-    bool is_matrix() { return info.col_cnt && info.ln_cnt && info.mtx_val && elem_cnt && elem_cnt==info.ln_cnt*info.col_cnt; }
+    bool is_matrix() { return (info.col_cnt && info.ln_cnt && info.mtx_val && elem_cnt && elem_cnt==info.ln_cnt*info.col_cnt); }
     MATRIX ptr() { return mtx_copy(info.mtx_val, info.ln_cnt, info.col_cnt); }
     matrix()
     {

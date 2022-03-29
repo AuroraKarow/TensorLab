@@ -8,11 +8,13 @@
 
 #define NET_LIST        bagrt::net_list
 #define NET_MAP         bagrt::net_map
+#define NET_SEQ         bagrt::net_sequence
 
 // Layer
 
 #define LAYER_PTR               std::shared_ptr<layer::Layer>
 
+#define LAYER_ACT               layer::LayerAct
 #define LAYER_ACT_VT            layer::LayerActVect
 #define LAYER_ACT_FT            layer::LayerActFt
 

@@ -1,5 +1,6 @@
 #pragma once
 #include "netbatlib"
+#include "lock"
 
 #define LAYER_BEGIN         namespace layer {
 #define LAYER_END           }
@@ -17,20 +18,18 @@
 #define POOL_MAX            1
 #define POOL_GAG            2
 
-#define ACT_VT              0
-#define ACT_FT              1
-#define FC                  2
-#define CONV                3
-#define POOL                4
-#define FC_BN               5
-#define CONV_BN             6
-#define TRANS               7
-#define CONV_IM2COL         8
-#define CONV_BN_IM2COL      9
-#define POOL_IM2COL         10
-#define TRANS_IM2COL        11
-
-#define GD_BGD              0
-#define GD_MINIBATCH_SGD    1
+#define ACT                 0
+#define ACT_VT              1
+#define ACT_FT              2
+#define FC                  3
+#define CONV                4
+#define POOL                5
+#define FC_BN               6
+#define CONV_BN             7
+#define TRANS               8
+#define CONV_IM2COL         9
+#define CONV_BN_IM2COL      10
+#define POOL_IM2COL         11
+#define TRANS_IM2COL        12
 
 #include "layer.hpp"
