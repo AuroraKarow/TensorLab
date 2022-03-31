@@ -1,0 +1,9 @@
+#include <shared_mutex>
+#include <future>
+
+#define ASYNC_BEGIN     namespace async {
+#define ASYNC_END       }
+
+#define ASYNC_CORE_CNT  std::thread::hardware_concurrency()
+
+#include "async.hpp"

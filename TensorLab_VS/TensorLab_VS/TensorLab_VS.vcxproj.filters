@@ -60,9 +60,6 @@
     <ClInclude Include="..\..\neunet.hpp">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\thread_pool.hpp">
-      <Filter>头文件</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\bagrt">
       <Filter>头文件</Filter>
     </ClInclude>
@@ -93,16 +90,10 @@
     <ClInclude Include="..\..\neunet">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\thread_pool">
-      <Filter>头文件</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\Iomp.h">
       <Filter>头文件\omp</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\lock.hpp">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\lock">
+    <ClInclude Include="..\..\async.hpp">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>
@@ -117,6 +108,9 @@
   <ItemGroup>
     <None Include="..\..\.gitignore">
       <Filter>资源文件</Filter>
+    </None>
+    <None Include="..\..\async">
+      <Filter>头文件</Filter>
     </None>
   </ItemGroup>
 </Project>

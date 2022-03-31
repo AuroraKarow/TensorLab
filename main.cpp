@@ -105,7 +105,7 @@ private:
         if(bPassSgn) netSrc->iPassCnt.increment();
         netSrc->iTrainCnt.increment();
     }
-    lock::lock_counter iPassCnt, iTrainCnt;
+    async::lock_counter iPassCnt, iTrainCnt;
     uint64_t iIterCnt = 0;
     bool iBlockThread = false, iActThread = true;
     NET_SEQ<LAYER_PTR> seqLayer;
@@ -170,23 +170,25 @@ public:
             InitDatasetIdx(mnistTrainSet.size());
             auto setOrigin = mnistTrainSet.orgn();
             auto iEpoch = 0, iTestPassCnt = 0;
+            // set<std::thread> setTd(iNetMiniBatch);
+            async::async_batch asybatBat(iNetMiniBatch);
             do
             {
                 ShuffleIdx();
                 iTestPassCnt = 0;
+                
                 for(auto i=0; i<iNetBatchCnt; ++i)
                 {
                     InitCurrBatchTrainSet(mnistTrainSet.elem_im2col, setOrigin, i);
                     auto iCurrBatchSize = CurrBatchSize(i);
                     CLOCK_BEGIN
-                    set<std::thread> setTd(iNetMiniBatch);
                     for(auto j=0; j<iCurrBatchSize; ++j)
                     {
                         bool bTrainFlag = true;
-                        setTd[j] = std::thread(TrainRound, this, std::ref(bTrainFlag), mnistTrainSet.ln_cnt(), j);
+                        asybatBat.set_task(j, TrainRound, this, std::ref(bTrainFlag), mnistTrainSet.ln_cnt(), j);
                         if(!bTrainFlag) return false;
                     }
-                    for(auto j=0; j<iCurrBatchSize; ++j) setTd[j].join();
+                    // for(auto j=0; j<iCurrBatchSize; ++j) setTd[j].join();
                     while(iTrainCnt.get_cnt() != iCurrBatchSize);
                     iTrainCnt.set_cnt();
                     UpdatePara(i);
@@ -218,7 +220,7 @@ int main(int argc, char *argv[], char *envp[])
 {
     cout << "hello, world." << endl;
     // MNIST demo
-    string root_dir = "D:\\code\\cpp\\mnist\\";
+    string root_dir = "E:\\VS Code project data\\MNIST\\";
     MNIST dataset(root_dir + "train-images.idx3-ubyte", root_dir + "train-labels.idx1-ubyte", true);
     // dataset.output_bitmap("E:\\VS Code project data\\MNIST_out\\train", BMIO_BMP);
     // MNIST testset(root_dir + "t10k-images.idx3-ubyte", root_dir + "t10k-labels.idx1-ubyte");

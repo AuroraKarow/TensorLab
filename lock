@@ -1,6 +1,0 @@
-#include <shared_mutex>
-
-#define LOCK_BEGIN  namespace lock {
-#define LOCK_END    }
-
-#include "lock.hpp"
