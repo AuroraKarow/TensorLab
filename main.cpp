@@ -201,6 +201,7 @@ public:
         }
         else return false;
     }
+    uint64_t Depth() { return seqLayer.size(); }
     void Reset() { NetMNISTIm2Col::Reset(); seqLayer.reset(); }
     ~NetMNISTIm2ColThread() { Reset(); }
 };
