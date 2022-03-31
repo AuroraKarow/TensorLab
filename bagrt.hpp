@@ -768,11 +768,11 @@ public:
         }
     };
 protected:
-    net_list<kv> val;
+    net_sequence<kv> val;
     _V v_temp;
     kv kv_temp;
 public:
-    net_map() {}
+    net_map(uint64_t buf_len = IDX_MAX) : val(buf_len) {}
     net_map(net_map &src) { val.value_copy(src.val); }
     net_map(net_map &&src) { val.value_move(std::move(src.val)); }
     void reset() { val.reset(); }
@@ -792,14 +792,13 @@ public:
     net_list<_K> find_key(_V &value) { return find_key(std::move(value)); }
     bool insert(_K &&key, _V &&value)
     {
-        if(this->find_idx(key)>=0 || val[IDX_ZERO].key==key) return false;
+        if(this->find_idx(key)>=0) return false;
         else
         {
             kv in_temp;
             in_temp.key = key;
             in_temp.value = value;
-            val.insert(size(), std::move(in_temp));
-            return true;
+            return val.emplace_back(std::move(in_temp));
         }
     }
     bool insert(_K &key, _V &value) { return insert(std::move(key), std::move(value)); }
@@ -835,6 +834,64 @@ public:
         return output;
     }
     ~net_map() { reset(); }
+};
+
+template<typename k_type = uint64_t> struct clock_timer
+{
+private:
+    struct _dur
+    {
+        long begin;
+        long end;
+        long dur; 
+    };
+    net_map<k_type, _dur> clock_log;
+public:
+    clock_timer(clock_timer &src) : clock_log(src) {}
+    clock_timer(clock_timer &&src) : clock_log(std::move(src)) {}
+    void operator=(clock_timer &src) { clock_log = src.clock_log }
+    void operator=(clock_timer &&src) { clock_log = std::move(src.clock_log); }
+
+    clock_timer(uint64_t buf_len = IDX_MAX) : clock_log(IDX_MAX) {}
+    bool clock_begin(k_type &&clock_log_id)
+    {
+        auto begin_point = clock();
+        auto id_temp = clock_log.find_idx(clock_log_id);
+        if(id_temp < 0)
+        {
+            _dur dur_temp;
+            dur_temp.begin = begin_point;
+            return clock_log.insert(clock_log_id, dur_temp);
+        }
+        else
+        {
+            clock_log.index(id_temp).value.begin = begin_point;
+            return true;
+        }
+    }
+    bool clock_begin(k_type &clock_log_id) { return clock_begin(std::move(clock_log_id)); }
+    bool clock_end(k_type &&clock_log_id)
+    {
+        auto end_point = clock();
+        auto log_idx = clock_log.find_idx(clock_log_id);
+        if(log_idx < 0) return false;
+        else
+        {
+            clock_log.index(log_idx).value.end = end_point;
+            clock_log.index(log_idx).value.dur = (clock_log.index(log_idx).value.end - clock_log.index(log_idx).value.begin) * 1000 / CLOCKS_PER_SEC;
+        }
+        return true;
+    }
+    bool clock_end(k_type &clock_log_id) { return clock_end(std::move(clock_log_id)); }
+    long duration(k_type &&clock_log_id)
+    {
+        auto log_idx = clock_log.find_idx(clock_log_id);
+        if(log_idx < 0) return -1;
+        else return clock_log.index(log_idx).value.dur;
+    }
+    long duration(k_type &clock_log_id) { return duration(std::move(clock_log_id)); }
+    void reset() { clock_log.reset(); }
+    ~clock_timer() { reset(); }
 };
 
 bool acc_valid(double acc)

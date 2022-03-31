@@ -3,8 +3,6 @@
 #include "dataset"
 #include "neunet"
 
-void monitor(int td_idx, int lyr_idx, std::string lyr_name, bool is_forw) { std::printf("Thread[%d]Layer[%d - %s][%s]\n", td_idx, lyr_idx, lyr_name.c_str(), (is_forw ? "FP" : "BP")); }
-
 NEUNET_BEGIN
 
 class NetMNISTIm2ColThread final : public NetMNISTIm2Col
@@ -170,34 +168,33 @@ public:
             InitDatasetIdx(mnistTrainSet.size());
             auto setOrigin = mnistTrainSet.orgn();
             auto iEpoch = 0, iTestPassCnt = 0;
-            // set<std::thread> setTd(iNetMiniBatch);
             async::async_batch asybatBat(iNetMiniBatch);
             do
             {
                 ShuffleIdx();
                 iTestPassCnt = 0;
-                
+                CLOCK_BEGIN(0)
                 for(auto i=0; i<iNetBatchCnt; ++i)
                 {
                     InitCurrBatchTrainSet(mnistTrainSet.elem_im2col, setOrigin, i);
                     auto iCurrBatchSize = CurrBatchSize(i);
-                    CLOCK_BEGIN
+                    CLOCK_BEGIN(1)
                     for(auto j=0; j<iCurrBatchSize; ++j)
                     {
                         bool bTrainFlag = true;
                         asybatBat.set_task(j, TrainRound, this, std::ref(bTrainFlag), mnistTrainSet.ln_cnt(), j);
                         if(!bTrainFlag) return false;
                     }
-                    // for(auto j=0; j<iCurrBatchSize; ++j) setTd[j].join();
                     while(iTrainCnt.get_cnt() != iCurrBatchSize);
                     iTrainCnt.set_cnt();
                     UpdatePara(i);
-                    CLOCK_END
-                    std::printf("\r[Epoch][%d][Batch Index][%d/%d][Accuracy][%.2f][Duration][%dms]  ", iEpoch+1, i+1, (int)iNetBatchCnt, iPassCnt.get_cnt()*1.0/iCurrBatchSize, CLOCK_DURATION);
+                    CLOCK_END(1)
+                    std::printf("\r[Epoch][%d][Index][%d/%d][Accuracy][%.2f][Duration][%dms]    ", iEpoch+1, i+1, (int)iNetBatchCnt, iPassCnt.get_cnt()*1.0/iCurrBatchSize, CLOCK_DURATION(1));
                     iTestPassCnt += iPassCnt.get_cnt();
                     iPassCnt.set_cnt();
                 }
-                std::printf("\r[Epoch][%d][Accuracy][%lf]\n", iEpoch+1, iTestPassCnt*1.0/setOrigin.size());
+                CLOCK_END(0)
+                std::printf("\r[Epoch][%d][Epoch Accuracy][%lf][Epoch Duration][%dms]\n", iEpoch+1, iTestPassCnt*1.0/setOrigin.size(), CLOCK_DURATION(0));
                 ++ iEpoch;
             } while (iTestPassCnt < mnistTrainSet.size());
             return true;
@@ -225,7 +222,7 @@ int main(int argc, char *argv[], char *envp[])
     // dataset.output_bitmap("E:\\VS Code project data\\MNIST_out\\train", BMIO_BMP);
     // MNIST testset(root_dir + "t10k-images.idx3-ubyte", root_dir + "t10k-labels.idx1-ubyte");
     // testset.output_bitmap("E:\\VS Code project data\\MNIST_out\\test", BMIO_BMP);
-    NetMNISTIm2ColThread LeNet(0.1, 32, false);
+    NetMNISTIm2ColThread LeNet(0.1, 125, false);
     LeNet.AddLayer<LAYER_CONV_IM2COL>(20, 1, 5, 5, 1, 1);
     LeNet.AddLayer<LAYER_CONV_BN_IM2COL>(20);
     LeNet.AddLayer<LAYER_ACT>(RELU);
