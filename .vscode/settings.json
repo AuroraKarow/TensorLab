@@ -95,6 +95,7 @@
         "stop_token": "cpp",
         "thread": "cpp",
         "lock": "cpp",
-        "shared_mutex": "cpp"
+        "shared_mutex": "cpp",
+        "async": "cpp"
     }
 }
