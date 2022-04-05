@@ -1,12 +1,12 @@
 ASYNC_BEGIN
 
-class lock_signal
+class shared_signal
 {
 public:
-    lock_signal(bool init_val = false) : sgn(init_val) {}
-    lock_signal(lock_signal &src) : sgn(src.get_sgn()) {}
+    shared_signal(bool init_val = false) : sgn(init_val) {}
+    shared_signal(shared_signal &src) : sgn(src.get_sgn()) {}
     void operator=(bool val) { set_sgn(val); }
-    void operator=(lock_signal &src) { set_sgn(src.get_sgn()); }
+    void operator=(shared_signal &src) { set_sgn(src.get_sgn()); }
     operator bool() { return get_sgn(); }
     bool get_sgn() const
     {
@@ -25,17 +25,17 @@ private:
     bool sgn = false;
 };
 
-class lock_counter
+class shared_counter
 {
     public:
-    lock_counter(uint64_t init_val = 0) : cnt(init_val) {}
-    lock_counter(lock_counter &src) : cnt(src.get_cnt()) {}
+    shared_counter(uint64_t init_val = 0) : cnt(init_val) {}
+    shared_counter(shared_counter &src) : cnt(src.get_cnt()) {}
     void operator=(uint64_t val) { set_cnt(val); }
-    void operator=(lock_counter &src) { set_cnt(src.get_cnt()); }
-    lock_counter &operator++() { increment(); return *this; }
-    lock_counter operator++(int) { auto temp = *this; increment(); return temp; }
-    lock_counter &operator--() { decrement(); return *this; }
-    lock_counter operator--(int) { auto temp = *this; decrement(); return temp; }
+    void operator=(shared_counter &src) { set_cnt(src.get_cnt()); }
+    shared_counter &operator++() { increment(); return *this; }
+    shared_counter operator++(int) { auto temp = *this; increment(); return temp; }
+    shared_counter &operator--() { decrement(); return *this; }
+    shared_counter operator--(int) { auto temp = *this; decrement(); return temp; }
     operator uint64_t() { return get_cnt(); }
     uint64_t get_cnt() const
     {
@@ -67,8 +67,8 @@ class async_batch
 private:
     bagrt::net_queue<std::thread> td_set;
     bagrt::net_queue<std::function<void()>> tsk_set;
-    lock_counter tsk_cnt;
-    lock_signal stop, proc;
+    shared_counter tsk_cnt;
+    shared_signal stop, proc;
     std::mutex td_mtx_tsk;
     std::condition_variable cond_tsk;
     uint64_t asyn_batch_size = ASYNC_CORE_CNT;

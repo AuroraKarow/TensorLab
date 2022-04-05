@@ -214,7 +214,7 @@ struct LayerFCBN : Layer
     set<vect> setLayerInput, setGradLossToOutput, setGradLossToInput/*Need not initialize*/;
     std::mutex tdmtxFCBN;
     std::condition_variable condFCBN;
-    async::lock_counter lkCnt;
+    async::shared_counter lkCnt;
     bool bForwSgn = false, bBackSgn = false;
 
     void ValueAssign(LayerFCBN &lyrSrc)
@@ -510,7 +510,7 @@ struct LayerConvBNIm2Col : Layer
     set<vect> setLayerInput, setGradLossToOutput, setGradLossToInput/*Need not initialize*/;
     std::mutex tdmtxFCBN;
     std::condition_variable condFCBN;
-    async::lock_counter lkCnt;
+    async::shared_counter lkCnt;
     bool bForwSgn = false, bBackSgn = false;
 
     void ValueAssign(LayerConvBNIm2Col &lyrSrc) { dEpsilon = lyrSrc.dEpsilon; bForwSgn = lyrSrc.bForwSgn; bBackSgn = lyrSrc.bBackSgn; }

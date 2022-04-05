@@ -348,7 +348,7 @@ public:
                 // Batch shuffling
                 ShuffleIdx();
                 iTestPassCnt = 0;
-                CLOCK_BEGIN
+                CLOCK_BEGIN(0)
                 for(auto i=0; i<iNetBatchCnt; ++i)
                 {
                     auto CurrInput = GetCurrInput(mnistDataset.elem, setOrigin, i);
@@ -364,9 +364,9 @@ public:
                     }
                     else return false;
                 }
-                CLOCK_END
+                CLOCK_END(0)
                 std::printf("\r[Epoch][%d][Accuracy][%lf]", iEpoch+1, iTestPassCnt*1.0/setOrigin.size());
-                std::cout << "[Duration][" << CLOCK_DURATION << ']' << std::endl;
+                std::cout << "[Duration][" << CLOCK_DURATION(0) << ']' << std::endl;
                 ++ iEpoch;
             }
             while(iTestPassCnt < mnistDataset.size());
@@ -601,7 +601,7 @@ public:
                 for(auto i=0; i<iNetBatchCnt; ++i)
                 {
                     InitCurrBatchTrainSet(mnistTrainSet.elem_im2col, setOrigin, i);
-                    CLOCK_BEGIN
+                    CLOCK_BEGIN(0)
                     auto setCurrOutput = ForwProp(mnistTrainSet.ln_cnt());
                     if(setCurrOutput.size())
                     {
@@ -609,8 +609,8 @@ public:
                         if(bMonitorFlag) IterShow(setCurrOutput);
                         else std::printf("\r[Epoch][%d][Batch Index][%d/%d][Accuracy][%.2f]", iEpoch+1, i+1, (int)iNetBatchCnt, iSglTestPassCnt*1.0/setCurrOutput.size());
                         if(iSglTestPassCnt != setCurrOutput.size()) if(!BackProp(setCurrOutput, i)) return false;
-                        CLOCK_END
-                        std::cout << "[Duration][" << CLOCK_DURATION << ']';
+                        CLOCK_END(0)
+                        std::cout << "[Duration][" << CLOCK_DURATION(0) << ']';
                         iTestPassCnt += iSglTestPassCnt;
                     }
                     else return false;

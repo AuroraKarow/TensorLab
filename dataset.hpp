@@ -8,8 +8,8 @@ public:
     set<feature> elem;
     set<vect> elem_im2col;
     // Element index list of data, number sequence -> label value
-    set<uint64_t> elem_lbl;
-    set<vect> origin, curr_input_im2col, curr_orgn;
+    set<uint64_t> elem_lbl, curr_lbl;
+    set<vect> curr_input_im2col, curr_orgn;
     set<feature> curr_input;
 private:
     /* Magic number */
@@ -162,8 +162,9 @@ public:
     void init_batch(uint64_t _batch_size = 0)
     {
         if(!_batch_size) set_batch_size = size();
+        else set_batch_size = _batch_size;
         set_batch_cnt = size() / set_batch_size;
-                // Last bacth's size
+        // Last bacth's size
         set_batch_rear_size = size() % set_batch_size;
         if(set_batch_rear_size) ++ set_batch_cnt;
         if(set_batch_size != size())
@@ -171,23 +172,27 @@ public:
             idx_set.init(size());
             for(auto i=0; i<idx_set.size(); ++i) idx_set[i] = i;
         }
-        origin = orgn();
     }
+    uint64_t batch_cnt() { return set_batch_cnt; }
+    uint64_t batch_size() { return set_batch_size; }
+    uint64_t batch_rear_size() { if(set_batch_rear_size) return set_batch_rear_size; else return batch_size(); }
     void shuffle_batch() { if(idx_set.size()) idx_set.shuffle(); }
-    void init_curr_input_orgn(uint64_t curr_batch_idx)
+    void init_curr_set(uint64_t curr_batch_idx)
     {
         auto curr_idx_set = curr_input_idx_set(curr_batch_idx);
         if(curr_idx_set.size())
         {
             if(elem.size()) curr_input = elem.sub_queue(curr_idx_set);
             else curr_input_im2col = elem_im2col.sub_queue(curr_idx_set);
-            curr_orgn = origin.sub_queue(curr_idx_set);
+            curr_lbl = elem_lbl.sub_queue(curr_idx_set);
+            curr_orgn = orgn(curr_lbl);
         }
         else
         {
             if(elem.size()) curr_input = elem;
             else curr_input_im2col = elem_im2col;
-            curr_orgn = origin;
+            curr_lbl = elem_lbl;
+            curr_orgn = orgn(curr_lbl);
         }
     }
     bool valid()
@@ -221,6 +226,12 @@ public:
             return _orgn;
         }
         else return blank_vect;
+    }
+    static set<vect> orgn(set<uint64_t> &lbl_set)
+    {
+        set<vect> ans(lbl_set.size());
+        for(auto i=0; i<ans.size(); ++i) ans[i] = orgn(lbl_set[i]);
+        return ans;
     }
     // Get origin vector sequence
     set<vect> orgn()
@@ -365,6 +376,13 @@ public:
             }
             return true;
         }
+    }
+    static bool output_bitmap(vect &img_vec, std::string dir_root, std::string name, uint64_t format = BMIO_BMP, bool im2col = false, uint64_t ln_cnt = 0)
+    {
+        bmio::bitmap img_val;
+        if(im2col) img_val.set_raw(img_vec.reshape(ln_cnt, img_vec.LN_CNT/ln_cnt), img_vec.reshape(ln_cnt, img_vec.LN_CNT/ln_cnt), img_vec.reshape(ln_cnt, img_vec.LN_CNT/ln_cnt), img_vec.reshape(ln_cnt, img_vec.LN_CNT/ln_cnt));
+        else img_val.set_raw(img_vec, img_vec, img_vec, img_vec);
+        return img_val.save_img(dir_root, name, format);
     }
     ~MNIST() { reset(); }
 };

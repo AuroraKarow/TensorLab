@@ -11,6 +11,7 @@
                 "/Zi",
                 "/EHsc",
                 "/Qpar",
+                // "/O2",
                 "/Fe:",
                 "${fileDirname}\\${fileBasenameNoExtension}.exe",
                 "${file}"

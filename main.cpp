@@ -103,7 +103,7 @@ private:
         if(bPassSgn) netSrc->iPassCnt.increment();
         netSrc->iTrainCnt.increment();
     }
-    async::lock_counter iPassCnt, iTrainCnt;
+    async::shared_counter iPassCnt, iTrainCnt;
     uint64_t iIterCnt = 0;
     bool iBlockThread = false, iActThread = true;
     NET_SEQ<LAYER_PTR> seqLayer;
