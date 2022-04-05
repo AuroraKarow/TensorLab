@@ -8,42 +8,41 @@ NEUNET_BEGIN
 class NetMNISTIm2ColThread final : public NetMNISTIm2Col
 {
 private:
-    vect ForwProp(uint64_t iInputLnCnt, uint64_t iThreadIdx)
+    vect ForwProp(vect& vecInput, uint64_t iInputLnCnt, uint64_t iThreadIdx)
     {
-        auto vecOutput = std::move(setCurrBatchInput[iThreadIdx]);
         for(auto i=0; i<seqLayer.size(); ++i)
         {
             switch (seqLayer[i] -> iLayerType)
             {
-            case ACT: vecOutput = INSTANCE_DERIVE<LAYER_ACT>(seqLayer[i])->ForwProp(vecOutput, iThreadIdx); break;
-            case FC: vecOutput = INSTANCE_DERIVE<LAYER_FC>(seqLayer[i])->ForwProp(vecOutput, iThreadIdx); break;
-            case FC_BN: vecOutput = INSTANCE_DERIVE<LAYER_FC_BN>(seqLayer[i])->ForwProp(vecOutput, iThreadIdx); break;
+            case ACT: vecInput = INSTANCE_DERIVE<LAYER_ACT>(seqLayer[i])->ForwProp(vecInput, iThreadIdx); break;
+            case FC: vecInput = INSTANCE_DERIVE<LAYER_FC>(seqLayer[i])->ForwProp(vecInput, iThreadIdx); break;
+            case FC_BN: vecInput = INSTANCE_DERIVE<LAYER_FC_BN>(seqLayer[i])->ForwProp(vecInput, iThreadIdx); break;
             case CONV_IM2COL:
-                vecOutput = INSTANCE_DERIVE<LAYER_CONV_IM2COL>(seqLayer[i])->ForwProp(vecOutput, iInputLnCnt, iThreadIdx);
+                vecInput = INSTANCE_DERIVE<LAYER_CONV_IM2COL>(seqLayer[i])->ForwProp(vecInput, iInputLnCnt, iThreadIdx);
                 iInputLnCnt = INSTANCE_DERIVE<LAYER_CONV_IM2COL>(seqLayer[i])->iLayerOutputLnCnt;
                 break;
-            case CONV_BN_IM2COL: vecOutput = INSTANCE_DERIVE<LAYER_CONV_BN_IM2COL>(seqLayer[i])->ForwProp(vecOutput, iThreadIdx); break;
+            case CONV_BN_IM2COL: vecInput = INSTANCE_DERIVE<LAYER_CONV_BN_IM2COL>(seqLayer[i])->ForwProp(vecInput, iThreadIdx); break;
             case POOL_IM2COL:
-                vecOutput = INSTANCE_DERIVE<LAYER_POOL_IM2COL>(seqLayer[i])->ForwProp(vecOutput, iInputLnCnt, iThreadIdx);
+                vecInput = INSTANCE_DERIVE<LAYER_POOL_IM2COL>(seqLayer[i])->ForwProp(vecInput, iInputLnCnt, iThreadIdx);
                 iInputLnCnt = INSTANCE_DERIVE<LAYER_POOL_IM2COL>(seqLayer[i])->iLayerOutputLnCnt;
                 break;
             case TRANS_IM2COL:
-                if(INSTANCE_DERIVE<LAYER_TRANS_IM2COL>(seqLayer[i])->bFeatToVec) vecOutput = INSTANCE_DERIVE<LAYER_TRANS_IM2COL>(seqLayer[i])->ForwProp(vecOutput, iInputLnCnt, iThreadIdx);
-                else vecOutput = INSTANCE_DERIVE<LAYER_TRANS_IM2COL>(seqLayer[i])->ForwProp(vecOutput);
+                if(INSTANCE_DERIVE<LAYER_TRANS_IM2COL>(seqLayer[i])->bFeatToVec) vecInput = INSTANCE_DERIVE<LAYER_TRANS_IM2COL>(seqLayer[i])->ForwProp(vecInput, iInputLnCnt, iThreadIdx);
+                else vecInput = INSTANCE_DERIVE<LAYER_TRANS_IM2COL>(seqLayer[i])->ForwProp(vecInput);
                 break;
             default: return blank_vect;
             }
-            if(!vecOutput.is_matrix())  return blank_vect;
+            if(!vecInput.is_matrix())  return blank_vect;
         }
-        return vecOutput;
+        return vecInput;
     }
-    bool BackProp(vect &vecOutput, uint64_t iThreadIdx)
+    bool BackProp(vect &vecOutput, vect& vecOrgn, uint64_t iThreadIdx)
     {
         for(int i=seqLayer.size()-1; i>=0; --i)
         {
             switch (seqLayer[i] -> iLayerType)
             {
-            case ACT: vecOutput = INSTANCE_DERIVE<LAYER_ACT>(seqLayer[i])->BackProp(vecOutput, iThreadIdx, setCurrBatchOrigin[iThreadIdx]); break;
+            case ACT: vecOutput = INSTANCE_DERIVE<LAYER_ACT>(seqLayer[i])->BackProp(vecOutput, iThreadIdx, vecOrgn); break;
             case FC: vecOutput = INSTANCE_DERIVE<LAYER_FC>(seqLayer[i])->BackProp(vecOutput, iThreadIdx); break;
             case FC_BN: vecOutput = INSTANCE_DERIVE<LAYER_FC_BN>(seqLayer[i])->BackProp(vecOutput, iThreadIdx); break;
             case CONV_IM2COL: vecOutput = INSTANCE_DERIVE<LAYER_CONV_IM2COL>(seqLayer[i])->BackProp(vecOutput, iThreadIdx); break;
@@ -86,22 +85,14 @@ private:
         default: continue;
         }
     }
-    bool PassTest(vect &vecOutput, uint64_t iThreadIdx)
+    bool PassTest(vect &vecOutput, vect &vecOrgn)
     {
-        for(auto i=0; i<vecOutput.ELEM_CNT; ++i) if(setCurrBatchOrigin[iThreadIdx].pos_idx(i))
+        for(auto i=0; i<vecOutput.ELEM_CNT; ++i) if(vecOrgn.pos_idx(i))
         {
             if(1-vecOutput.pos_idx(i) > dAcc) return false;
             else return true;
         }
         return false;
-    }
-    friend void TrainRound(NetMNISTIm2ColThread *netSrc, bool &bTrainFlag, uint64_t iInputLnCnt, uint64_t iThreadIdx = 0)
-    {
-        auto vecOutput = netSrc->ForwProp(iInputLnCnt, iThreadIdx);
-        auto bPassSgn = netSrc->PassTest(vecOutput, iThreadIdx);
-        bTrainFlag = netSrc->BackProp(vecOutput, iThreadIdx);
-        if(bPassSgn) netSrc->iPassCnt.increment();
-        netSrc->iTrainCnt.increment();
     }
     async::shared_counter iPassCnt, iTrainCnt;
     uint64_t iIterCnt = 0;
@@ -165,36 +156,42 @@ public:
     {
         if(mnistTrainSet.valid())
         {
-            InitDatasetIdx(mnistTrainSet.size());
-            auto setOrigin = mnistTrainSet.orgn();
+            mnistTrainSet.init_batch(iNetMiniBatch);
             auto iEpoch = 0, iTestPassCnt = 0;
             async::async_batch asybatBat(iNetMiniBatch);
             do
             {
-                ShuffleIdx();
+                mnistTrainSet.shuffle_batch();
                 iTestPassCnt = 0;
                 CLOCK_BEGIN(0)
-                for(auto i=0; i<iNetBatchCnt; ++i)
+                for(auto i=0; i<mnistTrainSet.batch_cnt(); ++i)
                 {
-                    InitCurrBatchTrainSet(mnistTrainSet.elem_im2col, setOrigin, i);
-                    auto iCurrBatchSize = CurrBatchSize(i);
+                    mnistTrainSet.init_curr_set(i);
+                    auto iCurrBatchSize = mnistTrainSet.batch_size(i);
                     CLOCK_BEGIN(1)
                     for(auto j=0; j<iCurrBatchSize; ++j)
                     {
-                        bool bTrainFlag = true;
-                        asybatBat.set_task(j, TrainRound, this, std::ref(bTrainFlag), mnistTrainSet.ln_cnt(), j);
+                        auto bTrainFlag = true;
+                        asybatBat.set_task(j, [this](vect &intput, vect &orgn, bool &train_flag, int ln_cnt, int idx)
+                        {
+                            auto vecOutput = this->ForwProp(intput, ln_cnt, idx);
+                            auto bPassSgn = this->PassTest(vecOutput, orgn);
+                            train_flag = this->BackProp(vecOutput, orgn, idx);
+                            if(bPassSgn) this->iPassCnt.increment();
+                            this->iTrainCnt.increment();
+                        }, std::ref(mnistTrainSet.curr_input_im2col[j]), std::ref(mnistTrainSet.curr_orgn[j]), std::ref(bTrainFlag), mnistTrainSet.ln_cnt(), j);
                         if(!bTrainFlag) return false;
                     }
                     while(iTrainCnt.get_cnt() != iCurrBatchSize);
                     iTrainCnt.set_cnt();
                     UpdatePara(i);
                     CLOCK_END(1)
-                    std::printf("\r[Epoch][%d][Index][%d/%d][Accuracy][%.2f][Duration][%dms]    ", iEpoch+1, i+1, (int)iNetBatchCnt, iPassCnt.get_cnt()*1.0/iCurrBatchSize, CLOCK_DURATION(1));
+                    std::printf("\r[Epoch][%d][Index][%d/%d][Accuracy][%.2f][Duration][%dms]    ", iEpoch+1, i+1, (int)mnistTrainSet.batch_cnt(), iPassCnt.get_cnt()*1.0/iCurrBatchSize, CLOCK_DURATION(1));
                     iTestPassCnt += iPassCnt.get_cnt();
                     iPassCnt.set_cnt();
                 }
                 CLOCK_END(0)
-                std::printf("\r[Epoch][%d][Epoch Accuracy][%lf][Epoch Duration][%dms]\n", iEpoch+1, iTestPassCnt*1.0/setOrigin.size(), CLOCK_DURATION(0));
+                std::printf("\r[Epoch][%d][Epoch Accuracy][%lf][Epoch Duration][%dms]\n", iEpoch+1, iTestPassCnt*1.0/mnistTrainSet.size(), CLOCK_DURATION(0));
                 ++ iEpoch;
             } while (iTestPassCnt < mnistTrainSet.size());
             return true;
@@ -223,7 +220,7 @@ int main(int argc, char *argv[], char *envp[])
     // dataset.output_bitmap("E:\\VS Code project data\\MNIST_out\\train", BMIO_BMP);
     // MNIST testset(root_dir + "t10k-images.idx3-ubyte", root_dir + "t10k-labels.idx1-ubyte");
     // testset.output_bitmap("E:\\VS Code project data\\MNIST_out\\test", BMIO_BMP);
-    NetMNISTIm2ColThread LeNet(0.1, 125, false);
+    NetMNISTIm2ColThread LeNet(0.1, 32, false);
     LeNet.AddLayer<LAYER_CONV_IM2COL>(20, 1, 5, 5, 1, 1);
     LeNet.AddLayer<LAYER_CONV_BN_IM2COL>(20);
     LeNet.AddLayer<LAYER_ACT>(RELU);

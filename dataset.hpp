@@ -174,8 +174,11 @@ public:
         }
     }
     uint64_t batch_cnt() { return set_batch_cnt; }
-    uint64_t batch_size() { return set_batch_size; }
-    uint64_t batch_rear_size() { if(set_batch_rear_size) return set_batch_rear_size; else return batch_size(); }
+    uint64_t batch_size(uint64_t curr_bat_idx = 0)
+    {
+        if(curr_bat_idx+1==set_batch_cnt && set_batch_rear_size) return set_batch_rear_size;
+        else return set_batch_size;
+    }
     void shuffle_batch() { if(idx_set.size()) idx_set.shuffle(); }
     void init_curr_set(uint64_t curr_batch_idx)
     {

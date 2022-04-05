@@ -486,7 +486,7 @@ protected:
                 else setOutput[i] = INSTANCE_DERIVE<LAYER_FC_BN>(lsLayer[i]) -> Deduce(setOutput[i], INSTANCE_DERIVE<BN_FC>(mapBNData[i]), iNetMiniBatch, iNetBatchCnt);
                 break;
             case CONV_IM2COL:
-                setOutput[i] = INSTANCE_DERIVE<LAYER_CONV_IM2COL>(lsLayer[i]) -> Deduce(setOutput[i], iInputLnCnt);
+                setOutput[i] = INSTANCE_DERIVE<LAYER_CONV_IM2COL>(lsLayer[i]) -> Deduce(setOutput[i]);
                 iInputLnCnt = INSTANCE_DERIVE<LAYER_CONV_IM2COL>(lsLayer[i]) -> iLayerOutputLnCnt;
                 break;
             case CONV_BN_IM2COL:
@@ -494,7 +494,7 @@ protected:
                 else setOutput[i] = INSTANCE_DERIVE<LAYER_CONV_BN_IM2COL>(lsLayer[i]) -> Deduce(setOutput[i], INSTANCE_DERIVE<BN_CONV_IM2COL>(mapBNData[i]), iNetMiniBatch, iNetBatchCnt);
                 break;
             case POOL_IM2COL:
-                setOutput[i] = INSTANCE_DERIVE<LAYER_POOL_IM2COL>(lsLayer[i]) -> Deduce(setOutput[i], iInputLnCnt);
+                setOutput[i] = INSTANCE_DERIVE<LAYER_POOL_IM2COL>(lsLayer[i]) -> Deduce(setOutput[i]);
                 iInputLnCnt = INSTANCE_DERIVE<LAYER_POOL_IM2COL>(lsLayer[i]) -> iLayerOutputLnCnt;
                 break;
             case TRANS_IM2COL:
