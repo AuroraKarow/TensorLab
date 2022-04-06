@@ -376,14 +376,21 @@ vect BNGradLossToShiftIm2Col(set<vect> &setIm2ColGradLossToOutput)
     return vecGradBeta;
 }
 
-vect BNDeduceIm2Col(vect &vecIm2ColInput, vect &vecBeta, vect &vecGamma, std::shared_ptr<ConvBNIm2Col> &pBNDataIm2Col, uint64_t iMiniBatchCnt = 0, uint64_t iMiniBatchSize = 0, double dEpsilon = 1e-10)
+bool BNDataExpIm2Col(std::shared_ptr<ConvBNIm2Col> &pBNDataIm2Col, uint64_t iMiniBatchCnt, uint64_t iMiniBatchSize)
 {
-    if(iMiniBatchCnt)
+    if(pBNDataIm2Col)
     {
         pBNDataIm2Col->vecIm2ColMuBeta = pBNDataIm2Col->vecIm2ColMuBeta.elem_cal_opt(iMiniBatchCnt, MATRIX_ELEM_DIV);
         pBNDataIm2Col->vecIm2ColSigmaSqr = pBNDataIm2Col->vecIm2ColSigmaSqr.elem_cal_opt(iMiniBatchCnt, MATRIX_ELEM_DIV);
         if(iMiniBatchSize > 1) pBNDataIm2Col->vecIm2ColSigmaSqr *= (iMiniBatchCnt / (iMiniBatchCnt - 1.0));
+        return true;
     }
+    else return false;
+}
+
+vect BNDeduceIm2Col(vect &vecIm2ColInput, vect &vecBeta, vect &vecGamma, std::shared_ptr<ConvBNIm2Col> &pBNDataIm2Col, uint64_t iMiniBatchCnt = 0, uint64_t iMiniBatchSize = 0, double dEpsilon = 1e-10)
+{
+    if(iMiniBatchCnt) BNDataExpIm2Col(pBNDataIm2Col, iMiniBatchCnt, iMiniBatchSize);
     vect vecAns = (vecIm2ColInput - pBNDataIm2Col->vecIm2ColMuBeta).elem_cal_opt(DIV_DOM(pBNDataIm2Col->vecIm2ColSigmaSqr, dEpsilon).elem_cal_opt(0.5, MATRIX_ELEM_POW), MATRIX_ELEM_DIV);
     for(auto i=0; i<vecAns.ELEM_CNT; ++i)
     {

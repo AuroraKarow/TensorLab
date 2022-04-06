@@ -39,30 +39,32 @@ struct LayerAct : Layer
 
     LayerAct(uint64_t iActFuncType, uint64_t iLayerTypeVal = ACT, double dLearnRate = 0) : Layer(iLayerTypeVal, dLearnRate), iLayerActFuncType(iActFuncType) {}
 
-    vect ForwProp(vect &vecInput, uint64_t iTdIdx)
+    vect ForwProp(vect &vecInput, uint64_t iIdx)
     {
-        if(vecInput.is_matrix()) setLayerInput[iTdIdx] = std::move(vecInput);
+        if(vecInput.is_matrix()) setLayerInput[iIdx] = std::move(vecInput);
         switch (iLayerActFuncType)
         {
-        case SIGMOID:   return sigmoid(setLayerInput[iTdIdx]);
-        case RELU:      return ReLU(setLayerInput[iTdIdx]);
-        case SOFTMAX:   return softmax(setLayerInput[iTdIdx]);
-        default: return setLayerInput[iTdIdx];
+        case SIGMOID:   return sigmoid(setLayerInput[iIdx]);
+        case RELU:      return ReLU(setLayerInput[iIdx]);
+        case SOFTMAX:   return softmax(setLayerInput[iIdx]);
+        default: return setLayerInput[iIdx];
         }
     }
-    vect BackProp(vect &vecGrad, uint64_t iTdIdx, vect &vecOrgn = blank_vect)
+    // Gradient is activation output for the last layer
+    vect BackProp(vect &vecGrad, uint64_t iIdx, vect &vecOrgn = blank_vect)
     {
         switch (iLayerActFuncType)
         {
-        case SIGMOID:   return hadamard_product(sigmoid_dv(setLayerInput[iTdIdx]), vecGrad);
-        case RELU:      return hadamard_product(ReLU_dv(setLayerInput[iTdIdx]), vecGrad);
+        case SIGMOID:   return hadamard_product(sigmoid_dv(setLayerInput[iIdx]), vecGrad);
+        case RELU:      return hadamard_product(ReLU_dv(setLayerInput[iIdx]), vecGrad);
         case SOFTMAX:   return softmax_cec_grad(vecGrad, vecOrgn);
         default: return vecGrad;
         }
     }
 
-    template<typename elemT> set<elemT> ForwProp(set<elemT> &setLayerInput)
+    set<vect> ForwProp(set<vect> &setInput)
     {
+        if(setInput.size()) setLayerInput = std::move(setInput);
         switch (iLayerActFuncType)
         {
         case SIGMOID:   return sigmoid(setLayerInput);
@@ -71,18 +73,18 @@ struct LayerAct : Layer
         default: return setLayerInput;
         }
     }
-    // Gradient is activation output as the last layer
-    template<typename elemT> set<elemT> BackProp(set<elemT> &setLayerInput, set<elemT> &setGrad, set<elemT> &setOrigin = set<elemT>())
+    // Gradient is activation output for the last layer
+    set<vect> BackProp(set<vect> &setGrad, set<vect> &setOrgn = set<vect>())
     {
         switch (iLayerActFuncType)
         {
         case SIGMOID:   return hadamard_product(sigmoid_dv(setLayerInput), setGrad);
         case RELU:      return hadamard_product(ReLU_dv(setLayerInput), setGrad);
-        case SOFTMAX:   return softmax_cec_grad(setGrad, setOrigin);
+        case SOFTMAX:   return softmax_cec_grad(setGrad, setOrgn);
         default: return setGrad;
         }     
     }
-    template<typename T> T Deduce(T &vecInput)
+    vect Deduce(vect &vecInput)
     {
         switch (iLayerActFuncType)
         {
@@ -94,52 +96,6 @@ struct LayerAct : Layer
     }
     void Reset() { setLayerInput.reset(); }
     ~LayerAct() { Reset(); }
-};
-
-struct LayerActVect : LayerAct
-{
-    set<vect> setLayerInput;
-
-    void ValueAssign(LayerActVect &lyrSrc) {}
-    void ValueCopy(LayerActVect &lyrSrc) { setLayerInput = lyrSrc.setLayerInput; }
-    void ValueMove(LayerActVect &&lyrSrc) { setLayerInput = std::move(lyrSrc.setLayerInput); }
-    LayerActVect(LayerActVect &lyrSrc) : LayerAct(lyrSrc) { ValueCopy(lyrSrc); }
-    LayerActVect(LayerActVect &&lyrSrc) : LayerAct(std::move(lyrSrc)) { ValueMove(std::move(lyrSrc)); }
-    void operator=(LayerActVect &lyrSrc) { LayerAct::operator=(lyrSrc); ValueCopy(lyrSrc); }
-    void operator=(LayerActVect &&lyrSrc) { LayerAct::operator=(std::move(lyrSrc)); ValueMove(std::move(lyrSrc)); }
-
-    LayerActVect(uint64_t iActFuncType) : LayerAct(ACT_VT, iActFuncType) {}
-    set<vect> ForwProp(set<vect> &setInput)
-    {
-        if(setInput.size()) setLayerInput = std::move(setInput);
-        return LayerAct::ForwProp(setLayerInput);
-    }
-    set<vect> BackProp(set<vect> &setGrad, set<vect> &setOrigin = set<vect>()) { return LayerAct::BackProp(setLayerInput, setGrad, setOrigin); }
-    vect Deduce(vect &vecInput) { return LayerAct::Deduce(vecInput); }
-    ~LayerActVect() { setLayerInput.reset(); }
-};
-
-struct LayerActFt : LayerAct
-{
-    set<feature> setLayerInput;
-
-    void ValueAssign(LayerActFt &lyrSrc) {}
-    void ValueCopy(LayerActFt &lyrSrc) { setLayerInput = lyrSrc.setLayerInput; }
-    void ValueMove(LayerActFt &&lyrSrc) { setLayerInput = std::move(lyrSrc.setLayerInput); }
-    LayerActFt(LayerActFt &lyrSrc) : LayerAct(lyrSrc) { ValueCopy(lyrSrc); }
-    LayerActFt(LayerActFt &&lyrSrc) : LayerAct(std::move(lyrSrc)) { ValueMove(std::move(lyrSrc)); }
-    void operator=(LayerActFt &lyrSrc) { LayerAct::operator=(lyrSrc); ValueCopy(lyrSrc); }
-    void operator=(LayerActFt &&lyrSrc) { LayerAct::operator=(std::move(lyrSrc)); ValueMove(std::move(lyrSrc)); }
-
-    LayerActFt(uint64_t iActFuncType) : LayerAct(ACT_FT, iActFuncType) {}
-    set<feature> ForwProp(set<feature> &setInput)
-    {
-        if(setInput.size()) setLayerInput = std::move(setInput);
-        return LayerAct::ForwProp(setLayerInput);
-    }
-    set<feature> BackProp(set<feature> &setGrad, set<feature> &setOrigin = set<feature>()) { return LayerAct::BackProp(setLayerInput, setGrad, setOrigin); }
-    feature Deduce(feature &vecInput) { return LayerAct::Deduce(vecInput); }
-    ~LayerActFt() { setLayerInput.reset(); }
 };
 
 struct LayerFC : Layer
@@ -168,14 +124,14 @@ struct LayerFC : Layer
     LayerFC() : Layer(FC) {}
     LayerFC(uint64_t iInputLnCnt, uint64_t iOutputLnCnt, double dLearnRate = 0, double dRandBoundryFirst = 0, double dRandBoundrySecond = 0, double dAcc = 1e-05) : Layer(FC, dLearnRate) { vecLayerWeight = _FC InitWeight(iInputLnCnt, iOutputLnCnt, dRandBoundryFirst, dRandBoundrySecond, dAcc); }
 
-    vect ForwProp(vect &vecInput, uint64_t iTdIdx)
+    vect ForwProp(vect &vecInput, uint64_t iIdx)
     {
-        if(vecInput.is_matrix()) setLayerInput[iTdIdx] = std::move(vecInput);
-        return Deduce(setLayerInput[iTdIdx]);
+        if(vecInput.is_matrix()) setLayerInput[iIdx] = std::move(vecInput);
+        return Deduce(setLayerInput[iIdx]);
     }
-    vect BackProp(vect &vecGrad, uint64_t iTdIdx)
+    vect BackProp(vect &vecGrad, uint64_t iIdx)
     {
-        setLayerGradWeight[iTdIdx] = _FC GradLossToWeight(vecGrad, setLayerInput[iTdIdx]);
+        setLayerGradWeight[iIdx] = _FC GradLossToWeight(vecGrad, setLayerInput[iIdx]);
         return _FC GradLossToInput(vecGrad, vecLayerWeight);
     }
 
@@ -214,7 +170,7 @@ struct LayerFCBN : Layer
     set<vect> setLayerInput, setGradLossToOutput, setGradLossToInput/*Need not initialize*/;
     std::mutex tdmtxFCBN;
     std::condition_variable condFCBN;
-    async::shared_counter lkCnt;
+    async::shared_counter lkCnt = 0;
     bool bForwSgn = false, bBackSgn = false;
 
     void ValueAssign(LayerFCBN &lyrSrc)
@@ -230,11 +186,11 @@ struct LayerFCBN : Layer
 
     LayerFCBN(double dShift = 0, double dScale = 1, double dLearnRate = 0, double dDmt = 1e-10) : Layer(FC_BN, dLearnRate), dBeta(dShift), dGamma(dScale), dEpsilon(dDmt) {}
 
-    vect ForwProp(vect &vecInput, uint64_t iTdIdx)
+    vect ForwProp(vect &vecInput, uint64_t iIdx)
     {
         lkCnt.increment();
-        if(vecInput.is_matrix()) setLayerInput[iTdIdx] = std::move(vecInput);
-        if(iTdIdx)
+        if(vecInput.is_matrix()) setLayerInput[iIdx] = std::move(vecInput);
+        if(iIdx)
         {
             std::unique_lock<std::mutex> lkFCBN(tdmtxFCBN);
             while(!bForwSgn) condFCBN.wait(lkFCBN);
@@ -248,13 +204,13 @@ struct LayerFCBN : Layer
             condFCBN.notify_all();
             lkCnt.set_cnt();
         }
-        return BNData.setY[iTdIdx];
+        return BNData.setY[iIdx];
     }
-    vect BackProp(vect &vecGrad, uint64_t iTdIdx)
+    vect BackProp(vect &vecGrad, uint64_t iIdx)
     {
         lkCnt.increment();
-        if(vecGrad.is_matrix()) setGradLossToOutput[iTdIdx] = std::move(vecGrad);
-        if(iTdIdx)
+        if(vecGrad.is_matrix()) setGradLossToOutput[iIdx] = std::move(vecGrad);
+        if(iIdx)
         {
             std::unique_lock<std::mutex> lkFCBN(tdmtxFCBN);
             while(!bBackSgn) condFCBN.wait(lkFCBN);
@@ -269,7 +225,7 @@ struct LayerFCBN : Layer
             dGradBeta = _FC BNGradLossToShift(setGradLossToOutput);
             lkCnt.set_cnt();
         }
-        return setGradLossToInput[iTdIdx];
+        return setGradLossToInput[iIdx];
     }
 
     set<vect> ForwProp(set<vect> &setInput)
@@ -387,11 +343,11 @@ struct LayerConvIm2Col : Layer
     LayerConvIm2Col() : Layer(CONV_IM2COL) {}
     LayerConvIm2Col(uint64_t iKernelAmt, uint64_t iKernelChannCnt, uint64_t iKernelLnCnt, uint64_t iKernelColCnt, uint64_t iLnStride, uint64_t iColStride, double dLearnRate = 0, uint64_t iLnDilation = 0, uint64_t iColDilation = 0, uint64_t iInputPadTop = 0, uint64_t iInputPadRight = 0, uint64_t iInputPadBottom = 0, uint64_t iInputPadLeft = 0, uint64_t iLnDistance = 0, uint64_t iColDistance = 0, double dRandBoundryFirst = 0, double dRandBoundrySecond = 0, double dRandBoundryAcc = 1e-5) : Layer(CONV_IM2COL, dLearnRate), iLayerKernelLnCnt(iKernelLnCnt), iLayerKernelColCnt(iKernelColCnt), iLayerLnStride(iLnStride), iLayerColStride(iColStride), iLayerLnDilation(iLnDilation), iLayerColDilation(iColDilation), iLayerInputPadTop(iInputPadTop), iLayerInputPadRight(iInputPadRight), iLayerInputPadBottom(iInputPadBottom), iLayerInputPadLeft(iInputPadLeft), iLayerLnDistance(iLnDistance), iLayerColDistance(iColDistance) { vecKernel = _CONV InitKernelIm2Col(iKernelAmt, iKernelChannCnt, iKernelLnCnt, iKernelColCnt, dRandBoundryFirst, dRandBoundrySecond, dRandBoundryAcc); }
 
-    vect ForwProp(vect &vecInput, uint64_t iInputLnCnt, uint64_t iTdIdx)
+    vect ForwProp(vect &vecInput, uint64_t iInputLnCnt, uint64_t iIdx)
     {
         uint64_t iOutputLnCnt = 0;
-        if(vecInput.is_matrix()) setPrepInput[iTdIdx] = _CONV Im2ColInputTransform(vecInput, iOutputLnCnt, iInputLnCnt, iLayerKernelLnCnt, iLayerKernelColCnt, iLayerLnStride, iLayerColStride, iLayerLnDilation, iLayerColDilation, iLayerInputPadTop, iLayerInputPadRight, iLayerInputPadBottom, iLayerInputPadLeft, iLayerLnDistance, iLayerColDistance);
-        if(iTdIdx)
+        if(vecInput.is_matrix()) setPrepInput[iIdx] = _CONV Im2ColInputTransform(vecInput, iOutputLnCnt, iInputLnCnt, iLayerKernelLnCnt, iLayerKernelColCnt, iLayerLnStride, iLayerColStride, iLayerLnDilation, iLayerColDilation, iLayerInputPadTop, iLayerInputPadRight, iLayerInputPadBottom, iLayerInputPadLeft, iLayerLnDistance, iLayerColDistance);
+        if(iIdx)
         {
             std::unique_lock<std::mutex> lkConvIm2Col(tdmtxConvIm2Col);
             while(!bActSgn) condConvIm2Col.wait(lkConvIm2Col);            
@@ -404,11 +360,11 @@ struct LayerConvIm2Col : Layer
             bActSgn = true;
             condConvIm2Col.notify_all();
         }
-        return _CONV ConvIm2Col(setPrepInput[iTdIdx], vecKernel);
+        return _CONV ConvIm2Col(setPrepInput[iIdx], vecKernel);
     }
-    vect BackProp(vect &vecGrad, uint64_t iTdIdx)
+    vect BackProp(vect &vecGrad, uint64_t iIdx)
     {
-        setGradKernel[iTdIdx] = _CONV GradLossToKernelIm2Col(vecGrad, setPrepInput[iTdIdx]);
+        setGradKernel[iIdx] = _CONV GradLossToKernelIm2Col(vecGrad, setPrepInput[iIdx]);
         return _CONV GradLossToInputIm2Col(vecGrad, vecKernel, iLayerOutputLnCnt, iLayerKernelLnCnt, iLayerKernelColCnt, iLayerLnStride, iLayerColStride, iLayerLnDilation, iLayerColDilation, iLayerInputPadTop, iLayerInputPadRight, iLayerInputPadBottom, iLayerInputPadLeft, iLayerLnDistance, iLayerColDistance);
     }
 
@@ -516,7 +472,7 @@ struct LayerConvBNIm2Col : Layer
     set<vect> setLayerInput, setGradLossToOutput, setGradLossToInput/*Need not initialize*/;
     std::mutex tdmtxFCBN;
     std::condition_variable condFCBN;
-    async::shared_counter lkCnt;
+    async::shared_counter lkCnt = 0;
     bool bForwSgn = false, bBackSgn = false;
 
     void ValueAssign(LayerConvBNIm2Col &lyrSrc) { dEpsilon = lyrSrc.dEpsilon; bForwSgn = lyrSrc.bForwSgn; bBackSgn = lyrSrc.bBackSgn; }
@@ -539,11 +495,11 @@ struct LayerConvBNIm2Col : Layer
         vecGamma = _CONV BNInitScaleShift(iChannCnt, dScale);
     }
 
-    vect ForwProp(vect &vecInput, uint64_t iTdIdx)
+    vect ForwProp(vect &vecInput, uint64_t iIdx)
     {
         lkCnt.increment();
-        if(vecInput.is_matrix()) setLayerInput[iTdIdx] = std::move(vecInput);
-        if(iTdIdx)
+        if(vecInput.is_matrix()) setLayerInput[iIdx] = std::move(vecInput);
+        if(iIdx)
         {
             std::unique_lock<std::mutex> lkFCBN(tdmtxFCBN);
             while(!bForwSgn) condFCBN.wait(lkFCBN);
@@ -557,13 +513,13 @@ struct LayerConvBNIm2Col : Layer
             condFCBN.notify_all();
             lkCnt.set_cnt();
         }
-        return BNData.setIm2ColY[iTdIdx];
+        return BNData.setIm2ColY[iIdx];
     }
-    vect BackProp(vect &vecGrad, uint64_t iTdIdx)
+    vect BackProp(vect &vecGrad, uint64_t iIdx)
     {
         lkCnt.increment();
-        if(vecGrad.is_matrix()) setGradLossToOutput[iTdIdx] = std::move(vecGrad);
-        if(iTdIdx)
+        if(vecGrad.is_matrix()) setGradLossToOutput[iIdx] = std::move(vecGrad);
+        if(iIdx)
         {
             std::unique_lock<std::mutex> lkFCBN(tdmtxFCBN);
             while(!bBackSgn) condFCBN.wait(lkFCBN);
@@ -578,7 +534,7 @@ struct LayerConvBNIm2Col : Layer
             vecGradBeta = _CONV BNGradLossToShiftIm2Col(setGradLossToOutput);
             lkCnt.set_cnt();
         }
-        return setGradLossToInput[iTdIdx];
+        return setGradLossToInput[iIdx];
     }
     
     set<vect> ForwProp(set<vect> &setInput)
@@ -608,7 +564,7 @@ struct LayerConvBNIm2Col : Layer
         bForwSgn = false;
         bBackSgn = false;
     }
-    vect Deduce(vect &vecInput, BN_CONV_IM2COL_PTR &pBNData, uint64_t iBatchSize = 0, uint64_t iBatchCnt = 0) { _CONV BNDeduceIm2Col(vecInput, vecBeta, vecGamma, pBNData, iBatchCnt, iBatchSize, dEpsilon); }
+    vect Deduce(vect &vecInput, BN_CONV_IM2COL_PTR &pBNData, uint64_t iBatchSize = 0, uint64_t iBatchCnt = 0) { return _CONV BNDeduceIm2Col(vecInput, vecBeta, vecGamma, pBNData, iBatchCnt, iBatchSize, dEpsilon); }
 
     void ResetAda() { advBeta.Reset(); advGamma.Reset(); anvBeta.Reset(); anvGamma.Reset(); }
     void Reset() { vecBeta.reset(); vecGamma.reset(); setLayerInput.reset(); vecGradBeta.reset(); vecGradGamma.reset(); BNData.Reset(); setGradLossToOutput.reset(); setGradLossToInput.reset(); ResetAda(); }
@@ -676,11 +632,11 @@ struct LayerPoolIm2Col : Layer
 
     LayerPoolIm2Col(uint64_t iPoolTypeVal = POOL_MAX_IM2COL, uint64_t iFilterLnCnt = 0, uint64_t iFilterColCnt = 0, uint64_t iLnStride = 0, uint64_t iColStride = 0, uint64_t iLnDilation = 0, uint64_t iColDilation = 0, uint64_t iInputPadTop = 0, uint64_t iInputPadRight = 0, uint64_t iInputPadBottom = 0, uint64_t iInputPadLeft = 0, uint64_t iLnDistance = 0, uint64_t iColDistance = 0) : Layer(POOL_IM2COL, 0), iPoolType(iPoolTypeVal), iLayerFilterLnCnt(iFilterLnCnt), iLayerFilterColCnt(iFilterColCnt), iLayerLnStride(iLnStride), iLayerColStride(iColStride), iLayerLnDilation(iLnDilation), iLayerColDilation(iColDilation), iLayerInputPadTop(iInputPadTop), iLayerInputPadRight(iInputPadRight), iLayerInputPadBottom(iInputPadBottom), iLayerInputPadLeft(iInputPadLeft), iLayerLnDistance(iLnDistance), iLayerColDistance(iColDistance) {}
 
-    vect ForwProp(vect &vecInput, uint64_t iInputLnCnt, uint64_t iTdIdx)
+    vect ForwProp(vect &vecInput, uint64_t iInputLnCnt, uint64_t iIdx)
     {
         if(iPoolType == POOL_GAG_IM2COL)
         {
-            if(iTdIdx)
+            if(iIdx)
             {
                 std::unique_lock<std::mutex> lkPoolIm2Col(tdmtxPoolIm2Col);
                 while(!bActSgn) condPoolIm2Col.wait(lkPoolIm2Col);
@@ -699,8 +655,8 @@ struct LayerPoolIm2Col : Layer
         else
         {
             uint64_t iOutputLnCnt = 0;
-            auto vecAns =  _CONV PoolMaxAvgIm2Col(iPoolType, vecInput, setInputMaxPosList[iTdIdx], iOutputLnCnt, iInputLnCnt, iLayerFilterLnCnt, iLayerFilterColCnt, iLayerLnStride, iLayerColStride, iLayerLnDilation, iLayerColDilation, iLayerInputPadTop, iLayerInputPadRight, iLayerInputPadBottom, iLayerInputPadLeft, iLayerLnDistance, iLayerColDistance);
-            if(iTdIdx)
+            auto vecAns =  _CONV PoolMaxAvgIm2Col(iPoolType, vecInput, setInputMaxPosList[iIdx], iOutputLnCnt, iInputLnCnt, iLayerFilterLnCnt, iLayerFilterColCnt, iLayerLnStride, iLayerColStride, iLayerLnDilation, iLayerColDilation, iLayerInputPadTop, iLayerInputPadRight, iLayerInputPadBottom, iLayerInputPadLeft, iLayerLnDistance, iLayerColDistance);
+            if(iIdx)
             {
                 std::unique_lock<std::mutex> lkPoolIm2Col(tdmtxPoolIm2Col);
                 while(!bActSgn) condPoolIm2Col.wait(lkPoolIm2Col);
@@ -716,12 +672,12 @@ struct LayerPoolIm2Col : Layer
             return vecAns;
         }
     }
-    vect BackProp(vect &vecGrad, uint64_t iTdIdx)
+    vect BackProp(vect &vecGrad, uint64_t iIdx)
     {
         if(iPoolType == POOL_GAG_IM2COL) return _CONV GradLossToPoolGlbAvgInputIm2Col(vecGrad, iLayerInputLnCnt*iLayerInputColCnt);
         else
         {
-            return _CONV GradLossToPoolMaxAvgInputIm2Col(iPoolType, vecGrad, setInputMaxPosList[iTdIdx], iLayerOutputLnCnt, iLayerFilterLnCnt, iLayerFilterColCnt, iLayerLnStride, iLayerColStride, iLayerLnDilation, iLayerColDilation, iLayerInputPadTop, iLayerInputPadRight, iLayerInputPadBottom, iLayerInputPadLeft, iLayerLnDistance, iLayerColDistance);
+            return _CONV GradLossToPoolMaxAvgInputIm2Col(iPoolType, vecGrad, setInputMaxPosList[iIdx], iLayerOutputLnCnt, iLayerFilterLnCnt, iLayerFilterColCnt, iLayerLnStride, iLayerColStride, iLayerLnDilation, iLayerColDilation, iLayerInputPadTop, iLayerInputPadRight, iLayerInputPadBottom, iLayerInputPadLeft, iLayerLnDistance, iLayerColDistance);
         }
     }
 
@@ -739,7 +695,7 @@ struct LayerPoolIm2Col : Layer
         if(iPoolType == POOL_GAG_IM2COL) return _CONV PoolGlbAvgIm2Col(vecInput);
         else return _CONV PoolMaxAvgIm2Col(iPoolType, vecInput, set<bagrt::net_list<mtx::mtx_pos>>(), iOutputLnCntTemp, iLayerInputLnCnt, iLayerFilterLnCnt, iLayerFilterColCnt, iLayerLnStride, iLayerColStride, iLayerLnDilation, iLayerColDilation, iLayerInputPadTop, iLayerInputPadRight, iLayerInputPadBottom, iLayerInputPadLeft, iLayerLnDistance, iLayerColDistance);
     }
-    void UpdatePara() { bActSgn = false; }
+    void RefreshAsyncSgn() { bActSgn = false; }
 
     void Reset() { setInputMaxPosList.reset(); }
     ~LayerPoolIm2Col() { Reset(); }
@@ -792,25 +748,27 @@ struct LayerTransIm2Col : Layer
     LayerTransIm2Col() : Layer(TRANS_IM2COL, 0) {}
     LayerTransIm2Col(uint64_t iChannLnCnt, uint64_t iChannColCnt) : Layer(TRANS_IM2COL, 0), iLnCnt(iChannLnCnt), iColCnt(iChannColCnt), bFeatToVec(false) {}
 
-    vect ForwProp(vect &vecInput, uint64_t iInputLnCnt, uint64_t iTdIdx)
+    vect ForwProp(vect &vecInput, uint64_t iInputLnCnt, uint64_t iIdx)
     {
-        if(iTdIdx)
+        if(bFeatToVec)
         {
-            std::unique_lock<std::mutex> lckTransIm2Col(tdmtxTransIm2Col);
-            while(!bActSgn) condTransIm2Col.wait(lckTransIm2Col);
-        }
-        else
-        {
-            std::unique_lock<std::mutex> lckTransIm2Col(tdmtxTransIm2Col);
-            iLnCnt = iInputLnCnt;
-            iColCnt = vecInput.LN_CNT / iLnCnt;
-            bActSgn = true;
-            condTransIm2Col.notify_all();
+            if(iIdx)
+            {
+                std::unique_lock<std::mutex> lckTransIm2Col(tdmtxTransIm2Col);
+                while(!bActSgn) condTransIm2Col.wait(lckTransIm2Col);
+            }
+            else
+            {
+                std::unique_lock<std::mutex> lckTransIm2Col(tdmtxTransIm2Col);
+                iLnCnt = iInputLnCnt;
+                iColCnt = vecInput.LN_CNT / iLnCnt;
+                bActSgn = true;
+                condTransIm2Col.notify_all();
+            }
         }
         return Deduce(vecInput); 
     }
-    vect ForwProp(vect &vecInput) { return Deduce(vecInput); }
-    vect BackProp(vect &vecGrad, uint64_t iTdIdx)
+    vect BackProp(vect &vecGrad, uint64_t iIdx)
     {
         if(bFeatToVec) return _FC FeatureTransformIm2Col(vecGrad, iLnCnt, iColCnt);
         else return _FC FeatureTransformIm2Col(vecGrad);
@@ -828,7 +786,7 @@ struct LayerTransIm2Col : Layer
         if(bFeatToVec) return _FC FeatureTransformIm2Col(setGrad, iLnCnt, iColCnt);
         else return _FC FeatureTransformIm2Col(setGrad);
     }
-    void UpdatePara() { if(bFeatToVec) bActSgn = false; }
+    void RefreshAsyncSgn() { if(bFeatToVec) bActSgn = false; }
 
     vect Deduce(vect &vecInput)
     {

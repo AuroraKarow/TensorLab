@@ -269,12 +269,11 @@ MATRIX mtx_mult(MATRIX &l_mtx, MATRIX &r_mtx, uint64_t l_ln_cnt, uint64_t l_col_
     {
         auto res_mtx = mtx_init(l_ln_cnt, r_col_cnt);
         for (int i = 0; i < l_ln_cnt; ++i)
-            for (int j = 0; j < r_col_cnt; ++j)
+            for(auto j=0; j< l_col_cnt; ++j)
             {
-                double sum = 0.0;
-                for (int k = 0; k < l_col_cnt; ++k)
-                    sum += l_mtx[mtx_elem_pos(i, k, l_col_cnt)] * r_mtx[mtx_elem_pos(k, j, r_col_cnt)];
-                res_mtx[mtx_elem_pos(i, j, r_col_cnt)] = sum;
+                auto coe = l_mtx[mtx_elem_pos(i, j, l_col_cnt)];
+                for(auto k=0; k < r_col_cnt; ++k)
+                res_mtx[mtx_elem_pos(i, k, r_col_cnt)] += coe * r_mtx[mtx_elem_pos(j, k, r_col_cnt)];
             }
         return res_mtx;
     }

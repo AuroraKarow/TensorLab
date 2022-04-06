@@ -8,7 +8,7 @@
 
 #define NET_LIST        bagrt::net_list
 #define NET_MAP         bagrt::net_map
-#define NET_SEQ         bagrt::net_sequence
+#define NET_SEQ         seq
 
 // Layer
 
