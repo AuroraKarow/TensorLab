@@ -86,93 +86,6 @@ feature GradLossToInput(feature &vecGradLossToOutput, tensor &tenKernel, uint64_
     return vecGrad;
 }
 
-vect Im2ColFeaturePad(vect &vecSrc, uint64_t &iLnPadCnt, uint64_t &iColPadCnt, uint64_t iLnCnt, uint64_t iColCnt, uint64_t iTopCnt, uint64_t iRightCnt, uint64_t iBottomCnt, uint64_t iLeftCnt, uint64_t iLnDistance, uint64_t iColDistance)
-{
-    if(iTopCnt || iRightCnt || iBottomCnt || iLeftCnt || iLnDistance || iColDistance)
-    {
-        iLnPadCnt = iTopCnt + iBottomCnt + iLnCnt + (iLnCnt - 1) * iLnDistance;
-        iColPadCnt = iRightCnt + iLeftCnt + iColCnt + (iColCnt - 1) * iColDistance;
-        vect vecAns(iLnPadCnt*iColPadCnt, vecSrc.COL_CNT);
-        for(auto i=0; i<vecSrc.ELEM_CNT; ++i)
-        {
-            auto posCurrAxis = mtx::mtx_elem_pos(i, vecSrc.COL_CNT);
-            auto posCurrDim = mtx::mtx_elem_pos(posCurrAxis.ln, iColCnt);
-            vecAns[mtx::mtx_elem_pos(iTopCnt+posCurrDim.ln*(iLnDistance+1),iLeftCnt+posCurrDim.col*(iColDistance+1),iColPadCnt)][posCurrAxis.col] = vecSrc.pos_idx(i);
-        }
-        return vecAns;
-    }
-    else { iLnPadCnt = iLnCnt; iColPadCnt = iColCnt; return vecSrc; }
-}
-
-vect Im2ColFeatureCrop(vect &vecSrc, uint64_t &iLnCropCnt, uint64_t &iColCropCnt, uint64_t iLnCnt, uint64_t iColCnt, uint64_t iTopCnt, uint64_t iRightCnt, uint64_t iBottomCnt, uint64_t iLeftCnt, uint64_t iLnDistance, uint64_t iColDistance)
-{
-    if(iTopCnt || iRightCnt || iBottomCnt || iLeftCnt || iLnDistance || iColDistance)
-    {
-        iLnCropCnt = (iLnCnt - (iTopCnt + iBottomCnt) + iLnDistance) / (iLnDistance + 1);
-        iColCropCnt = (iColCnt - (iLeftCnt + iRightCnt) + iColDistance) / (iColDistance + 1);
-        vect vecAns(iLnCropCnt*iColCropCnt, vecSrc.COL_CNT);
-        for(auto i=0; i<vecAns.ELEM_CNT; ++i)
-        {
-            auto posCurrAxis = mtx::mtx_elem_pos(i, vecAns.COL_CNT);
-            auto posCurrDim = mtx::mtx_elem_pos(posCurrAxis.ln, iColCropCnt);
-            vecAns.pos_idx(i) = vecSrc[mtx::mtx_elem_pos(iTopCnt+posCurrDim.ln*(iLnDistance+1),iLeftCnt+posCurrDim.col*(iColDistance+1), iColCnt)][posCurrAxis.col];
-        }
-        return vecAns;
-    }
-    else { iLnCropCnt = iLnCnt; iColCropCnt = iColCnt; return vecSrc; }
-}
-
-vect Im2ColInputTransform(vect &vecInput, uint64_t &iOutputLnCnt, uint64_t iInputLnCnt, uint64_t iFilterLnCnt, uint64_t iFilterColCnt, uint64_t iLnStride, uint64_t iColStride, uint64_t iLnDilation, uint64_t iColDilation, uint64_t iInputPadTop, uint64_t iInputPadRight, uint64_t iInputPadBottom, uint64_t iInputPadLeft, uint64_t iLnDistance, uint64_t iColDistance)
-{
-    uint64_t iPrepInputLnCnt = 0, iPrepInputColCnt = 0, iInputColCnt = vecInput.LN_CNT / iInputLnCnt, iOutputColCnt = 0;
-    auto vecPrepInput = Im2ColFeaturePad(vecInput, iPrepInputLnCnt, iPrepInputColCnt, iInputLnCnt, iInputColCnt, iInputPadTop, iInputPadRight, iInputPadBottom, iInputPadLeft, iLnDistance, iColDistance);
-    iOutputLnCnt = SAMP_OUTPUT_DIR_CNT(iPrepInputLnCnt, iFilterLnCnt, iLnStride, iLnDilation);
-    iOutputColCnt = SAMP_OUTPUT_DIR_CNT(iPrepInputColCnt, iFilterColCnt, iColStride, iColDilation);
-    auto iOutputElemCnt = iOutputLnCnt * iOutputColCnt, iFilterElemCnt = iFilterLnCnt * iFilterColCnt;
-    vect vecAns(iOutputElemCnt, vecInput.COL_CNT*iFilterElemCnt);
-    auto iTensorSize = iOutputElemCnt * iFilterElemCnt,
-        iHyperSize = vecInput.COL_CNT * iTensorSize;
-    for(auto i=0; i<iHyperSize; ++i)
-    {
-        auto posCurrHyperDim = mtx::mtx_elem_pos(i, iTensorSize),
-            posCurrTensorDim = mtx::mtx_elem_pos(posCurrHyperDim.col, iFilterElemCnt);
-        auto iOutputPos = mtx::mtx_elem_pos(posCurrTensorDim.ln, iOutputColCnt), iFilterPos = mtx::mtx_elem_pos(posCurrTensorDim.col, iFilterColCnt);
-        vecAns[posCurrTensorDim.ln][posCurrHyperDim.ln*iFilterElemCnt+posCurrTensorDim.col] = vecPrepInput[mtx::mtx_elem_pos(SAMP_TRACE_POS(iOutputPos.ln, iFilterPos.ln, iLnStride, iLnDilation),SAMP_TRACE_POS(iOutputPos.col, iFilterPos.col, iColStride, iColDilation),iPrepInputColCnt)][posCurrHyperDim.ln];
-    }
-    return vecAns;
-}
-
-// [iInputLnCnt][iInputColCnt] could be blank for gradient calculation otherwise should be relay with [iOutputLnCnt]
-vect Im2ColInputTransform(vect &vecIm2ColInput, uint64_t iFilterLnCnt, uint64_t iFilterColCnt, uint64_t iLnStride, uint64_t iColStride, uint64_t iOutputLnCnt, uint64_t iInputLnCnt, uint64_t iInputColCnt, bool bGradFlag, uint64_t iLnDilation, uint64_t iColDilation, uint64_t iInputPadTop, uint64_t iInputPadRight, uint64_t iInputPadBottom, uint64_t iInputPadLeft, uint64_t iLnDistance, uint64_t iColDistance)
-{
-    uint64_t iFilterElemCnt = iFilterLnCnt * iFilterColCnt, iOutputColCnt = vecIm2ColInput.LN_CNT / iOutputLnCnt;
-    if(bGradFlag)
-    {
-        iInputLnCnt = SAMP_INPUT_DIR_CNT(iOutputLnCnt, iFilterLnCnt, iLnStride, iLnDilation);
-        iInputColCnt = SAMP_INPUT_DIR_CNT(iOutputColCnt, iFilterColCnt, iColStride, iColDilation);
-    }
-    vect vecPrepAns(iInputLnCnt*iInputColCnt, vecIm2ColInput.COL_CNT/iFilterElemCnt);
-    for(auto i=0; i<vecPrepAns.COL_CNT; ++i) for(auto j=0; j<vecIm2ColInput.LN_CNT; ++j) for(auto k=0; k<iFilterElemCnt; ++k)
-    {
-        auto iOutputPos = mtx::mtx_elem_pos(j, iOutputColCnt), iFilterPos = mtx::mtx_elem_pos(k, iFilterColCnt);
-        auto iTraceIdx = mtx::mtx_elem_pos(SAMP_TRACE_POS(iOutputPos.ln, iFilterPos.ln, iLnStride, iLnDilation), SAMP_TRACE_POS(iOutputPos.col, iFilterPos.col, iColStride, iColDilation), iInputColCnt);
-        if(bGradFlag) vecPrepAns[iTraceIdx][i] += vecIm2ColInput[j][i*iFilterElemCnt+k];
-        else vecPrepAns[iTraceIdx][i] = vecIm2ColInput[j][i*iFilterElemCnt+k];
-    }
-    uint64_t iTempL = 0, iTempC = 0;
-    return Im2ColFeatureCrop(vecPrepAns, iTempL, iTempC, iInputLnCnt, iInputColCnt, iInputPadTop, iInputPadRight, iInputPadBottom, iInputPadLeft, iLnDistance, iColDistance);
-}
-
-vect ConvIm2Col(vect &vecIm2ColInput, vect &vecIm2ColKernel) { return fc::Output(vecIm2ColKernel, vecIm2ColInput); }
-
-vect GradLossToInputIm2Col(vect &vecGradLossToOutput, vect &vectKernel, uint64_t iOutputLnCnt, uint64_t iKernelLnCnt, uint64_t iKernelColCnt, uint64_t iLnStride, uint64_t iColStride, uint64_t iLnDilation, uint64_t iColDilation, uint64_t iInputPadTop, uint64_t iInputPadRight, uint64_t iInputPadBottom, uint64_t iInputPadLeft, uint64_t iLnDistance, uint64_t iColDistance)
-{
-    auto vecIm2ColGrad = fc::GradLossToWeight(vecGradLossToOutput, vectKernel);
-    return Im2ColInputTransform(vecIm2ColGrad, iKernelLnCnt, iKernelColCnt, iLnStride, iColStride, iOutputLnCnt, 0, 0, true, iLnDilation, iColDilation, iInputPadTop, iInputPadRight, iInputPadBottom, iInputPadLeft, iLnDistance, iColDistance);
-}
-
-vect GradLossToKernelIm2Col(vect &vecGradLossToOutput, vect &vecIm2ColInput) { return fc::GradLossToInput(vecGradLossToOutput, vecIm2ColInput); }
-
 vect PoolDownMaxAvg(vect &vecInput, uint64_t iFilterLnCnt, uint64_t iFilterColCnt, uint64_t iLnStride, uint64_t iColStride, uint64_t iPoolType = POOL_DOWN_MAX, uint64_t iLnDilation = 0, uint64_t iColDilation = 0)
 {
     vect vecOutput;
@@ -261,6 +174,93 @@ feature PoolUp(feature &vecInput, uint64_t iPoolType = POOL_UP_MAX, feature &vec
     return vecOutput;
 }
 
+vect Im2ColFeaturePad(vect &vecSrc, uint64_t &iLnPadCnt, uint64_t &iColPadCnt, uint64_t iLnCnt, uint64_t iColCnt, uint64_t iTopCnt, uint64_t iRightCnt, uint64_t iBottomCnt, uint64_t iLeftCnt, uint64_t iLnDistance, uint64_t iColDistance)
+{
+    if(iTopCnt || iRightCnt || iBottomCnt || iLeftCnt || iLnDistance || iColDistance)
+    {
+        iLnPadCnt = iTopCnt + iBottomCnt + iLnCnt + (iLnCnt - 1) * iLnDistance;
+        iColPadCnt = iRightCnt + iLeftCnt + iColCnt + (iColCnt - 1) * iColDistance;
+        vect vecAns(iLnPadCnt*iColPadCnt, vecSrc.COL_CNT);
+        for(auto i=0; i<vecSrc.ELEM_CNT; ++i)
+        {
+            auto posCurrAxis = mtx::mtx_elem_pos(i, vecSrc.COL_CNT);
+            auto posCurrDim = mtx::mtx_elem_pos(posCurrAxis.ln, iColCnt);
+            vecAns[mtx::mtx_elem_pos(iTopCnt+posCurrDim.ln*(iLnDistance+1),iLeftCnt+posCurrDim.col*(iColDistance+1),iColPadCnt)][posCurrAxis.col] = vecSrc.pos_idx(i);
+        }
+        return vecAns;
+    }
+    else { iLnPadCnt = iLnCnt; iColPadCnt = iColCnt; return vecSrc; }
+}
+
+vect Im2ColFeatureCrop(vect &vecSrc, uint64_t &iLnCropCnt, uint64_t &iColCropCnt, uint64_t iLnCnt, uint64_t iColCnt, uint64_t iTopCnt, uint64_t iRightCnt, uint64_t iBottomCnt, uint64_t iLeftCnt, uint64_t iLnDistance, uint64_t iColDistance)
+{
+    if(iTopCnt || iRightCnt || iBottomCnt || iLeftCnt || iLnDistance || iColDistance)
+    {
+        iLnCropCnt = (iLnCnt - (iTopCnt + iBottomCnt) + iLnDistance) / (iLnDistance + 1);
+        iColCropCnt = (iColCnt - (iLeftCnt + iRightCnt) + iColDistance) / (iColDistance + 1);
+        vect vecAns(iLnCropCnt*iColCropCnt, vecSrc.COL_CNT);
+        for(auto i=0; i<vecAns.ELEM_CNT; ++i)
+        {
+            auto posCurrAxis = mtx::mtx_elem_pos(i, vecAns.COL_CNT);
+            auto posCurrDim = mtx::mtx_elem_pos(posCurrAxis.ln, iColCropCnt);
+            vecAns.pos_idx(i) = vecSrc[mtx::mtx_elem_pos(iTopCnt+posCurrDim.ln*(iLnDistance+1),iLeftCnt+posCurrDim.col*(iColDistance+1), iColCnt)][posCurrAxis.col];
+        }
+        return vecAns;
+    }
+    else { iLnCropCnt = iLnCnt; iColCropCnt = iColCnt; return vecSrc; }
+}
+
+vect Im2ColInputTransform(vect &vecInput, uint64_t &iOutputLnCnt, uint64_t iInputLnCnt, uint64_t iFilterLnCnt, uint64_t iFilterColCnt, uint64_t iLnStride, uint64_t iColStride, uint64_t iLnDilation, uint64_t iColDilation, uint64_t iInputPadTop, uint64_t iInputPadRight, uint64_t iInputPadBottom, uint64_t iInputPadLeft, uint64_t iLnDistance, uint64_t iColDistance)
+{
+    uint64_t iPrepInputLnCnt = 0, iPrepInputColCnt = 0, iInputColCnt = vecInput.LN_CNT / iInputLnCnt, iOutputColCnt = 0;
+    auto vecPrepInput = Im2ColFeaturePad(vecInput, iPrepInputLnCnt, iPrepInputColCnt, iInputLnCnt, iInputColCnt, iInputPadTop, iInputPadRight, iInputPadBottom, iInputPadLeft, iLnDistance, iColDistance);
+    iOutputLnCnt = SAMP_OUTPUT_DIR_CNT(iPrepInputLnCnt, iFilterLnCnt, iLnStride, iLnDilation);
+    iOutputColCnt = SAMP_OUTPUT_DIR_CNT(iPrepInputColCnt, iFilterColCnt, iColStride, iColDilation);
+    auto iOutputElemCnt = iOutputLnCnt * iOutputColCnt, iFilterElemCnt = iFilterLnCnt * iFilterColCnt;
+    vect vecAns(iOutputElemCnt, vecInput.COL_CNT*iFilterElemCnt);
+    auto iTensorSize = iOutputElemCnt * iFilterElemCnt,
+        iHyperSize = vecInput.COL_CNT * iTensorSize;
+    for(auto i=0; i<iHyperSize; ++i)
+    {
+        auto posCurrHyperDim = mtx::mtx_elem_pos(i, iTensorSize),
+            posCurrTensorDim = mtx::mtx_elem_pos(posCurrHyperDim.col, iFilterElemCnt);
+        auto iOutputPos = mtx::mtx_elem_pos(posCurrTensorDim.ln, iOutputColCnt), iFilterPos = mtx::mtx_elem_pos(posCurrTensorDim.col, iFilterColCnt);
+        vecAns[posCurrTensorDim.ln][posCurrHyperDim.ln*iFilterElemCnt+posCurrTensorDim.col] = vecPrepInput[mtx::mtx_elem_pos(SAMP_TRACE_POS(iOutputPos.ln, iFilterPos.ln, iLnStride, iLnDilation),SAMP_TRACE_POS(iOutputPos.col, iFilterPos.col, iColStride, iColDilation),iPrepInputColCnt)][posCurrHyperDim.ln];
+    }
+    return vecAns;
+}
+
+// [iInputLnCnt][iInputColCnt] could be blank for gradient calculation otherwise should be relaid with [iOutputLnCnt]
+vect Im2ColInputTransform(vect &vecIm2ColInput, uint64_t iFilterLnCnt, uint64_t iFilterColCnt, uint64_t iLnStride, uint64_t iColStride, uint64_t iOutputLnCnt, uint64_t iInputLnCnt, uint64_t iInputColCnt, bool bGradFlag, uint64_t iLnDilation, uint64_t iColDilation, uint64_t iInputPadTop, uint64_t iInputPadRight, uint64_t iInputPadBottom, uint64_t iInputPadLeft, uint64_t iLnDistance, uint64_t iColDistance)
+{
+    uint64_t iFilterElemCnt = iFilterLnCnt * iFilterColCnt, iOutputColCnt = vecIm2ColInput.LN_CNT / iOutputLnCnt;
+    if(bGradFlag)
+    {
+        iInputLnCnt = SAMP_INPUT_DIR_CNT(iOutputLnCnt, iFilterLnCnt, iLnStride, iLnDilation);
+        iInputColCnt = SAMP_INPUT_DIR_CNT(iOutputColCnt, iFilterColCnt, iColStride, iColDilation);
+    }
+    vect vecPrepAns(iInputLnCnt*iInputColCnt, vecIm2ColInput.COL_CNT/iFilterElemCnt);
+    for(auto i=0; i<vecPrepAns.COL_CNT; ++i) for(auto j=0; j<vecIm2ColInput.LN_CNT; ++j) for(auto k=0; k<iFilterElemCnt; ++k)
+    {
+        auto iOutputPos = mtx::mtx_elem_pos(j, iOutputColCnt), iFilterPos = mtx::mtx_elem_pos(k, iFilterColCnt);
+        auto iTraceIdx = mtx::mtx_elem_pos(SAMP_TRACE_POS(iOutputPos.ln, iFilterPos.ln, iLnStride, iLnDilation), SAMP_TRACE_POS(iOutputPos.col, iFilterPos.col, iColStride, iColDilation), iInputColCnt);
+        if(bGradFlag) vecPrepAns[iTraceIdx][i] += vecIm2ColInput[j][i*iFilterElemCnt+k];
+        else vecPrepAns[iTraceIdx][i] = vecIm2ColInput[j][i*iFilterElemCnt+k];
+    }
+    uint64_t iTempL = 0, iTempC = 0;
+    return Im2ColFeatureCrop(vecPrepAns, iTempL, iTempC, iInputLnCnt, iInputColCnt, iInputPadTop, iInputPadRight, iInputPadBottom, iInputPadLeft, iLnDistance, iColDistance);
+}
+
+vect ConvIm2Col(vect &vecIm2ColInput, vect &vecIm2ColKernel) { return fc::Output(vecIm2ColKernel, vecIm2ColInput); }
+
+vect GradLossToInputIm2Col(vect &vecGradLossToOutput, vect &vectKernel, uint64_t iOutputLnCnt, uint64_t iKernelLnCnt, uint64_t iKernelColCnt, uint64_t iLnStride, uint64_t iColStride, uint64_t iLnDilation, uint64_t iColDilation, uint64_t iInputPadTop, uint64_t iInputPadRight, uint64_t iInputPadBottom, uint64_t iInputPadLeft, uint64_t iLnDistance, uint64_t iColDistance)
+{
+    auto vecIm2ColGrad = fc::GradLossToWeight(vecGradLossToOutput, vectKernel);
+    return Im2ColInputTransform(vecIm2ColGrad, iKernelLnCnt, iKernelColCnt, iLnStride, iColStride, iOutputLnCnt, 0, 0, true, iLnDilation, iColDilation, iInputPadTop, iInputPadRight, iInputPadBottom, iInputPadLeft, iLnDistance, iColDistance);
+}
+
+vect GradLossToKernelIm2Col(vect &vecGradLossToOutput, vect &vecIm2ColInput) { return fc::GradLossToInput(vecGradLossToOutput, vecIm2ColInput); }
+
 vect PoolGlbAvgIm2Col(vect &vecInput)
 {
     vect vecAns(IDX_SGL, vecInput.COL_CNT);
@@ -287,14 +287,11 @@ vect PoolMaxAvgIm2Col(uint64_t iPoolType, vect &vecInput, set<bagrt::net_list<mt
         auto posCurrDim = mtx::mtx_elem_pos(i, vecAns.COL_CNT);
         auto iCurrChannBeginCol = posCurrDim.col * iFilterElemCnt;
         auto iCurrVal = 0.0;
-        if(iPoolType == POOL_AVG_IM2COL)
-        {
-            iCurrVal = vecIm2ColPrepInput.child(posCurrDim.ln,posCurrDim.ln,iCurrChannBeginCol,iCurrChannBeginCol+iFilterElemCnt-1).elem_sum() / iFilterElemCnt;
-        }
+        if(iPoolType == POOL_AVG_IM2COL) iCurrVal = vecIm2ColPrepInput.elem_sum(posCurrDim.ln, posCurrDim.ln, iCurrChannBeginCol, iCurrChannBeginCol+iFilterElemCnt-1) / iFilterElemCnt;
         else if(iPoolType == POOL_MAX_IM2COL)
         {
             if(!setIm2ColInputPoolExtmPosList.size()) setIm2ColInputPoolExtmPosList.init(vecAns.ELEM_CNT);
-            auto iExtmTemp = vecIm2ColPrepInput.extremum(posCurrDim.ln,posCurrDim.ln,iCurrChannBeginCol,iCurrChannBeginCol+iFilterElemCnt-1);
+            auto iExtmTemp = vecIm2ColPrepInput.extremum(posCurrDim.ln, posCurrDim.ln, iCurrChannBeginCol, iCurrChannBeginCol+iFilterElemCnt-1);
             iCurrVal = iExtmTemp.val;
             setIm2ColInputPoolExtmPosList[i] = std::move(iExtmTemp.pos_list);
         }

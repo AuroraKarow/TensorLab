@@ -1,9 +1,11 @@
 BASEALGO_BEGIN
 
-uint64_t num_cnt(uint64_t from, uint64_t to)
+uint64_t num_cnt(uint64_t first, uint64_t second, uint64_t dilate = 0)
 {
-    if(from <= to) return to - from + 1;
-    else return 0;
+    first > second ? std::swap(first, second) : 0;
+    auto ans = second - first;
+    if(ans % (dilate+1)) return 0;
+    else return (ans / (dilate+1) + 1);
 }
 
 double num_rate(double numerator, double denominator)
@@ -11,6 +13,32 @@ double num_rate(double numerator, double denominator)
     if(denominator) return numerator / denominator;
     else return 0;
 }
+
+template<typename _T> _T num_extreme(std::initializer_list<_T> init_num, bool max = true, std::function<bool(_T, _T)>bigger_comp = [](_T _first, _T _second) { return _first > _second; })
+{
+    auto ext_val = *init_num.begin();
+    for(auto temp : init_num)
+    {
+        if(max && !bigger_comp(ext_val, temp)) ext_val = temp;
+        if(!max && bigger_comp(ext_val, temp)) ext_val = temp;
+    }
+    return ext_val;
+}
+
+uint64_t num_pow_pad_cnt(uint64_t val, uint64_t base, uint64_t min_size = 1, uint64_t pad = 0, uint64_t fold = 0)
+{
+    if(val <= min_size) return pad;
+    else if(val % base)
+    {
+        auto pad_curr = 0;
+        while (val % base) { ++ val; ++ pad_curr; }
+        pad_curr *= (fold + 1);
+        return num_pow_pad_cnt(val/base, base, min_size, pad+pad_curr, (fold+1)*(base-1)+fold);
+    }
+    else return num_pow_pad_cnt(val/base, base, min_size, pad, (fold+1)*(base-1)+fold);
+}
+
+uint64_t num_unsign(uint64_t val) { return val*(-1)<val ? 0 : val; }
 
 template<typename _T> void quick_sort(std::unique_ptr<_T[]> &seq_val, uint64_t begin, uint64_t end, bool asc = true, std::function<bool(_T&, _T&)>func_comp = [](_T &_first, _T &_second){return _first > _second;})
 {
@@ -59,6 +87,35 @@ template<typename arg, typename...args> void reset_ptr(arg &&first, args &&...ot
     reset_ptr(others...);
 }
 
+template<typename T> bool ptr_insert(T &src, std::unique_ptr<T[]> &ptr, int tar_idx, int len, bool mov_sgn = false)
+{
+    if(ptr.get() && tar_idx<=len)
+    {
+        auto ans = std::make_unique<T[]>(len+1);
+        if(tar_idx)
+            if(tar_idx == len) std::memmove(ans.get(), ptr.get(), len*sizeof(T));
+            else
+            {
+                auto head_len = tar_idx, rear_len = len - head_len;
+                auto head_ptr = ptr.get(), rear_ptr = head_ptr + head_len,
+                    ans_head_ptr = ans.get(), ans_rear_ptr = ans.get() + tar_idx + 1;
+                std::memmove(ans_head_ptr, head_ptr, head_len*sizeof(T));
+                std::memmove(ans_rear_ptr, rear_ptr, rear_len*sizeof(T));
+            }
+        else
+        {
+            auto dst = ans.get() + 1;
+            std::memmove(dst, ptr.get(), len*sizeof(T));
+        }
+        if(mov_sgn) ans[tar_idx] = std::move(src);
+        else ans[tar_idx] = src;
+        reset_ptr(ptr);
+        ptr = std::move(ans);
+        return true;
+    }
+    else return false;
+}
+
 template<typename _Ty> class net_queue
 {
 protected:
@@ -77,7 +134,7 @@ protected:
     }
     template <typename ... Args> net_queue<_Ty> realloc_dec_ptr(Args &&...idx)
     {
-        uint64_t idx_arr[] = {idx ...};
+        int idx_arr[] = {idx ...};
         auto cut_len = sizeof(idx_arr)/sizeof(uint64_t);
         auto uniq_idx = std::make_unique<uint64_t[]>(cut_len);
         for(auto i=0; i<cut_len; ++i) if(idx_arr[i] < len) uniq_idx[i] = idx_arr[i];
@@ -311,7 +368,7 @@ public:
         p_val = std::move(src.p_val);
         src.reset();
     }
-    net_sequence(uint64_t _size = 0, uint64_t alloc_size = IDX_MAX) { init(_size, alloc_size);}
+    net_sequence(uint64_t _size = IDX_ZERO, uint64_t alloc_size = IDX_MAX) { init(_size, alloc_size);}
     net_sequence(net_sequence &src) { value_copy(src); }
     net_sequence(net_sequence &&src) { value_move(std::move(src)); }
     net_sequence(std::initializer_list<_Ty> _init_list)
@@ -323,14 +380,15 @@ public:
     net_sequence blank_sequence() { return net_sequence(IDX_ZERO); }
     uint64_t size() { return len; }
     uint64_t mem_size() { return mem_len; }
-    void realloc(uint64_t _mem_size = IDX_MAX)
+    void realloc(uint64_t _mem_size = IDX_MAX, bool append_size = false)
     {
         auto p_tool = std::make_unique<_Ty[]>(_mem_size);
         mem_len = _mem_size;
-        if(len > mem_len)  len = mem_len;
+        if(len > mem_len) len = mem_len;
         for(auto i=0; i<len; ++i) p_tool[i] = std::move(p_val[i]);
         reset_ptr(p_val);
         p_val = std::move(p_tool);
+        if(append_size) len = _mem_size;
     }
     bool init(uint64_t _size = 1, uint64_t _alloc_size = IDX_MAX)
     {
@@ -363,7 +421,7 @@ public:
         if(idx > len) return false;
         else
         {
-            if(len == mem_len) realloc(len+IDX_MAX);
+            if(len == mem_len) realloc(mem_len+IDX_MAX);
             for(auto i=len; i>idx; --i) p_val[i] = std::move(p_val[i-1]);
             p_val[idx] = std::move(_Ty(std::forward<Args>(args)...));
             ++ len;
@@ -459,6 +517,7 @@ public:
         }
         else return false;
     }
+    std::unique_ptr<_Ty[]> &get() { return p_val; }
     _Ty &operator[](uint64_t idx)
     {
         if(idx < len) return p_val[idx];
@@ -501,6 +560,7 @@ public:
         }
         else reset();
     }
+    void clear() { len = 0; }
     void reset()
     {
         len = 0;
@@ -976,12 +1036,13 @@ public:
     ~net_link() { reset(); }
 };
 
-template<typename _K, typename _V>class net_map
+template<typename _K, typename _V> class net_map
 {
 public:
     struct kv
     {
         _K key; _V value;
+        bool occupy = false;
         void operator=(kv &val)
         {
             key = val.key;
@@ -991,77 +1052,117 @@ public:
         bool operator!=(kv &val) {return !(*this == val);}
         friend std::ostream &operator<<(std::ostream &output, kv &out_val)
         {
-            output << "[Key]" << std::endl << out_val.key << std::endl << "[Value]" << std::endl << out_val.value;
+            output << "[K][" << std::endl << out_val.key << std::endl << "]->[V][" << std::endl << out_val.value << std::endl << ']';
             return output;
         }
     };
+    uint64_t string_hash(std::string &src)
+    {
+        auto sum = 0;
+        for(auto i=0; i<src.length(); ++i) sum += i*src[i];
+        return sum;
+    }
 protected:
-    net_sequence<kv> val;
-    _V v_temp;
-    kv kv_temp;
+    int detective(int &cnt, bool &sgn)
+    {
+        if(cnt)
+            if(sgn) { sgn = false; auto temp = (-1) * cnt * cnt; ++ cnt; return temp; }
+            else { sgn = true; return cnt * cnt; }
+        else
+        {
+            if(sgn) sgn = false;
+            return cnt;
+        }
+    }
+    int next_key(int hash_key, int d) { return (hash_key + d) % val.mem_size(); }
 public:
-    net_map(uint64_t buf_size = 0, uint64_t alloc_size = IDX_MAX) : val(buf_size, alloc_size) {}
-    net_map(net_map &src) { val.value_copy(src.val); }
-    net_map(net_map &&src) { val.value_move(std::move(src.val)); }
-    void reset() { val.reset(); }
-    uint64_t size() { return val.size(); }
+    net_map(std::function<uint64_t(_K)> hash_key_func = [](_K idx) { return idx; }) : val(IDX_MAX, IDX_MAX), hash_func(hash_key_func) {}
+    net_map(net_map &src) { val.value_copy(src.val); hash_func = src.hash_func; }
+    net_map(net_map &&src) { val.value_move(std::move(src.val)); hash_func = std::move(src.hash_func); }
+    uint64_t size() { return len; }
+    uint64_t mem_size() { return val.mem_size(); }
     int find_idx(_K &&key)
     {
-        for(auto i=0; i<size(); ++i) if(val[i].key == key) return i;
-        return -1;
+        auto hash_key = hash_func(key);
+        auto cnt = 0;
+        bool sgn = false, flag = true;
+        for(;;)
+        {
+            auto curr_d = detective(cnt, sgn);
+            hash_key = next_key(hash_key, curr_d);
+            if(val[hash_key].occupy && val[hash_key].key==key) return hash_key;
+            else if(!val[hash_key].occupy) return hash_key;
+            else continue;
+        }
     }
     int find_idx(_K &key) { return find_idx(std::move(key)); }
-    net_list<_K> find_key(_V &&value)
+    net_sequence<_K> find_key(_V &&value)
     {
-        net_list<_K> key_set;
+        net_sequence<_K> key_set;
         for(auto i=0; i<size(); ++i) if(val[i].value == value) key_set.emplace_back(val[i].key);
         return key_set;
     }
-    net_list<_K> find_key(_V &value) { return find_key(std::move(value)); }
-    bool insert(_K &&key, _V &&value)
+    net_sequence<_K> find_key(_V &value) { return find_key(std::move(value)); }
+    bool insert(_K &&key, _V &&value, bool move_assign = false)
     {
-        if(this->find_idx(key)>=0) return false;
+        auto idx = find_idx(key);
+        if(val[idx].occupy) return false;
         else
         {
-            kv in_temp;
-            in_temp.key = key;
-            in_temp.value = value;
-            return val.emplace_back(std::move(in_temp));
+            val[idx].occupy = true;
+            ++ len;
+            if(len == val.mem_size()) val.realloc(val.mem_size()+val.mem_size(), true);
+            if(move_assign) { val[idx].key = std::move(key); val[idx].value = std::move(value); }
+            else { val[idx].key = key; val[idx].value = value; }
+            return true;
         }
     }
     bool insert(_K &key, _V &value) { return insert(std::move(key), std::move(value)); }
     kv erase(_K &&key)
     {
-        for(auto i=0; i<size(); ++i) if(val[i].key == key) kv_temp = val.erase(i);
-        return kv_temp;
+        auto idx = find_idx(key);
+        kv temp;
+        if(val[idx].occupy)
+        { 
+            val[idx].occupy = false;
+            temp.key = std::move(val[idx].key);
+            temp.value = std::move(val[idx].value);
+            -- len;
+        }
+        return temp;
     }
     kv erase(_K &key) { return erase(std::move(key)); }
-    kv &index(uint64_t idx)
-    {
-        if(idx < size()) return val[idx];
-        else return kv_temp;
-    }
+    kv &index(uint64_t idx) { return val[idx]; }
     _V &operator[](_K &&key) 
     {
-        auto tar_idx = find_idx(key);
-        if(tar_idx < 0) return v_temp;
-        else return val[tar_idx].value;
+        auto idx = find_idx(key);
+        if(val[idx].occupy) return val[idx].value;
+        else throw std::logic_error("Key not found.");
     }
     _V &operator[](_K &key) { return this->operator[](std::move(key)); }
-    void operator=(net_map &src) { val.value_copy(src.val); }
-    void operator=(net_map &&src) { val.value_move(std::move(src.val)); }
+    void operator=(net_map &src) { val.value_copy(src.val); hash_func = src.hash_func; }
+    void operator=(net_map &&src) { val.value_move(std::move(src.val)); hash_func = std::move(src.hash_func); }
     bool operator==(net_map &val) { return val == val.val; }
     bool operator!=(net_map &val) { return val != val.val; }
     friend std::ostream &operator<<(std::ostream &output, net_map &out_val)
     {
+        auto cnt = 0;
         for(auto i=0; i<out_val.val.size(); ++i)
         {
-            output << '[' << i << ']' << out_val.val[i];
-            if(i + 1 < out_val.val.size()) output << std::endl;
+            if(out_val.val[i].occupy)
+            {
+                output << out_val.val[i]; ++ cnt;
+                if(cnt != out_val.size()) output << std::endl;
+            }
         }
         return output;
     }
+    void reset() { val.reset(); }
     ~net_map() { reset(); }
+protected:
+    uint64_t len = 0;
+    std::function<uint64_t(_K)> hash_func;
+    net_sequence<kv> val;
 };
 
 template<typename k_type = uint64_t> struct clock_timer
@@ -1080,21 +1181,21 @@ public:
     void operator=(clock_timer &src) { clock_log = src.clock_log }
     void operator=(clock_timer &&src) { clock_log = std::move(src.clock_log); }
 
-    clock_timer(uint64_t buf_len = IDX_MAX) : clock_log(IDX_MAX) {}
+    clock_timer(std::function<uint64_t(k_type)> id_hash_func = [](k_type idx) { return idx; }) : clock_log(id_hash_func) {}
     bool clock_begin(k_type &&clock_log_id)
     {
         auto begin_point = clock();
         auto id_temp = clock_log.find_idx(clock_log_id);
-        if(id_temp < 0)
+        if(clock_log.index(id_temp).occupy)
+        {
+            clock_log.index(id_temp).value.begin = begin_point;
+            return true;
+        }
+        else
         {
             _dur dur_temp;
             dur_temp.begin = begin_point;
             return clock_log.insert(clock_log_id, dur_temp);
-        }
-        else
-        {
-            clock_log.index(id_temp).value.begin = begin_point;
-            return true;
         }
     }
     bool clock_begin(k_type &clock_log_id) { return clock_begin(std::move(clock_log_id)); }
@@ -1102,13 +1203,13 @@ public:
     {
         auto end_point = clock();
         auto log_idx = clock_log.find_idx(clock_log_id);
-        if(log_idx < 0) return false;
-        else
+        if(clock_log.index(log_idx).occupy)
         {
             clock_log.index(log_idx).value.end = end_point;
             clock_log.index(log_idx).value.dur = (clock_log.index(log_idx).value.end - clock_log.index(log_idx).value.begin) * 1000 / CLOCKS_PER_SEC;
+            return true;
         }
-        return true;
+        else return false;
     }
     bool clock_end(k_type &clock_log_id) { return clock_end(std::move(clock_log_id)); }
     long duration(k_type &&clock_log_id)
@@ -1121,6 +1222,205 @@ public:
     void reset() { clock_log.reset(); }
     ~clock_timer() { reset(); }
 };
+
+template<typename _Ty> class memory_sequence
+{
+public:
+    struct _pointer
+    {
+    private:
+        _Ty *p_ret; uint64_t len = 0; 
+    public:
+        _pointer() {}
+        _pointer(_pointer &src) { *this = src; }
+        _pointer(_pointer &&src) { *this = std::move(src); }
+        void operator=(_pointer &src) { p_ret = src.p_ret; len = src.len; }
+        void operator=(_pointer &&src) { p_ret = src.p_ret; src.p_ret = nullptr; len = src.len; src.len = 0;}
+        _pointer(std::unique_ptr<_Ty[]> &ptr, uint64_t begin_addr, uint64_t _len) : p_ret(ptr.get()+begin_addr), len(_len) {}
+        _Ty &operator[](int addr)
+        {
+            if(addr>=0 && addr<len) return p_ret[addr];
+            else throw std::logic_error("Out of boundary!");
+        }
+        uint64_t size() { return len; }
+        std::unique_ptr<_Ty[]> copy_ptr()
+        {
+            if(len)
+            {
+                auto p_tool = std::make_unique<_Ty[]>(len);
+                for(auto i=0; i<len; ++i) p_tool[i] = p_ret[i];
+                return p_tool;
+            }
+            else return nullptr;
+        }
+        ~_pointer() { len = 0; p_ret = nullptr; }
+    };
+protected:
+    struct mem_block
+    {
+        bool occupy = false;
+        uint64_t begin_addr = 0, end_addr = 0, size = 0;
+        int prev_id = -1, next_id = -1;
+        uint64_t length() { return bagrt::num_cnt(begin_addr, end_addr); }
+    };
+    net_sequence<_Ty> mem_val;
+    net_sequence<mem_block> idx_seq;
+    uint64_t head_id = 0, rear_id = 0, len = 0;
+    void value_assign(memory_sequence &src) { len = src.len; head_id = src.head_id; rear_id = src.rear_id; }
+public:
+    memory_sequence(uint64_t mem_size = IDX_MAX) : mem_val(mem_size, mem_size) {}
+    memory_sequence(memory_sequence &src) { *this = src; }
+    memory_sequence(memory_sequence &&src) { *this = std::move(src.idx_seq); }
+    void operator=(memory_sequence &src) { mem_val = src.mem_val; idx_seq = src.idx_seq; value_assign(src); }
+    void operator=(memory_sequence &&src) { mem_val = std::move(src.mem_val); idx_seq = std::move(src.idx_seq); value_assign(src); }
+    uint64_t max_size() { return mem_val.mem_size(); }
+    uint64_t size() { return len; }
+    uint64_t mem_length() { return (idx_seq[rear_id].end_addr + 1); }
+    void print_block_info(int id, bool detail = false)
+    {
+        if(id>=0 && id<idx_seq.size())
+        {
+            std::cout << "[ID " << id << "][Size ";
+            if(idx_seq[id].occupy) std::cout << idx_seq[id].size;
+            else std::cout << 0;
+            std::cout << '/' << idx_seq[id].length() << ']';
+            if(detail) std::cout << "[Address " << idx_seq[id].begin_addr << '-' << idx_seq[id].end_addr << "][Previous " << idx_seq[id].prev_id << " Next " << idx_seq[id].next_id << ']';
+        }
+        else std::cerr << "[Illegal ID]" << std::endl;
+    }
+    void print_mem_info(bool detail = false)
+    {
+        int tool_idx = head_id;
+        std::cout << "[Memory Structure]";
+        while(tool_idx >= 0)
+        {
+            if(tool_idx != head_id) std::cout << "->";
+            print_block_info(tool_idx, detail);
+            tool_idx = idx_seq[tool_idx].next_id;
+        }
+        std::cout << std::endl;
+        std::cout << "[Memory Size][Block " << size() << '/' << mem_length() << "][Max Size " << max_size() << ']' << std::endl;
+    }
+    int alloc_mem(uint64_t _size = 1, std::unique_ptr<_Ty[]> &&src = nullptr)
+    {
+        _size = num_unsign(_size);
+        auto tar_idx = -1;
+        if(_size)
+        {
+            for(auto i=0; i<idx_seq.size(); ++i) if(!idx_seq[i].occupy && _size<=idx_seq[i].length())
+            {
+                tar_idx = i;
+                idx_seq[i].occupy = true;
+                idx_seq[i].size = _size;
+                break;
+            }
+            if(tar_idx < 0)
+            {
+                mem_block blk_temp;
+                blk_temp.occupy = true;
+                blk_temp.begin_addr = 0;
+                if(idx_seq.size()) blk_temp.begin_addr = idx_seq[rear_id].end_addr + 1;
+                blk_temp.end_addr = blk_temp.begin_addr + _size - 1;
+                blk_temp.size = _size;
+                tar_idx = idx_seq.size();
+                if(tar_idx)
+                {
+                    blk_temp.prev_id = rear_id;
+                    idx_seq[rear_id].next_id = tar_idx;
+                }
+                rear_id = tar_idx;
+                if(mem_val.mem_size() <= blk_temp.end_addr)
+                {
+                    auto realloc_size = mem_val.mem_size();
+                    while((realloc_size+=realloc_size) <= blk_temp.end_addr);
+                    mem_val.realloc(realloc_size, true);
+                }
+                idx_seq.emplace_back(std::move(blk_temp));
+            }
+            if(src)
+            {
+                for(auto i=0; i<_size; ++i) mem_val[idx_seq[tar_idx].begin_addr+i] = std::move(src[i]);
+                reset_ptr(src);
+            }
+            len += _size;
+        }
+        return tar_idx;
+    }
+    bool free_mem(int &id)
+    {
+        if(id>=0 && id<idx_seq.size()) if(idx_seq[id].occupy) { idx_seq[id].occupy = false; len -= idx_seq[id].size; id = -1; return true; }
+        return false;
+    }
+    void re_arrange()
+    {
+        if(head_id!=rear_id)
+        {
+            int next_id_temp = -1, tool_idx = head_id; len = 0;
+            while(tool_idx >= 0)
+            {
+                next_id_temp = idx_seq[tool_idx].next_id;
+                if(idx_seq[tool_idx].occupy)
+                {
+                    len += idx_seq[tool_idx].size;
+                    auto begin_addr_temp = 0;
+                    if(idx_seq[tool_idx].prev_id >= 0) begin_addr_temp = idx_seq[idx_seq[tool_idx].prev_id].end_addr + 1;
+                    if(begin_addr_temp != idx_seq[tool_idx].begin_addr)
+                    {
+                        for(auto i=0; i<idx_seq[tool_idx].size; ++i) mem_val[begin_addr_temp+i] = std::move(mem_val[idx_seq[tool_idx].begin_addr+i]);
+                        idx_seq[tool_idx].end_addr -= idx_seq[tool_idx].begin_addr - begin_addr_temp;
+                        idx_seq[tool_idx].begin_addr = begin_addr_temp;
+                    }
+                    if(!idx_seq[tool_idx].begin_addr) head_id = tool_idx;
+                }
+                else if(idx_seq[tool_idx].size)
+                {
+                    idx_seq[tool_idx].size = 0;
+                    idx_seq[idx_seq[tool_idx].prev_id].next_id = idx_seq[tool_idx].next_id;
+                    idx_seq[idx_seq[tool_idx].next_id].prev_id = idx_seq[tool_idx].prev_id;
+                    idx_seq[tool_idx].prev_id = rear_id;
+                    idx_seq[rear_id].next_id = tool_idx;
+                    rear_id = tool_idx;
+                    idx_seq[tool_idx].next_id = -1;
+                }
+                else
+                {
+                    auto blk_size = idx_seq[tool_idx].length();
+                    idx_seq[tool_idx].begin_addr = idx_seq[idx_seq[tool_idx].prev_id].end_addr + 1;
+                    idx_seq[tool_idx].end_addr = idx_seq[tool_idx].begin_addr + blk_size - 1;
+                }
+                tool_idx = next_id_temp;
+            }
+        }
+    }
+    bool exist(int id) { return (id>=0 && id<idx_seq.size() && idx_seq[id].occupy); }
+    void reset() { mem_val.reset(); idx_seq.reset(); }
+    _pointer operator[](int id)
+    {
+        if(id>=0 && id<idx_seq.size() && idx_seq[id].occupy) return _pointer(mem_val.get(), idx_seq[id].begin_addr, idx_seq[id].size);
+        else return _pointer(mem_val.get(), 0, 0);
+    }
+    ~memory_sequence() { reset(); }
+};
+
+bagrt::net_queue<uint64_t> integer_radix_sort(bagrt::net_queue<uint64_t> &src)
+{
+    bagrt::net_queue<net_sequence<uint64_t>> tool(10);
+    auto ans = src;
+    uint64_t base = 1;
+    while(true)
+    {
+        for(auto i=0; i<src.size(); ++i) tool[(ans[i]/base)%10].push_back(ans[i]);
+        if(tool[0].size() == src.size()) break;
+        auto cnt = 0;
+        for(auto i=0; i<tool.size(); ++i)
+        {
+            for(auto j=0; j<tool[i].size(); ++j) ans[cnt++] = tool[i][j];
+            tool[i].clear();
+        }
+        base *= 10;
+    }
+    return ans;
+}
 
 bool acc_valid(double acc)
 {

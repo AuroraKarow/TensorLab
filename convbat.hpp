@@ -46,46 +46,6 @@ set<feature> GradLossToInput(set<feature> &setGradLossToOutput, tensor &tenKerne
     return setGradLossToInput;
 }
 
-vect InitKernelIm2Col(uint64_t iAmt, uint64_t iChannCnt, uint64_t iLnCnt, uint64_t iColCnt, double dRandBoundryFirst = 0, double dRandBoundrySecond = 0, double dRandAcc = 1e-5) { return vect(iLnCnt*iColCnt*iChannCnt, iAmt, true, dRandBoundryFirst, dRandBoundrySecond, dRandAcc); }
-
-set<vect> Im2ColInputTransform(set<vect> &setInput, uint64_t &iOutputLnCnt, uint64_t iInputLnCnt, uint64_t iFilterLnCnt, uint64_t iFilterColCnt, uint64_t iLnStride, uint64_t iColStride, uint64_t iLnDilation, uint64_t iColDilation, uint64_t iInputPadTop, uint64_t iInputPadRight, uint64_t iInputPadBottom, uint64_t iInputPadLeft, uint64_t iLnDistance, uint64_t iColDistance)
-{
-    set<vect> setAns(setInput.size());
-    for(auto i=0; i<setAns.size(); ++i) setAns[i] = Im2ColInputTransform(setInput[i], iOutputLnCnt, iInputLnCnt, iFilterLnCnt, iFilterColCnt, iLnStride, iColStride, iLnDilation, iColDilation, iInputPadTop, iInputPadRight, iInputPadBottom, iInputPadLeft, iLnDistance, iColDistance);
-    return setAns;
-}
-
-// [iInputLnCnt][iInputColCnt] could be blank for gradient calculation otherwise should be relay with [iOutputLnCnt]
-set<vect> Im2ColInputTransform(set<vect> &setIm2ColInput, uint64_t iFilterLnCnt, uint64_t iFilterColCnt, uint64_t iLnStride, uint64_t iColStride, uint64_t iOutputLnCnt, uint64_t iInputLnCnt, uint64_t iInputColCnt, bool bGradFlag, uint64_t iLnDilation, uint64_t iColDilation, uint64_t iInputPadTop, uint64_t iInputPadRight, uint64_t iInputPadBottom, uint64_t iInputPadLeft, uint64_t iLnDistance, uint64_t iColDistance)
-{
-    set<vect> setAns(setIm2ColInput.size());
-    for(auto i=0; i<setAns.size(); ++i) setAns[i] = Im2ColInputTransform(setIm2ColInput[i], iFilterLnCnt, iFilterColCnt, iLnStride, iColStride, iOutputLnCnt, iInputLnCnt, iInputColCnt, bGradFlag, iLnDilation, iColDilation, iInputPadTop, iInputPadRight, iInputPadBottom, iInputPadLeft, iLnDistance, iColDistance);
-    return setAns;
-}
-
-set<vect> ConvIm2Col(set<vect> &setIm2ColInput, vect &vecKernel)
-{
-    set<vect> vecAns(setIm2ColInput.size());
-    for(auto i=0; i<vecAns.size(); ++i) vecAns[i] = ConvIm2Col(setIm2ColInput[i], vecKernel); 
-    return vecAns;
-}
-
-set<vect> GradLossToInputIm2Col(set<vect> &setGradLossToOutput, vect &vectKernel, uint64_t iOutputLnCnt, uint64_t iKernelLnCnt, uint64_t iKernelColCnt, uint64_t iLnStride, uint64_t iColStride, uint64_t iLnDilation, uint64_t iColDilation, uint64_t iInputPadTop, uint64_t iInputPadRight, uint64_t iInputPadBottom, uint64_t iInputPadLeft, uint64_t iLnDistance, uint64_t iColDistance)
-{
-    set<vect> vecAns(setGradLossToOutput.size());
-    for(auto i=0; i<vecAns.size(); ++i) vecAns[i] = GradLossToInputIm2Col(setGradLossToOutput[i], vectKernel, iOutputLnCnt, iKernelLnCnt, iKernelColCnt, iLnStride, iColStride, iLnDilation, iColDilation, iInputPadTop, iInputPadRight, iInputPadBottom, iInputPadLeft, iLnDistance, iColDistance);
-    return vecAns;
-}
-
-vect GradLossToKernelIm2Col(set<vect> &setGradLossToOutput, set<vect> &vecIm2ColInput)
-{
-    vect vecAns;
-    for(auto i=0; i<vecIm2ColInput.size(); ++i)
-        if(vecAns.is_matrix()) vecAns += GradLossToKernelIm2Col(setGradLossToOutput[i], vecIm2ColInput[i]);
-        else vecAns = GradLossToKernelIm2Col(setGradLossToOutput[i], vecIm2ColInput[i]);
-    return vecAns;
-}
-
 set<feature> Pool(set<feature> &vecInput, uint64_t iPoolType = POOL_DOWN_MAX, bool bDownSamp = true, set<feature> &setTraceInput = set<feature>(), uint64_t iFilterLnCnt = 0, uint64_t iFilterColCnt = 0, uint64_t iLnStride = 0, uint64_t iColStride = 0, uint64_t iLnDilation = 0, uint64_t iColDilation = 0)
 {
     set<feature> setOutput(vecInput.size());
@@ -98,25 +58,7 @@ set<feature> Pool(set<feature> &vecInput, uint64_t iPoolType = POOL_DOWN_MAX, bo
     return setOutput;
 }
 
-set<vect> PoolIm2Col(uint64_t iPoolType, set<vect> &setInput, vect_t<bagrt::net_list<mtx::mtx_pos>> &setIm2ColInputPoolExtmPosList, uint64_t &iOutputLnCnt, uint64_t iInputLnCnt, uint64_t iFilterLnCnt, uint64_t iFilterColCnt, uint64_t iLnStride, uint64_t iColStride, uint64_t iLnDilation, uint64_t iColDilation, uint64_t iInputPadTop, uint64_t iInputPadRight, uint64_t iInputPadBottom, uint64_t iInputPadLeft, uint64_t iLnDistance, uint64_t iColDistance)
-{
-    set<vect> setAns(setInput.size());
-    for(auto i=0; i<setAns.size(); ++i)
-        if(iPoolType == POOL_GAG_IM2COL) setAns[i] = PoolDownGlbAvg(setInput[i]);
-        else setAns[i] = PoolMaxAvgIm2Col(iPoolType, setInput[i], setIm2ColInputPoolExtmPosList[i], iOutputLnCnt, iInputLnCnt, iFilterLnCnt, iFilterColCnt, iLnStride, iColStride, iLnDilation, iColDilation, iInputPadTop, iInputPadRight, iInputPadBottom, iInputPadLeft, iLnDistance, iColDistance);
-    return setAns;
-}
-
-set<vect> GradLossToPoolIm2ColInput(uint64_t iPoolType, set<vect> &setGradLossToOutput, vect_t<bagrt::net_list<mtx::mtx_pos>> &setIm2ColInputPoolExtmPosList, uint64_t iOutputLnCnt, uint64_t iInputLnCnt, uint64_t iInputColCnt, uint64_t iFilterLnCnt, uint64_t iFilterColCnt, uint64_t iLnStride, uint64_t iColStride, uint64_t iLnDilation, uint64_t iColDilation, uint64_t iInputPadTop, uint64_t iInputPadRight, uint64_t iInputPadBottom, uint64_t iInputPadLeft, uint64_t iLnDistance, uint64_t iColDistance)
-{
-    set<vect> setGrad(setGradLossToOutput.size());
-    for(auto i=0; i<setGrad.size(); ++i)
-        if(iPoolType == POOL_GAG_IM2COL) setGrad[i] = GradLossToPoolGlbAvgInputIm2Col(setGradLossToOutput[i], iInputLnCnt*iInputColCnt);
-        else setGrad[i] = GradLossToPoolMaxAvgInputIm2Col(iPoolType, setGradLossToOutput[i], setIm2ColInputPoolExtmPosList[i], iOutputLnCnt, iFilterLnCnt, iFilterColCnt, iLnStride, iColStride, iLnDilation, iColDilation, iInputPadTop, iInputPadRight, iInputPadBottom, iInputPadLeft, iLnDistance, iColDistance);
-    return setGrad;
-}
-
-struct ConvBN : BN
+struct ConvBN
 {
     feature vecMiuBeta;
     feature vecSigmaSqr;
@@ -158,7 +100,7 @@ vect BNInitScaleShift(uint64_t iChannCnt, double dFillVal)
     return vecSS;
 }
 
-ConvBN BNTrain(set<feature> &setInput, vect &vecBeta, vect &vecGamma, double dEpsilon = 1e-5)
+ConvBN BNTrain(set<feature> &setInput, vect &vecBeta, vect &vecGamma, double dEpsilon = 1e-8)
 {
     ConvBN BNOutput;
     // Average & Variance
@@ -191,7 +133,7 @@ ConvBN BNTrain(set<feature> &setInput, vect &vecBeta, vect &vecGamma, double dEp
     return BNOutput;
 }
 
-set<feature> BNGradLossToInput(ConvBN &ConvBNOutput, set<feature> &setInput, set<feature> &setGradLossToOutput, vect &vecGamma, double dEpsilon = 1e-5)
+set<feature> BNGradLossToInput(ConvBN &ConvBNOutput, set<feature> &setInput, set<feature> &setGradLossToOutput, vect &vecGamma, double dEpsilon = 1e-8)
 {
     // Sigma & Square-powered sigma
     feature vecDmrSigmaSqr(ConvBNOutput.vecSigmaSqr.size()), vecDmrSigma(ConvBNOutput.vecSigmaSqr.size());
@@ -262,7 +204,7 @@ vect BNGradLossToShift(set<feature> &setGradLossToOutput)
     return vecGradBeta;
 }
 
-feature BNDeduce(feature &vecInput, vect &vecBeta, vect &vecGamma, std::shared_ptr<ConvBN> &pBNData, uint64_t iMiniBatchSize = 0, uint64_t iMiniBatchCnt = 0, double dEpsilon = 1e-10)
+feature BNDeduce(feature &vecInput, vect &vecBeta, vect &vecGamma, std::shared_ptr<ConvBN> &pBNData, uint64_t iMiniBatchSize = 0, uint64_t iMiniBatchCnt = 0, double dEpsilon = 1e-8)
 {
     if(iMiniBatchCnt) for(auto i=0; i<vecInput.size(); ++i)
     {
@@ -278,7 +220,9 @@ feature BNDeduce(feature &vecInput, vect &vecBeta, vect &vecGamma, std::shared_p
     return vecConvBNDeduceOutput;
 }
 
-struct ConvBNIm2Col : BN
+vect InitKernelIm2Col(uint64_t iAmt, uint64_t iChannCnt, uint64_t iLnCnt, uint64_t iColCnt, double dRandBoundryFirst = 0, double dRandBoundrySecond = 0, double dRandAcc = 1e-5) { return vect(iLnCnt*iColCnt*iChannCnt, iAmt, true, dRandBoundryFirst, dRandBoundrySecond, dRandAcc); }
+
+struct ConvBNIm2Col
 {
     vect vecIm2ColMuBeta;
     vect vecIm2ColSigmaSqr;
@@ -313,22 +257,20 @@ struct ConvBNIm2Col : BN
     ~ConvBNIm2Col() { Reset(); }
 };
 
-ConvBNIm2Col BNTrainIm2Col(set<vect> &setIm2ColInput, vect &vecBeta, vect &vecGamma, double dEpsilon = 1e-10)
+ConvBNIm2Col BNTrainIm2Col(set<vect> &setIm2ColInput, vect &vecBeta, vect &vecGamma, double dEpsilon = 1e-8)
 {
     ConvBNIm2Col BNOutput;
     BNOutput.vecIm2ColMuBeta = (1.0/setIm2ColInput.size()) * setIm2ColInput.sum();
     for(auto i=0; i<setIm2ColInput.size(); ++i)
-    {
         if(BNOutput.vecIm2ColSigmaSqr.is_matrix()) BNOutput.vecIm2ColSigmaSqr += (setIm2ColInput[i] - BNOutput.vecIm2ColMuBeta).elem_cal_opt(2, MATRIX_ELEM_POW);
         else BNOutput.vecIm2ColSigmaSqr = (setIm2ColInput[i] - BNOutput.vecIm2ColMuBeta).elem_cal_opt(2, MATRIX_ELEM_POW);
-    }
-    BNOutput.vecIm2ColSigmaSqr *= (1.0/setIm2ColInput.size());
-    auto vecIm2CollSigma = DIV_DOM(BNOutput.vecIm2ColSigmaSqr, dEpsilon).elem_cal_opt(0.5, MATRIX_ELEM_POW);
+    BNOutput.vecIm2ColSigmaSqr *= (1.0 / setIm2ColInput.size());
+    auto vecIm2ColSigma = DIV_DOM(BNOutput.vecIm2ColSigmaSqr, dEpsilon).elem_cal_opt(0.5, MATRIX_ELEM_POW);
     BNOutput.setBarIm2ColX.init(setIm2ColInput.size());
     BNOutput.setIm2ColY.init(setIm2ColInput.size());
     for(auto i=0; i<setIm2ColInput.size(); ++i)
     {
-        BNOutput.setBarIm2ColX[i] = (setIm2ColInput[i] - BNOutput.vecIm2ColMuBeta).elem_cal_opt(vecIm2CollSigma, MATRIX_ELEM_DIV);
+        BNOutput.setBarIm2ColX[i] = (setIm2ColInput[i] - BNOutput.vecIm2ColMuBeta).elem_cal_opt(vecIm2ColSigma, MATRIX_ELEM_DIV);
         BNOutput.setIm2ColY[i] = BNOutput.setBarIm2ColX[i];
         for(auto j=0; j<BNOutput.setIm2ColY[i].ELEM_CNT; ++j)
         {
@@ -340,7 +282,7 @@ ConvBNIm2Col BNTrainIm2Col(set<vect> &setIm2ColInput, vect &vecBeta, vect &vecGa
     return BNOutput;
 }
 
-set<vect> BNGradLossToInputIm2Col(set<vect> &setIm2ColGradLossToOutput, ConvBNIm2Col &ConvBNIm2ColOutput, set<vect> &setIm2ColInput, vect &vecGamma, double dEpsilon = 1e-10)
+set<vect> BNGradLossToInputIm2Col(set<vect> &setIm2ColGradLossToOutput, ConvBNIm2Col &ConvBNIm2ColOutput, set<vect> &setIm2ColInput, vect &vecGamma, double dEpsilon = 1e-8)
 {
     auto vecSigmaSqr = DIV_DOM(ConvBNIm2ColOutput.vecIm2ColSigmaSqr, dEpsilon),
         vecSigma = vecSigmaSqr.elem_cal_opt(0.5, MATRIX_ELEM_POW);
@@ -351,7 +293,7 @@ set<vect> BNGradLossToInputIm2Col(set<vect> &setIm2ColGradLossToOutput, ConvBNIm
     vecGradSigmaSqr *= (-0.5);
     vect vecDistanceSum(vecSigma.LN_CNT, vecSigma.COL_CNT);
     for(auto i=0; i<setIm2ColInput.size(); ++i) vecDistanceSum += (setIm2ColInput[i] - ConvBNIm2ColOutput.vecIm2ColMuBeta);
-    vect vecGradMuBeta = (-1) * setGradBarX.sum().elem_cal_opt(vecSigma, MATRIX_ELEM_DIV) + ((-2.0)/setIm2ColInput.size()) * vecGradSigmaSqr.elem_cal_opt(vecDistanceSum, MATRIX_ELEM_MULT);
+    vect vecGradMuBeta = (-1) * setGradBarX.sum().elem_cal_opt(vecSigma, MATRIX_ELEM_DIV) + ((-2.0) / setIm2ColInput.size()) * vecGradSigmaSqr.elem_cal_opt(vecDistanceSum, MATRIX_ELEM_MULT);
     set<vect> setGradInput(setIm2ColInput.size());
     for(auto i=0; i<setGradInput.size(); ++i) setGradInput[i] = setGradBarX[i].elem_cal_opt(vecSigma, MATRIX_ELEM_DIV) + ((2.0) / setIm2ColInput.size()) * vecGradSigmaSqr.elem_cal_opt((setIm2ColInput[i]-ConvBNIm2ColOutput.vecIm2ColMuBeta), MATRIX_ELEM_MULT) + ((1.0) / setIm2ColInput.size()) * vecGradMuBeta;
     return setGradInput;
@@ -366,32 +308,26 @@ vect BNGradLossToScaleIm2Col(set<vect> &setIm2ColGradLossToOutput, ConvBNIm2Col 
 
 vect BNGradLossToShiftIm2Col(set<vect> &setIm2ColGradLossToOutput)
 {
-    vect vecGradBeta;
-    for(auto i=0; i<setIm2ColGradLossToOutput.size(); ++i) for(auto j=0; j<setIm2ColGradLossToOutput[i].ELEM_CNT; ++j)
-    {
-        auto iCurrChann = mtx::mtx_elem_pos(j, setIm2ColGradLossToOutput[i].COL_CNT).col;
-        if(!vecGradBeta.is_matrix()) vecGradBeta = vect(setIm2ColGradLossToOutput[i].COL_CNT, IDX_SGL);
-        vecGradBeta.pos_idx(iCurrChann) += setIm2ColGradLossToOutput[i].pos_idx(j);
-    }
+    vect vecGradBeta(setIm2ColGradLossToOutput[IDX_ZERO].COL_CNT, IDX_SGL);
+    for(auto i=0; i<setIm2ColGradLossToOutput.size(); ++i) for(auto j=0; j<setIm2ColGradLossToOutput[i].ELEM_CNT; ++j) vecGradBeta.pos_idx(mtx::mtx_elem_pos(j, setIm2ColGradLossToOutput[i].COL_CNT).col) += setIm2ColGradLossToOutput[i].pos_idx(j);
     return vecGradBeta;
 }
 
-bool BNDataExpIm2Col(std::shared_ptr<ConvBNIm2Col> &pBNDataIm2Col, uint64_t iMiniBatchCnt, uint64_t iMiniBatchSize)
+void BNDeduceIm2ColInit(BN_EXP_VAR &BNData, uint64_t iBatchCnt, uint64_t iBatchSize)
 {
-    if(pBNDataIm2Col)
+    if(iBatchCnt)
     {
-        pBNDataIm2Col->vecIm2ColMuBeta = pBNDataIm2Col->vecIm2ColMuBeta.elem_cal_opt(iMiniBatchCnt, MATRIX_ELEM_DIV);
-        pBNDataIm2Col->vecIm2ColSigmaSqr = pBNDataIm2Col->vecIm2ColSigmaSqr.elem_cal_opt(iMiniBatchCnt, MATRIX_ELEM_DIV);
-        if(iMiniBatchSize > 1) pBNDataIm2Col->vecIm2ColSigmaSqr *= (iMiniBatchCnt / (iMiniBatchCnt - 1.0));
-        return true;
+        BNData.vecExp = BNData.vecExp.elem_cal_opt(iBatchCnt, MATRIX_ELEM_DIV);
+        BNData.vecVar = BNData.vecVar.elem_cal_opt(iBatchCnt, MATRIX_ELEM_DIV);
+        if(iBatchSize > 1) BNData.vecVar *= (iBatchSize / (iBatchSize - 1.0));
     }
-    else return false;
 }
 
-vect BNDeduceIm2Col(vect &vecIm2ColInput, vect &vecBeta, vect &vecGamma, std::shared_ptr<ConvBNIm2Col> &pBNDataIm2Col, uint64_t iMiniBatchCnt = 0, uint64_t iMiniBatchSize = 0, double dEpsilon = 1e-10)
+vect BNDeduceIm2Col(vect &vecIm2ColInput, vect &vecBeta, vect &vecGamma, BN_EXP_VAR &BNData, double dEpsilon = 1e-8)
 {
-    if(iMiniBatchCnt) BNDataExpIm2Col(pBNDataIm2Col, iMiniBatchCnt, iMiniBatchSize);
-    vect vecAns = (vecIm2ColInput - pBNDataIm2Col->vecIm2ColMuBeta).elem_cal_opt(DIV_DOM(pBNDataIm2Col->vecIm2ColSigmaSqr, dEpsilon).elem_cal_opt(0.5, MATRIX_ELEM_POW), MATRIX_ELEM_DIV);
+    auto vecNrom = vecIm2ColInput - BNData.vecExp,
+        vecVar = DIV_DOM(BNData.vecVar, dEpsilon);
+    vect vecAns = vecNrom.elem_cal_opt(vecVar.elem_cal_opt(0.5, MATRIX_ELEM_POW), MATRIX_ELEM_DIV);
     for(auto i=0; i<vecAns.ELEM_CNT; ++i)
     {
         auto iCurrChann = mtx::mtx_elem_pos(i, vecAns.COL_CNT).col;

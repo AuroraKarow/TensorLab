@@ -9,23 +9,9 @@ double sigmoid(double &val){ return 1 / (1 + 1 / exp(val)); }
 
 vect sigmoid(vect &vec_val){return vec_travel(vec_val, sigmoid);}
 
-template<typename T> set<T> sigmoid(set<T> &set_val)
-{
-    set<T> ans(set_val.size());
-    for(auto i=0; i<set_val.size(); ++i) ans[i] = sigmoid(set_val[i]);
-    return ans;
-}
-
 double sigmoid_dv(double &val){ return sigmoid(val) * (1.0 - sigmoid(val)); }
 
 vect sigmoid_dv(vect &vec_val){return vec_travel(vec_val, sigmoid_dv);}
-
-template<typename T> set<T> sigmoid_dv(set<T> &set_val)
-{
-    set<T> ans(set_val.size());
-    for(auto i=0; i<set_val.size(); ++i) ans[i] = sigmoid_dv(set_val[i]);
-    return ans;
-}
 
 double ReLU(double &val)
 {
@@ -35,13 +21,6 @@ double ReLU(double &val)
 
 vect ReLU(vect &vec_val){return vec_travel(vec_val, ReLU);}
 
-template<typename T> set<T> ReLU(set<T> &set_val)
-{
-    set<T> ans(set_val.size());
-    for(auto i=0; i<set_val.size(); ++i) ans[i] = ReLU(set_val[i]);
-    return ans;
-}
-
 double ReLU_dv(double &val)
 {
     if(val < 0) return 0;
@@ -49,13 +28,6 @@ double ReLU_dv(double &val)
 }
 
 vect ReLU_dv(vect &vec_val){return vec_travel(vec_val, ReLU_dv);}
-
-template<typename T> set<T> ReLU_dv(set<T> &set_val)
-{
-    set<T> ans(set_val.size());
-    for(auto i=0; i<set_val.size(); ++i) ans[i] = ReLU_dv(set_val[i]);
-    return ans;
-}
 
 vect softmax(vect &vec_val)
 {
@@ -67,13 +39,6 @@ vect softmax(vect &vec_val)
     for(auto i=0; i<vec_val.get_ln_cnt(); ++i)
         for(auto j=0; j<vec_val.get_col_cnt(); ++j)
             ans[i][j] = std::exp(vec_val[i][j]) / sum;
-    return ans;
-}
-
-template<typename T> set<T> softmax(set<T> &set_vec)
-{
-    set<T> ans(set_vec.size());
-    for(auto i=0; i<ans.size(); ++i) ans[i] = softmax(set_vec[i]);
     return ans;
 }
 
@@ -91,13 +56,6 @@ vect softmax_dv(vect &vec_input, vect &vec_output)
     else return blank_vect;
 }
 
-template<typename T> set<T> softmax_dv(set<T> &set_vec)
-{
-    set<T> ans(set_vec.size());
-    for(auto i=0; i<ans.size(); ++i) ans[i] = softmax(set_vec[i]);
-    return ans;
-}
-
 vect cec_grad(vect &output, vect &origin)
 {
     auto elem_cnt = output.ELEM_CNT;
@@ -111,48 +69,7 @@ vect cec_grad(vect &output, vect &origin)
     return ans;
 }
 
-feature cec_grad(feature &output, feature &origin)
-{
-    if(output.size() == origin.size())
-    {
-        feature ans(output.size());
-        for(auto i=0; i<origin.size(); ++i) ans[i] = cec_grad(output[i], origin[i]);
-        return ans;
-    }
-    else return blank_feature;
-}
-set<feature> cec_grad(set<feature> &output, set<feature> &origin)
-{
-    if(output.size() == origin.size())
-    {
-        set<feature> ans(output.size());
-        for(auto i=0; i<origin.size(); ++i) ans[i] = cec_grad(output[i], origin[i]);
-        return ans;
-    }
-    else return output;
-}
-
 vect softmax_cec_grad(vect &softmax_output, vect &origin) {return softmax_output - origin;}
-
-template<typename T> set<T> softmax_cec_grad(set<T> &setSoftmaxOutput, set<T> &setOrigin)
-{
-    if(setSoftmaxOutput.size() == setOrigin.size())
-    {
-        set<T> setGradOutput(setOrigin.size());
-        for(auto i=0; i<setOrigin.size(); ++i) setGradOutput[i] = softmax_cec_grad(setSoftmaxOutput[i], setOrigin[i]);
-        return setGradOutput;
-    }
-    else return set<T>::blank_queue();
-}
-
-vect hadamard_product(vect &l_vec, vect &r_vec) { return l_vec.elem_cal_opt(r_vec, MATRIX_ELEM_MULT); }
-
-template<typename T> set<T> hadamard_product(set<T> &l_set, set<T> &r_set)
-{
-    set<T> ans(l_set.size());
-    for(auto i=0; i<ans.size(); ++i) ans[i] = hadamard_product(l_set[i], r_set[i]);
-    return ans;
-}
 
 vect divisor_dominate(vect &divisor, double epsilon)
 {
@@ -195,3 +112,30 @@ set<feature> merge_channel(set<tensor> &input)
     }
     return set_ft_map;
 }
+
+void print_train_status(vect &vecOutput, vect &vecOrgn)
+{
+    std::cout << " [No.]\t[Output]\t[Origin]" << std::endl;
+    for(auto i=0; i<vecOrgn.ELEM_CNT; ++i)
+    {
+        if(vecOrgn.pos_idx(i)) std::cout << '>';
+        else std::cout << ' ';
+        std::cout << i << '\t' << vecOutput.pos_idx(i) << '\t' << vecOrgn.pos_idx(i) << std::endl;
+    }
+}
+
+void print_train_status(set<vect> &setOutput, set<vect> &setOrgn)
+{
+    for(auto i=0; i<setOutput.size(); ++i)
+    {
+        print_train_status(setOutput[i], setOrgn[i]);
+        std::cout << std::endl;
+    }
+}
+
+void print_train_status(int iEpoch, int iCurrProg, int iProg, double dAcc, double dPrec, int iDur) { std::printf("\r[Epoch][%d][Progress][%d/%d][Acc/Prec][%.2f/%.2f][Duration][%dms]", iEpoch, iCurrProg, iProg, dAcc, dPrec, iDur); }
+
+void print_deduce_status(int iEpoch, double dAcc, double dPrec, int iDur)
+{ std::printf("\r[Epoch][%d][Accuracy][%lf][Precision][%lf][Duration][%dms]", iEpoch, dAcc, dPrec, iDur); }
+
+void print_deduce_progress(int iCurrProg, int iProg) { std::printf("\r[Deducing][%d/%d]", iCurrProg, iProg); }

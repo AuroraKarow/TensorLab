@@ -73,7 +73,7 @@ private:
             case CONV_BN_IM2COL: vecInput = INSTANCE_DERIVE<LAYER_CONV_BN_IM2COL>(seqLayer[i])->ForwProp(vecInput, iIdx); break;
             default: return blank_vect;
             }
-            if(!vecInput.is_matrix()) return blank_vect;
+            if(!vecInput.is_matrix()) {std::cout << "Layer - " << i << ", " << seqLayer[i]->iLayerType; return blank_vect;}
         }
         return vecInput;
     }
@@ -96,77 +96,206 @@ private:
         }
         return true;
     }
-    void UpdatePara(uint64_t iCurrBatchIdx = 0)
+    void UpdatePara(uint64_t iCurrBatchIdx = 0, uint64_t iBatchCnt = 0)
     {
+        auto bIsLastBatch = ((iCurrBatchIdx + 1) == iBatchCnt);
         for(auto i=0ui64; i<seqLayer.size(); ++i) switch (seqLayer[i] -> iLayerType)
         {
         case ACT: continue;
         case POOL_IM2COL: if(bThreadFlag) INSTANCE_DERIVE<LAYER_POOL_IM2COL>(seqLayer[i])->RefreshAsyncSgn(); break;
         case TRANS_IM2COL: if(bThreadFlag) INSTANCE_DERIVE<LAYER_TRANS_IM2COL>(seqLayer[i])->RefreshAsyncSgn(); break;
-        case FC: INSTANCE_DERIVE<LAYER_FC>(seqLayer[i])->UpdatePara(); break;
+        case FC: INSTANCE_DERIVE<LAYER_FC>(seqLayer[i])->UpdatePara(bThreadFlag); break;
         case FC_BN:
             INSTANCE_DERIVE<LAYER_FC_BN>(seqLayer[i])->UpdatePara();
             if(iCurrBatchIdx)
             {
-                INSTANCE_DERIVE<BN_FC>(mapBNData[i])->vecMiuBeta += INSTANCE_DERIVE<LAYER_FC_BN>(seqLayer[i])->BNData.vecMiuBeta;
-                INSTANCE_DERIVE<BN_FC>(mapBNData[i])->vecSigmaSqr += INSTANCE_DERIVE<LAYER_FC_BN>(seqLayer[i])->BNData.vecSigmaSqr;
+                mapBNData[i].vecExp += INSTANCE_DERIVE<LAYER_FC_BN>(seqLayer[i])->BNData.vecMuBeta;
+                mapBNData[i].vecVar += INSTANCE_DERIVE<LAYER_FC_BN>(seqLayer[i])->BNData.vecSigmaSqr;
+                if(bIsLastBatch) _FC BNDeduceInit(mapBNData[i], iBatchCnt, iNetMiniBatch);
             }
-            else mapBNData[i] = std::make_shared<BN_FC>(std::move(INSTANCE_DERIVE<LAYER_FC_BN>(seqLayer[i])->BNData)); break;
-        case CONV_IM2COL: INSTANCE_DERIVE<LAYER_CONV_IM2COL>(seqLayer[i])->UpdatePara(); break;
+            else
+            {
+                mapBNData[i].vecExp = std::move(INSTANCE_DERIVE<LAYER_FC_BN>(seqLayer[i])->BNData.vecMuBeta);
+                mapBNData[i].vecVar = std::move(INSTANCE_DERIVE<LAYER_FC_BN>(seqLayer[i])->BNData.vecSigmaSqr);
+            } break;
+        case CONV_IM2COL: INSTANCE_DERIVE<LAYER_CONV_IM2COL>(seqLayer[i])->UpdatePara(bThreadFlag); break;
         case CONV_BN_IM2COL:
             INSTANCE_DERIVE<LAYER_CONV_BN_IM2COL>(seqLayer[i])->UpdatePara();
             if(iCurrBatchIdx)
             {
-                INSTANCE_DERIVE<BN_CONV_IM2COL>(mapBNData[i])->vecIm2ColMuBeta += INSTANCE_DERIVE<LAYER_CONV_BN_IM2COL>(seqLayer[i])->BNData.vecIm2ColMuBeta;
-                INSTANCE_DERIVE<BN_CONV_IM2COL>(mapBNData[i])->vecIm2ColSigmaSqr += INSTANCE_DERIVE<LAYER_CONV_BN_IM2COL>(seqLayer[i])->BNData.vecIm2ColSigmaSqr;
+                mapBNData[i].vecExp += INSTANCE_DERIVE<LAYER_CONV_BN_IM2COL>(seqLayer[i])->BNData.vecIm2ColMuBeta;
+                mapBNData[i].vecVar += INSTANCE_DERIVE<LAYER_CONV_BN_IM2COL>(seqLayer[i])->BNData.vecIm2ColSigmaSqr;
+                if(bIsLastBatch) _CONV BNDeduceIm2ColInit(mapBNData[i], iBatchCnt, iNetMiniBatch);
             }
-            else mapBNData[i] = std::make_shared<BN_CONV_IM2COL>(std::move(INSTANCE_DERIVE<LAYER_CONV_BN_IM2COL>(seqLayer[i])->BNData)); break;
+            else
+            {
+                mapBNData[i].vecExp = std::move(INSTANCE_DERIVE<LAYER_CONV_BN_IM2COL>(seqLayer[i])->BNData).vecIm2ColMuBeta;
+                mapBNData[i].vecVar = std::move(INSTANCE_DERIVE<LAYER_CONV_BN_IM2COL>(seqLayer[i])->BNData).vecIm2ColSigmaSqr;
+            } break;
         default: continue;
         }
     }
-    bool DeduceInit(uint64_t iTrainBatchCnt)
+    vect Deduce(vect &vecInput)
     {
-        iAccCnt = 0; iPrecCnt = 0;
-        for(auto i=0ui64; i<seqLayer.size(); ++i) 
+        for(auto i=0ui64; i<seqLayer.size(); ++i)
         {
-            bool bFlag = true;
             switch (seqLayer[i]->iLayerType)
             {
-            case FC_BN: bFlag = _FC BNDataExp(INSTANCE_DERIVE<BN_FC>(mapBNData[i]), iNetMiniBatch, iTrainBatchCnt); break;
-            case CONV_BN_IM2COL: bFlag = _CONV BNDataExpIm2Col(INSTANCE_DERIVE<BN_CONV_IM2COL>(mapBNData[i]), iNetMiniBatch, iTrainBatchCnt); break;
+            case ACT: vecInput = INSTANCE_DERIVE<LAYER_ACT>(seqLayer[i])->Deduce(vecInput); break;
+            case POOL_IM2COL: vecInput = INSTANCE_DERIVE<LAYER_POOL_IM2COL>(seqLayer[i])->Deduce(vecInput); break;
+            case TRANS_IM2COL: vecInput = INSTANCE_DERIVE<LAYER_TRANS_IM2COL>(seqLayer[i])->Deduce(vecInput); break;
+            case FC: vecInput = INSTANCE_DERIVE<LAYER_FC>(seqLayer[i])->Deduce(vecInput); break;
+            case FC_BN: vecInput = INSTANCE_DERIVE<LAYER_FC_BN>(seqLayer[i])->Deduce(vecInput, mapBNData[i]); break;
+            case CONV_IM2COL: vecInput = INSTANCE_DERIVE<LAYER_CONV_IM2COL>(seqLayer[i])->Deduce(vecInput); break;
+            case CONV_BN_IM2COL: vecInput = INSTANCE_DERIVE<LAYER_CONV_BN_IM2COL>(seqLayer[i])->Deduce(vecInput, mapBNData[i]); break;
             default: continue;
             }
-            if(!bFlag) return false;
+            if(!vecInput.is_matrix()) break;
         }
+        return vecInput;
+    }
+    template<typename tCnt> void OutputAcc(vect &vecOutput, uint64_t iLbl, tCnt &iAccCnt, tCnt &iPrecCnt)
+    {
+        static_assert(std::is_integral<tCnt>::value || 
+                    std::is_same<tCnt, async::shared_counter>::value,
+                    "Counter value only.");
+        auto dCurrAcc = 1 - vecOutput.pos_idx(iLbl);
+        if(dCurrAcc < 0.5) { ++ iAccCnt; if(dCurrAcc < dAcc) ++ iPrecCnt; }
+    }
+    void TrainAcc(set<vect> &Output, set<uint64_t> &setLbl, uint64_t &iAccCnt, uint64_t &iPrecCnt) { for(auto i=0; i<Output.size(); ++i) OutputAcc(Output[i], setLbl[i], iAccCnt, iPrecCnt); }
+    bool RunLinear(dataset::MNIST &mnistTrainSet, dataset::MNIST &mnistTestSet)
+    {
+        mnistTrainSet.init_batch(iNetMiniBatch);
+        uint64_t iAccCnt = 0, iPrecCnt = 0;
+        auto iEpoch = 0;
+        do
+        {
+            CLOCK_BEGIN(0)
+            mnistTrainSet.shuffle_batch(); ++ iEpoch;
+            // Train
+            for(auto i=0; i<mnistTrainSet.batch_cnt(); ++i)
+            {
+                CLOCK_BEGIN(1)
+                mnistTrainSet.init_curr_set(i); iAccCnt = 0; iPrecCnt = 0;
+                // FP
+                auto setOutput = ForwProp(mnistTrainSet.curr_input_im2col, mnistTrainSet.ln_cnt());
+                TrainAcc(setOutput, mnistTrainSet.curr_lbl, iAccCnt, iPrecCnt);
+                // EPOCH_TRAIN_STATUS(setOutput, mnistTrainSet.curr_orgn);
+                // BP & update parameters
+                if(BackProp(setOutput, mnistTrainSet.curr_orgn)) UpdatePara(i, mnistTrainSet.batch_cnt());
+                else return false;
+                CLOCK_END(1)
+                EPOCH_TRAIN_STATUS(iEpoch, i+1, mnistTrainSet.batch_cnt(), FRACTOR_RATE(iAccCnt, mnistTrainSet.batch_size()), FRACTOR_RATE(iPrecCnt, mnistTrainSet.batch_size()), CLOCK_DURATION(1));
+            }
+            // Deduce
+            iAccCnt = 0; iPrecCnt = 0;
+            for(auto i=0; i<mnistTestSet.size(); ++i) OutputAcc(Deduce(mnistTestSet.elem_im2col[i]), mnistTestSet.elem_lbl[i], iAccCnt, iPrecCnt);
+            CLOCK_END(0)
+            EPOCH_DEDUCE_STATUS(iEpoch, FRACTOR_RATE(iAccCnt, mnistTestSet.batch_size()), FRACTOR_RATE(iPrecCnt, mnistTestSet.batch_size()), CLOCK_DURATION(0));
+        } while (iAccCnt != mnistTestSet.size());
         return true;
     }
-    void DeduceAcc(vect &vecOutput, uint64_t iLbl)
+    bool RunThread(dataset::MNIST &mnistTrainSet, dataset::MNIST &mnistTestSet)
     {
-        auto dDeduceAcc = 1 - vecOutput.pos_idx(iLbl);
-        if(dDeduceAcc < 0.5) { ++ iAccCnt; if(dDeduceAcc < dAcc) ++ iPrecCnt; }
-    }
-    void Deduce(vect &vecInput, uint64_t iLbl)
-    {
-        for(auto i=0ui64; i<seqLayer.size(); ++i) switch (seqLayer[i] -> iLayerType)
+        // Batch thread
+        async::async_batch asyncBatch(iNetMiniBatch);
+        async::shared_counter iAccCnt = 0, iPrecCnt = 0, iProcCnt = 0;
+        async::shared_signal bRtnFlag = true, bBlk = true, 
+                            bTrainMode = true, // true - train; false - deduce
+                            bIterMode = true; // true - Iteration; false - convergence
+        std::condition_variable condBegin, condEnd;
+        std::mutex tdmtxBegin, tdmtxEnd;
+        // Load in batch threads
+        for(auto i=0; i<iNetMiniBatch; ++i) asyncBatch.set_task(i,
+            [this, &bRtnFlag, &bIterMode, &bBlk, &bTrainMode, &condBegin, &condEnd, &tdmtxBegin, &tdmtxEnd, &iAccCnt, &iPrecCnt, &iProcCnt, &mnistTrainSet, &mnistTestSet]
+            (int idx)
+            {
+                while(bRtnFlag && bIterMode)
+                {
+                    {
+                        // Wait for preparation of train set or test set in each batch
+                        std::unique_lock<std::mutex> lk(tdmtxBegin);
+                        while(bBlk) condBegin.wait(lk);
+                    }
+                    if(bTrainMode)
+                    {
+                        // FP
+                        auto output = this->ForwProp(mnistTrainSet.curr_input_im2col[idx], mnistTrainSet.ln_cnt(), idx);
+                        this->OutputAcc(output, mnistTrainSet.curr_lbl[idx], iAccCnt, iPrecCnt);
+                        // BP
+                        if(!this->BackProp(output, mnistTrainSet.curr_orgn[idx], idx)) bRtnFlag = false;
+                    }
+                    // Deduce
+                    else this->OutputAcc(this->Deduce(mnistTestSet.curr_input_im2col[idx]), mnistTestSet.curr_lbl[idx], iAccCnt, iPrecCnt);
+                    ++ iProcCnt;
+                    {
+                        // Wait for next training or deducing preparation
+                        std::unique_lock<std::mutex> lk(tdmtxEnd);
+                        while(!bBlk && bRtnFlag && bIterMode) condEnd.wait(lk);
+                    }
+                }
+            }, i);
+        // Dataset initialization
+        mnistTrainSet.init_batch(iNetMiniBatch);
+        mnistTestSet.init_batch(iNetMiniBatch);
+        auto iEpoch = 0; bIterMode = true;
+        // Main thread
+        do
         {
-        case ACT: vecInput = INSTANCE_DERIVE<LAYER_ACT>(seqLayer[i])->Deduce(vecInput); break;
-        case POOL_IM2COL: vecInput = INSTANCE_DERIVE<LAYER_POOL_IM2COL>(seqLayer[i])->Deduce(vecInput); break;
-        case TRANS_IM2COL: vecInput = INSTANCE_DERIVE<LAYER_TRANS_IM2COL>(seqLayer[i])->Deduce(vecInput); break;
-        case FC: vecInput = INSTANCE_DERIVE<LAYER_FC>(seqLayer[i])->Deduce(vecInput); break;
-        case FC_BN: vecInput = INSTANCE_DERIVE<LAYER_FC_BN>(seqLayer[i])->Deduce(vecInput, INSTANCE_DERIVE<BN_FC>(mapBNData[i])); break;
-        case CONV_IM2COL: vecInput = INSTANCE_DERIVE<LAYER_CONV_IM2COL>(seqLayer[i])->Deduce(vecInput); break;
-        case CONV_BN_IM2COL: vecInput = INSTANCE_DERIVE<LAYER_CONV_BN_IM2COL>(seqLayer[i])->Deduce(vecInput, INSTANCE_DERIVE<BN_CONV_IM2COL>(mapBNData[i])); break;
-        default: continue;
-        }
-        DeduceAcc(vecInput, iLbl);
-    }
-    void Deduce(set<vect> &setInput, set<uint64_t> &setLbl) { for(auto i=0; i<setInput.size(); ++i) Deduce(setInput[i], setLbl[i]); }
-    void TrainAcc(set<vect> &Output, set<uint64_t> &setLbl) { for(auto i=0; i<Output.size(); ++i) DeduceAcc(Output[i], setLbl[i]); }
-    void ValueAssign(NetMNISTIm2Col &netSrc)
-    {
-        iAccCnt = netSrc.iAccCnt;
-        iPrecCnt = netSrc.iPrecCnt;
-        bThreadFlag = netSrc.bThreadFlag;
+            CLOCK_BEGIN(0)
+            // Train set shuffle for the epoch increment
+            mnistTrainSet.shuffle_batch(); ++ iEpoch;
+            // Switch on train
+            bTrainMode = true; 
+            // Train
+            for(auto i=0; i<mnistTrainSet.batch_cnt(); ++i)
+            {
+                // Current batch initialization
+                CLOCK_BEGIN(1)
+                mnistTrainSet.init_curr_set(i);
+                iAccCnt = 0; iPrecCnt = 0; iProcCnt = 0;
+                // Wake up the batch threads for current training
+                bBlk = false;
+                condBegin.notify_all();
+                // Update parameters
+                while(iProcCnt!=mnistTrainSet.batch_size());
+                if(bRtnFlag) UpdatePara(i, mnistTrainSet.batch_cnt());
+                // Wake up the batch threads for next training
+                bBlk = true;
+                condEnd.notify_all();
+                CLOCK_END(1)
+                auto dAcc = FRACTOR_RATE(iAccCnt, mnistTrainSet.batch_size()),
+                    dPrec = FRACTOR_RATE(iPrecCnt, mnistTrainSet.batch_size());
+                EPOCH_TRAIN_STATUS(iEpoch, i+1, mnistTrainSet.batch_cnt(), dAcc, dPrec, CLOCK_DURATION(1));
+            }
+            // BP validation
+            if(!bRtnFlag) break;
+            // Deduce
+            iAccCnt = 0; iPrecCnt = 0;
+            // Sitch off train mode
+            bTrainMode = false;
+            for(auto i=0; i<mnistTestSet.batch_cnt(); ++i)
+            {
+                // Current batch initialization
+                mnistTestSet.init_curr_set(i);
+                iProcCnt = 0;
+                // Wake up the batch threads for current deducing
+                bBlk = false;
+                condBegin.notify_all();
+                while(iProcCnt != mnistTestSet.batch_size());
+                EPOCH_DEDUCE_PROG(i+1, mnistTestSet.batch_cnt());
+                bIterMode = (iAccCnt != mnistTestSet.size());
+                // Wake up the batch threads for next deducing
+                bBlk = true;
+                condEnd.notify_all();
+            }
+            CLOCK_END(0)
+            auto dAcc = FRACTOR_RATE(iAccCnt, mnistTestSet.size()),
+                dPrec = FRACTOR_RATE(iPrecCnt, mnistTestSet.size());
+            EPOCH_DEDUCE_STATUS(iEpoch, dAcc, dPrec, CLOCK_DURATION(0));
+            PRINT_ENTER
+        } while (bIterMode);
+        return bRtnFlag;
     }
 public:
     void ValueCopy(NetMNISTIm2Col &netSrc) { ValueAssign(netSrc); seqLayer = netSrc.seqLayer; mapBNData = netSrc.mapBNData; }
@@ -176,7 +305,7 @@ public:
     void operator=(NetMNISTIm2Col &netSrc) { NetBase::operator=(netSrc); ValueCopy(netSrc); }
     void operator=(NetMNISTIm2Col &&netSrc) { NetBase::operator=(netSrc); ValueMove(std::move(netSrc)); }
 
-    NetMNISTIm2Col(double dNetAcc = 1e-5, uint64_t iMinibatch = 0, bool bMultiThread = true) : NetBase(dNetAcc, iMinibatch), bThreadFlag(bMultiThread), task_batch(bMultiThread?iMinibatch:0) {}
+    NetMNISTIm2Col(double dNetAcc = 1e-5, uint64_t iMinibatch = 0, bool bMultiThread = true) : NetBase(dNetAcc, iMinibatch), bThreadFlag(bMultiThread) {}
     /*LAYER_ACT_SGL
     * uint64_t iActFuncType
     * LAYER_FC
@@ -201,13 +330,10 @@ public:
         {
         case ACT: if(bThreadFlag) INSTANCE_DERIVE<LAYER_ACT>(seqLayer[iCurrLayerSize])->setLayerInput.init(iNetMiniBatch); break;
         case FC:
-            if(bThreadFlag)
-            {
-                INSTANCE_DERIVE<LAYER_FC>(seqLayer[iCurrLayerSize])->setLayerInput.init(iNetMiniBatch);
-                INSTANCE_DERIVE<LAYER_FC>(seqLayer[iCurrLayerSize])->setLayerGradWeight.init(iNetMiniBatch);
-            } break;
+            INSTANCE_DERIVE<LAYER_FC>(seqLayer[iCurrLayerSize])->setLayerGradWeight.init(iNetMiniBatch);
+            if(bThreadFlag) INSTANCE_DERIVE<LAYER_FC>(seqLayer[iCurrLayerSize])->setLayerInput.init(iNetMiniBatch); break;
         case FC_BN:
-            mapBNData.insert(iCurrLayerSize, std::make_shared<BN>());
+            mapBNData.insert(iCurrLayerSize, BN_EXP_VAR());
             if(bThreadFlag)
             {
                 INSTANCE_DERIVE<LAYER_FC_BN>(seqLayer[iCurrLayerSize])->setLayerInput.init(iNetMiniBatch);
@@ -215,13 +341,10 @@ public:
             }
             break;
         case CONV_IM2COL:
-            if(bThreadFlag)
-            {
-                INSTANCE_DERIVE<LAYER_CONV_IM2COL>(seqLayer[iCurrLayerSize])->setGradKernel.init(iNetMiniBatch);
-                INSTANCE_DERIVE<LAYER_CONV_IM2COL>(seqLayer[iCurrLayerSize])->setPrepInput.init(iNetMiniBatch);
-            } break;
+            INSTANCE_DERIVE<LAYER_CONV_IM2COL>(seqLayer[iCurrLayerSize])->setGradKernel.init(iNetMiniBatch);
+            INSTANCE_DERIVE<LAYER_CONV_IM2COL>(seqLayer[iCurrLayerSize])->setPrepInput.init(iNetMiniBatch); break;
         case CONV_BN_IM2COL:
-            mapBNData.insert(iCurrLayerSize, std::make_shared<BN>());
+            mapBNData.insert(iCurrLayerSize, BN_EXP_VAR());
             if(bThreadFlag)
             {
                 INSTANCE_DERIVE<LAYER_CONV_BN_IM2COL>(seqLayer[iCurrLayerSize])->setLayerInput.init(iNetMiniBatch);
@@ -229,76 +352,25 @@ public:
             }
             break;
         case POOL_IM2COL:
-            if(bThreadFlag && INSTANCE_DERIVE<LAYER_POOL_IM2COL>(seqLayer[iCurrLayerSize])->iPoolType == POOL_MAX_IM2COL) INSTANCE_DERIVE<LAYER_POOL_IM2COL>(seqLayer[iCurrLayerSize])->setInputMaxPosList.init(iNetMiniBatch); break;
+            if(INSTANCE_DERIVE<LAYER_POOL_IM2COL>(seqLayer[iCurrLayerSize])->iPoolType == POOL_MAX_IM2COL) INSTANCE_DERIVE<LAYER_POOL_IM2COL>(seqLayer[iCurrLayerSize])->setInputMaxPosList.init(iNetMiniBatch); break;
         default: break;
         }
         return bAddFlag;
     }
     bool Run(dataset::MNIST &mnistTrainSet, dataset::MNIST &mnistTestSet)
     {
-        mnistTrainSet.init_batch(iNetMiniBatch);
-        auto iEpoch = 0;
-        do
-        {
-            CLOCK_BEGIN(0)
-            async::shared_counter asyCnt = 0;
-            mnistTrainSet.shuffle_batch(); ++ iEpoch;
-            for(auto i=0; i<mnistTrainSet.batch_cnt(); ++i)
-            {
-                CLOCK_BEGIN(1)
-                mnistTrainSet.init_curr_set(i); iAccCnt = 0; iPrecCnt = 0; asyCnt = 0;
-                if(bThreadFlag)
-                {
-                    auto bTrainFlag = true;
-                    for(auto j=0; j<mnistTrainSet.batch_size(i); ++j) task_batch.set_task(j, 
-                        [this](vect &input, vect &orgn, int lbl, bool &flag, async::shared_counter &cnt, int ln_cnt, int idx){
-                            auto output = this->ForwProp(input, ln_cnt, idx);
-                            this->DeduceAcc(output, lbl);
-                            flag = this->BackProp(output, orgn, idx);
-                            ++ cnt;
-                        }, std::ref(mnistTrainSet.curr_input_im2col[j]), std::ref(mnistTrainSet.curr_orgn[j]), mnistTrainSet.curr_lbl[j], std::ref(bTrainFlag), std::ref(asyCnt), mnistTrainSet.ln_cnt(), j);
-                    if(!bTrainFlag) return false;
-                }
-                else
-                {
-                    auto setCurrOutput = ForwProp(mnistTrainSet.curr_input_im2col, mnistTrainSet.ln_cnt());
-                    TrainAcc(setCurrOutput, mnistTrainSet.curr_lbl);
-                    if(!BackProp(setCurrOutput, mnistTrainSet.curr_orgn)) return false;
-                }
-                while(asyCnt != mnistTrainSet.batch_size(i)); UpdatePara(i);
-                CLOCK_END(1)
-                std::printf("\r[Epoch][%d][Progress][%d/%d][Train Acuuracy][%.2f][Train Precision][%.2f][Duration][%dms]", (int)iEpoch, (int)i, (int)mnistTrainSet.batch_cnt(), FRACTOR_RATE(iAccCnt, mnistTrainSet.curr_input_im2col.size()), FRACTOR_RATE(iPrecCnt, mnistTrainSet.curr_input_im2col.size()), (int)CLOCK_DURATION(1));
-            }
-            DeduceInit(mnistTrainSet.batch_cnt());
-            if(bThreadFlag)
-            {
-                mnistTestSet.init_batch(iNetMiniBatch);
-                for(auto i=0; i<mnistTestSet.batch_cnt(); ++i)
-                {
-                    mnistTestSet.init_curr_set(i);
-                    for(auto j=0; j<mnistTestSet.batch_size(); ++j) task_batch.set_task(j,
-                        [this](vect &input, int lbl, async::shared_counter &cnt){
-                            this->Deduce(input, lbl);
-                            ++ cnt;
-                        }, std::ref(mnistTestSet.curr_input_im2col[j]), mnistTestSet.curr_lbl[j], std::ref(asyCnt));
-                    while(asyCnt != mnistTestSet.batch_size()); asyCnt = 0;
-                }
-            }
-            else Deduce(mnistTestSet.elem_im2col, mnistTestSet.elem_lbl);
-            CLOCK_END(0)
-            std::printf("\r[Epoch][%d][Deduce Acuuracy][%lf][Deduce Precision][%lf][Duration][%dms]", iEpoch, FRACTOR_RATE(iAccCnt, mnistTestSet.size()), FRACTOR_RATE(iPrecCnt, mnistTestSet.size()), CLOCK_DURATION(0));
-        } while (iAccCnt == mnistTestSet.size());
-        return true;
+        if(bThreadFlag) return RunThread(mnistTrainSet, mnistTestSet);
+        else return RunLinear(mnistTrainSet, mnistTestSet);
     }
     void Reset() { mapBNData.reset(); seqLayer.reset(); }
     uint64_t Depth() { return seqLayer.size(); }
     ~NetMNISTIm2Col() { Reset(); }
 private:
-    async::async_batch task_batch;
-    async::shared_counter iAccCnt = 0, iPrecCnt = 0;
     bool bThreadFlag = false;
+
     NET_SEQ<LAYER_PTR> seqLayer;
-    NET_MAP<uint64_t, BN_PTR> mapBNData;
+    NET_MAP<uint64_t, BN_EXP_VAR> mapBNData;
+    void ValueAssign(NetMNISTIm2Col &netSrc) { bThreadFlag = netSrc.bThreadFlag; }
 };
 
 NEUNET_END
@@ -318,20 +390,21 @@ int main(int argc, char *argv[], char *envp[])
     // dataset.output_bitmap("E:\\VS Code project data\\MNIST_out\\train", BMIO_BMP);
     MNIST testset(root_dir + "t10k-images.idx3-ubyte", root_dir + "t10k-labels.idx1-ubyte", true);
     // testset.output_bitmap("E:\\VS Code project data\\MNIST_out\\test", BMIO_BMP);
-    NetMNISTIm2Col LeNet(0.1, 125);
-    LeNet.AddLayer<LAYER_CONV_IM2COL>(20, 1, 5, 5, 1, 1);
+    auto dLearnRate = 0.1;
+    NetMNISTIm2Col LeNet(0.1, 125, true);
+    LeNet.AddLayer<LAYER_CONV_IM2COL>(20, 1, 5, 5, 1, 1, dLearnRate);
     LeNet.AddLayer<LAYER_CONV_BN_IM2COL>(20);
     LeNet.AddLayer<LAYER_ACT>(RELU);
     LeNet.AddLayer<LAYER_POOL_IM2COL>(POOL_MAX_IM2COL, 2, 2, 2, 2);
-    LeNet.AddLayer<LAYER_CONV_IM2COL>(50, 20, 5, 5, 1, 1);
+    LeNet.AddLayer<LAYER_CONV_IM2COL>(50, 20, 5, 5, 1, 1, dLearnRate);
     LeNet.AddLayer<LAYER_CONV_BN_IM2COL>(50);
     LeNet.AddLayer<LAYER_ACT>(RELU);
     LeNet.AddLayer<LAYER_POOL_IM2COL>(POOL_MAX_IM2COL, 2, 2, 2, 2);
     LeNet.AddLayer<LAYER_TRANS_IM2COL>();
-    LeNet.AddLayer<LAYER_FC>(800, 500);
+    LeNet.AddLayer<LAYER_FC>(800, 500, dLearnRate);
     LeNet.AddLayer<LAYER_FC_BN>();
     LeNet.AddLayer<LAYER_ACT>(SIGMOID);
-    LeNet.AddLayer<LAYER_FC>(500, 10);
+    LeNet.AddLayer<LAYER_FC>(500, 10, dLearnRate);
     LeNet.AddLayer<LAYER_ACT>(SOFTMAX);
     cout << "[LeNet depth][" << LeNet.Depth() << ']' << endl;
     if(LeNet.Run(dataset, testset)) return EXIT_FAILURE;

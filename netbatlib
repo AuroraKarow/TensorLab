@@ -1,7 +1,8 @@
+#pragma once
 #include "netbaslib"
 
-#define ADA_BEGIN       namespace ada {
-#define ADA_END         }
+#define ADA_BEGIN           namespace ada {
+#define ADA_END             }
 
 ADA_BEGIN
 
@@ -10,8 +11,7 @@ template<typename _Ty> using ada_feature    =   set<_Ty>;
 
 ADA_END
 
-struct  BN                  { virtual void _Deriv() {} };
-#define BN_PTR              std::shared_ptr<BN>
+struct  BN_EXP_VAR          { vect vecExp, vecVar; };
 
 #include "ada.hpp"
 #include "fcbat.hpp"
@@ -20,7 +20,3 @@ struct  BN                  { virtual void _Deriv() {} };
 #define BN_FC               fc::FCBN
 #define BN_CONV             conv::ConvBN
 #define BN_CONV_IM2COL      conv::ConvBNIm2Col
-
-#define BN_FC_PTR           std::shared_ptr<BN_FC>
-#define BN_CONV_PTR         std::shared_ptr<BN_CONV>
-#define BN_CONV_IM2COL_PTR  std::shared_ptr<BN_CONV_IM2COL>

@@ -123,6 +123,7 @@ public:
         return res;
     }
     uint64_t task_cnt() { return tsk_cnt; }
+    uint64_t batch_size() { return asyn_batch_size; }
     ~async_batch()
     {
         stop = true;
@@ -196,59 +197,7 @@ public:
     ~async_queue() { reset(); }
 };
 
-class async_pool
-{
-private:
-    async_queue<bagrt::net_queue<std::function<void()>>> tsk_bat_list;
-    bagrt::net_queue<std::thread> td_set;
-    uint64_t pool_size = ASYNC_CORE_CNT, batch_size = ASYNC_CORE_CNT;
-    std::mutex tdmtx;
-    std::condition_variable cond;
-    shared_signal stop;
-public:
-    async_pool(uint64_t max_pool_size = ASYNC_CORE_CNT, uint64_t max_batch_size = ASYNC_CORE_CNT) : pool_size(max_pool_size), td_set(max_pool_size), batch_size(max_batch_size)
-    {
-        for(auto i=0; i<pool_size; ++i) td_set[i] = std::thread([this]{
-            async_batch bat_td(batch_size);
-            while(true)
-            {
-                {
-                    std::unique_lock<std::mutex> lck(tdmtx);
-                    while(!(stop || tsk_bat_list.size())) cond.wait(lck);
-                }
-                if(stop && !tsk_bat_list.size()) return;
-                auto tsk_bat = tsk_bat_list.de_queue();
-                for(auto j=0; j<tsk_bat.size(); ++j) bat_td.set_task(j, tsk_bat[j]);
-            }
-        });
-    }
-    template<typename _rtnT> bagrt::net_queue<std::future<_rtnT>> add_batch(bagrt::net_queue<PACK_PTR<_rtnT>> &task_set)
-    {
-        bagrt::net_queue<std::function<void()>> batch_temp(task_set.size());
-        bagrt::net_queue<std::future<_rtnT>> fut_temp(task_set.size());
-        for(auto i=0; i<batch_temp.size(); ++i)
-        {
-            auto curr_task = task_set[i];
-            fut_temp[i] = curr_task->get_future();
-            batch_temp[i] = [curr_task]() { (*curr_task)(); };
-        }
-        {
-            std::unique_lock<std::mutex> lck(tdmtx);
-            if(stop) throw std::runtime_error("Enqueue on stopped asynchronous pool.");
-            tsk_bat_list.en_queue(batch_temp);
-            cond.notify_one();
-        }
-        return fut_temp;
-    }
-    ~async_pool()
-    {
-        stop = true;
-        cond.notify_all();
-        for(auto i=0; i<td_set.size(); ++i) if(td_set[i].joinable()) td_set[i].join();
-    }
-};
-
-class async_task
+class async_tool
 {
 private:
     bagrt::net_queue<std::thread> td_set;
@@ -257,7 +206,7 @@ private:
     std::condition_variable cond;
     shared_signal stop;
 public:
-    async_task(uint64_t thread_size = ASYNC_CORE_CNT) : stop(false), td_set(thread_size) {
+    async_tool(uint64_t thread_size = ASYNC_CORE_CNT) : stop(false), td_set(thread_size) {
     for(auto i=0; i<td_set.size(); ++i) td_set[i] = std::thread([this]
     {
         while(true)
@@ -272,8 +221,7 @@ public:
             curr_tsk();
         }
     });}
-    template<typename _funcT, typename ... _parasT> auto add_task(_funcT &&func_val, _parasT &&...paras)
-        -> std::future<typename std::result_of<_funcT(_parasT ...)>::type>
+    template<typename _funcT, typename ... _parasT> auto add_task(_funcT &&func_val, _parasT &&...paras) -> std::future<typename std::result_of<_funcT(_parasT ...)>::type>
     {
         // Thread function result type name (For deduce)
         using _rtnT = std::result_of<_funcT(_parasT...)>::type;
@@ -291,7 +239,7 @@ public:
         cond.notify_one();
         return rtn;
     }
-    ~async_task()
+    ~async_tool()
     {
         stop = true;
         cond.notify_all();
