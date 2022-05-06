@@ -202,15 +202,15 @@ private:
         async::shared_counter iAccCnt = 0, iPrecCnt = 0, iProcCnt = 0;
         async::shared_signal bRtnFlag = true, bBlk = true, 
                             bTrainMode = true, // true - train; false - deduce
-                            bIterMode = true; // true - Iteration; false - convergence
-        std::condition_variable condBegin, condEnd;
-        std::mutex tdmtxBegin, tdmtxEnd;
+                            bIterFlag = true; // true - Iteration; false - convergence
+        std::condition_variable condBegin, condEnd, condMainBegin, condMainEnd;
+        std::mutex tdmtxBegin, tdmtxEnd, tdmtxMainBegin, tdmtxMainEnd;
         // Load in batch threads
         for(auto i=0; i<iNetMiniBatch; ++i) asyncBatch.set_task(i,
-            [this, &bRtnFlag, &bIterMode, &bBlk, &bTrainMode, &condBegin, &condEnd, &tdmtxBegin, &tdmtxEnd, &iAccCnt, &iPrecCnt, &iProcCnt, &mnistTrainSet, &mnistTestSet]
+            [this, &bRtnFlag, &bIterFlag, &bBlk, &bTrainMode, &condMainBegin, &condMainEnd, &condBegin, &condEnd, &tdmtxBegin, &tdmtxEnd, &iAccCnt, &iPrecCnt, &iProcCnt, &mnistTrainSet, &mnistTestSet]
             (int idx)
             {
-                while(bRtnFlag && bIterMode)
+                while(bRtnFlag && bIterFlag)
                 {
                     {
                         // Wait for preparation of train set or test set in each batch
@@ -227,18 +227,19 @@ private:
                     }
                     // Deduce
                     else this->OutputAcc(this->Deduce(mnistTestSet.curr_input_im2col[idx]), mnistTestSet.curr_lbl[idx], iAccCnt, iPrecCnt);
-                    ++ iProcCnt;
+                    if((++ iProcCnt) == iNetMiniBatch) condMainEnd.notify_one();
                     {
                         // Wait for next training or deducing preparation
                         std::unique_lock<std::mutex> lk(tdmtxEnd);
-                        while(!bBlk && bRtnFlag && bIterMode) condEnd.wait(lk);
+                        while(!bBlk) condEnd.wait(lk);
                     }
+                    if(!(-- iProcCnt)) condMainBegin.notify_one();
                 }
             }, i);
         // Dataset initialization
         mnistTrainSet.init_batch(iNetMiniBatch);
         mnistTestSet.init_batch(iNetMiniBatch);
-        auto iEpoch = 0; bIterMode = true;
+        auto iEpoch = 0; bIterFlag = true;
         // Main thread
         do
         {
@@ -246,55 +247,72 @@ private:
             // Train set shuffle for the epoch increment
             mnistTrainSet.shuffle_batch(); ++ iEpoch;
             // Switch on train
-            bTrainMode = true; 
+            bTrainMode = true;
             // Train
             for(auto i=0; i<mnistTrainSet.batch_cnt(); ++i)
             {
                 // Current batch initialization
                 CLOCK_BEGIN(1)
                 mnistTrainSet.init_curr_set(i);
-                iAccCnt = 0; iPrecCnt = 0; iProcCnt = 0;
+                // Wait for last round
+                {
+                    std::unique_lock<std::mutex> lk(tdmtxMainBegin);
+                    while(iProcCnt) condMainBegin.wait(lk);
+                }
                 // Wake up the batch threads for current training
                 bBlk = false;
                 condBegin.notify_all();
-                // Update parameters
-                while(iProcCnt!=mnistTrainSet.batch_size());
-                if(bRtnFlag) UpdatePara(i, mnistTrainSet.batch_cnt());
+                // Wait for this round
+                {
+                    std::unique_lock<std::mutex> lk(tdmtxMainEnd);
+                    while(iProcCnt != iNetMiniBatch) condMainEnd.wait(lk);
+                }
                 // Wake up the batch threads for next training
                 bBlk = true;
                 condEnd.notify_all();
+                if(bRtnFlag) UpdatePara(i, mnistTrainSet.batch_cnt());
+                else break;
                 CLOCK_END(1)
                 auto dAcc = FRACTOR_RATE(iAccCnt, mnistTrainSet.batch_size()),
                     dPrec = FRACTOR_RATE(iPrecCnt, mnistTrainSet.batch_size());
                 EPOCH_TRAIN_STATUS(iEpoch, i+1, mnistTrainSet.batch_cnt(), dAcc, dPrec, CLOCK_DURATION(1));
+                iAccCnt = 0; iPrecCnt = 0;
             }
             // BP validation
             if(!bRtnFlag) break;
             // Deduce
-            iAccCnt = 0; iPrecCnt = 0;
-            // Sitch off train mode
+            // Switch off train mode
             bTrainMode = false;
             for(auto i=0; i<mnistTestSet.batch_cnt(); ++i)
             {
                 // Current batch initialization
                 mnistTestSet.init_curr_set(i);
-                iProcCnt = 0;
+                // Wait for last round
+                {
+                    std::unique_lock<std::mutex> lk(tdmtxMainBegin);
+                    while(iProcCnt) condMainBegin.wait(lk);
+                }
                 // Wake up the batch threads for current deducing
                 bBlk = false;
                 condBegin.notify_all();
-                while(iProcCnt != mnistTestSet.batch_size());
-                EPOCH_DEDUCE_PROG(i+1, mnistTestSet.batch_cnt());
-                bIterMode = (iAccCnt != mnistTestSet.size());
+                // Wait for this round
+                {
+                    std::unique_lock<std::mutex> lk(tdmtxMainEnd);
+                    while(iProcCnt != iNetMiniBatch) condMainEnd.wait(lk);
+                }
+                bIterFlag = (iAccCnt != mnistTestSet.size());
                 // Wake up the batch threads for next deducing
                 bBlk = true;
                 condEnd.notify_all();
+                EPOCH_DEDUCE_PROG(i+1, mnistTestSet.batch_cnt());
             }
             CLOCK_END(0)
             auto dAcc = FRACTOR_RATE(iAccCnt, mnistTestSet.size()),
                 dPrec = FRACTOR_RATE(iPrecCnt, mnistTestSet.size());
             EPOCH_DEDUCE_STATUS(iEpoch, dAcc, dPrec, CLOCK_DURATION(0));
             PRINT_ENTER
-        } while (bIterMode);
+            iAccCnt = 0; iPrecCnt = 0;
+        } while (bIterFlag);
         return bRtnFlag;
     }
 public:
