@@ -254,11 +254,6 @@ private:
                 // Current batch initialization
                 CLOCK_BEGIN(1)
                 mnistTrainSet.init_curr_set(i);
-                // Wait for last round
-                {
-                    std::unique_lock<std::mutex> lk(tdmtxMainBegin);
-                    while(iProcCnt) condMainBegin.wait(lk);
-                }
                 // Wake up the batch threads for current training
                 bBlk = false;
                 condBegin.notify_all();
@@ -267,9 +262,6 @@ private:
                     std::unique_lock<std::mutex> lk(tdmtxMainEnd);
                     while(iProcCnt != iNetMiniBatch) condMainEnd.wait(lk);
                 }
-                // Wake up the batch threads for next training
-                bBlk = true;
-                condEnd.notify_all();
                 if(bRtnFlag) UpdatePara(i, mnistTrainSet.batch_cnt());
                 else break;
                 CLOCK_END(1)
@@ -277,6 +269,14 @@ private:
                     dPrec = FRACTOR_RATE(iPrecCnt, mnistTrainSet.batch_size());
                 EPOCH_TRAIN_STATUS(iEpoch, i+1, mnistTrainSet.batch_cnt(), dAcc, dPrec, CLOCK_DURATION(1));
                 iAccCnt = 0; iPrecCnt = 0;
+                // Wake up the batch threads for next training
+                bBlk = true;
+                condEnd.notify_all();
+                // Wait for last round
+                {
+                    std::unique_lock<std::mutex> lk(tdmtxMainBegin);
+                    while(iProcCnt) condMainBegin.wait(lk);
+                }
             }
             // BP validation
             if(!bRtnFlag) break;
