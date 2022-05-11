@@ -200,23 +200,24 @@ private:
         // Batch thread
         async::async_batch asyncBatch(iNetMiniBatch);
         async::shared_counter iAccCnt = 0, iPrecCnt = 0, iProcCnt = 0;
-        async::shared_signal bRtnFlag = true, bBlk = true, 
+        async::shared_signal bRtnFlag = true, 
                             bTrainMode = true, // true - train; false - deduce
                             bIterFlag = true; // true - Iteration; false - convergence
-        std::condition_variable condBegin, condEnd, condMainBegin, condMainEnd;
-        std::mutex tdmtxBegin, tdmtxEnd, tdmtxMainBegin, tdmtxMainEnd;
+        std::condition_variable condBatch, condMain;
+        std::mutex tdmtxBatch, tdmtxMain;
         // Load in batch threads
         for(auto i=0; i<iNetMiniBatch; ++i) asyncBatch.set_task(i,
-            [this, &bRtnFlag, &bIterFlag, &bBlk, &bTrainMode, &condMainBegin, &condMainEnd, &condBegin, &condEnd, &tdmtxBegin, &tdmtxEnd, &iAccCnt, &iPrecCnt, &iProcCnt, &mnistTrainSet, &mnistTestSet]
+            [this, &bRtnFlag, &bIterFlag, &bTrainMode, &condMain, &condBatch, &tdmtxBatch, &iAccCnt, &iPrecCnt, &iProcCnt, &mnistTrainSet, &mnistTestSet]
             (int idx)
             {
-                while(bRtnFlag && bIterFlag)
+                while(true)
                 {
                     {
                         // Wait for preparation of train set or test set in each batch
-                        std::unique_lock<std::mutex> lk(tdmtxBegin);
-                        while(bBlk) condBegin.wait(lk);
+                        std::unique_lock<std::mutex> lk(tdmtxBatch);
+                        condBatch.wait(lk);
                     }
+                    if(!(bRtnFlag && bIterFlag)) break;
                     if(bTrainMode)
                     {
                         // FP
@@ -227,13 +228,7 @@ private:
                     }
                     // Deduce
                     else this->OutputAcc(this->Deduce(mnistTestSet.curr_input_im2col[idx]), mnistTestSet.curr_lbl[idx], iAccCnt, iPrecCnt);
-                    if((++ iProcCnt) == iNetMiniBatch) condMainEnd.notify_one();
-                    {
-                        // Wait for next training or deducing preparation
-                        std::unique_lock<std::mutex> lk(tdmtxEnd);
-                        while(!bBlk) condEnd.wait(lk);
-                    }
-                    if(!(-- iProcCnt)) condMainBegin.notify_one();
+                    if((++iProcCnt) == iNetMiniBatch) condMain.notify_one();
                 }
             }, i);
         // Dataset initialization
@@ -255,31 +250,25 @@ private:
                 CLOCK_BEGIN(1)
                 mnistTrainSet.init_curr_set(i);
                 // Wake up the batch threads for current training
-                bBlk = false;
-                condBegin.notify_all();
+                condBatch.notify_all();
                 // Wait for this round
                 {
-                    std::unique_lock<std::mutex> lk(tdmtxMainEnd);
-                    while(iProcCnt != iNetMiniBatch) condMainEnd.wait(lk);
+                    std::unique_lock<std::mutex> lk(tdmtxMain);
+                    condMain.wait(lk);
+                    iProcCnt = 0;
                 }
                 if(bRtnFlag) UpdatePara(i, mnistTrainSet.batch_cnt());
-                else break;
+                else 
+                {
+                    condBatch.notify_all();
+                    return false;
+                }
                 CLOCK_END(1)
                 auto dAcc = FRACTOR_RATE(iAccCnt, mnistTrainSet.batch_size()),
                     dPrec = FRACTOR_RATE(iPrecCnt, mnistTrainSet.batch_size());
                 EPOCH_TRAIN_STATUS(iEpoch, i+1, mnistTrainSet.batch_cnt(), dAcc, dPrec, CLOCK_DURATION(1));
                 iAccCnt = 0; iPrecCnt = 0;
-                // Wake up the batch threads for next training
-                bBlk = true;
-                condEnd.notify_all();
-                // Wait for last round
-                {
-                    std::unique_lock<std::mutex> lk(tdmtxMainBegin);
-                    while(iProcCnt) condMainBegin.wait(lk);
-                }
             }
-            // BP validation
-            if(!bRtnFlag) break;
             // Deduce
             // Switch off train mode
             bTrainMode = false;
@@ -287,23 +276,13 @@ private:
             {
                 // Current batch initialization
                 mnistTestSet.init_curr_set(i);
-                // Wait for last round
-                {
-                    std::unique_lock<std::mutex> lk(tdmtxMainBegin);
-                    while(iProcCnt) condMainBegin.wait(lk);
-                }
-                // Wake up the batch threads for current deducing
-                bBlk = false;
-                condBegin.notify_all();
+                condBatch.notify_all();
                 // Wait for this round
                 {
-                    std::unique_lock<std::mutex> lk(tdmtxMainEnd);
-                    while(iProcCnt != iNetMiniBatch) condMainEnd.wait(lk);
+                    std::unique_lock<std::mutex> lk(tdmtxMain);
+                    condMain.wait(lk);
+                    iProcCnt = 0;
                 }
-                bIterFlag = (iAccCnt != mnistTestSet.size());
-                // Wake up the batch threads for next deducing
-                bBlk = true;
-                condEnd.notify_all();
                 EPOCH_DEDUCE_PROG(i+1, mnistTestSet.batch_cnt());
             }
             CLOCK_END(0)
@@ -311,6 +290,7 @@ private:
                 dPrec = FRACTOR_RATE(iPrecCnt, mnistTestSet.size());
             EPOCH_DEDUCE_STATUS(iEpoch, dAcc, dPrec, CLOCK_DURATION(0));
             PRINT_ENTER
+            bIterFlag = (iAccCnt != mnistTestSet.size());
             iAccCnt = 0; iPrecCnt = 0;
         } while (bIterFlag);
         return bRtnFlag;
