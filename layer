@@ -31,5 +31,6 @@
 #define CONV_BN_IM2COL      10
 #define POOL_IM2COL         11
 #define TRANS_IM2COL        12
+#define PAD_CROP_IM2COL     13
 
 #include "layer.hpp"

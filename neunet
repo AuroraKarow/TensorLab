@@ -3,35 +3,32 @@
 
 // namespace
 
-#define NEUNET_BEGIN    namespace neunet {
-#define NEUNET_END      }
+#define NEUNET_BEGIN            namespace neunet {
+#define NEUNET_END              }
 
-#define NET_LIST        bagrt::net_list
-#define NET_MAP         bagrt::net_map
-#define NET_SEQ         seq
+#define NET_LIST                bagrt::net_list
+#define NET_MAP                 bagrt::net_map
+#define NET_SEQ                 seq
 
 // Layer
 
 #define LAYER_PTR               std::shared_ptr<layer::Layer>
 
 #define LAYER_ACT               layer::LayerAct
-#define LAYER_ACT_VT            layer::LayerActVect
-#define LAYER_ACT_FT            layer::LayerActFt
-
 #define LAYER_FC                layer::LayerFC
-#define LAYER_CONV              layer::LayerConv
-#define LAYER_CONV_IM2COL       layer::LayerConvIm2Col
-
-#define LAYER_POOL              layer::LayerPool
-#define LAYER_POOL_IM2COL       layer::LayerPoolIm2Col
-
 #define LAYER_FC_BN             layer::LayerFCBN
-#define LAYER_CONV_BN           layer::LayerConvBN
+#define LAYER_CONV_IM2COL       layer::LayerConvIm2Col
 #define LAYER_CONV_BN_IM2COL    layer::LayerConvBNIm2Col
-
-#define LAYER_TRANS             layer::LayerTrans
+#define LAYER_POOL_IM2COL       layer::LayerPoolIm2Col
+#define LAYER_PAD_CROP_IM2COL   layer::LayerPadCropIm2Col
 #define LAYER_TRANS_IM2COL      layer::LayerTransIm2Col
 
 #define _LAYER                  layer::
+
+#define LAYER_OPT_UPDATE_PARA   0
+#define LAYER_OPT_CONV_BN_FP    1
+#define LAYER_OPT_CONV_BN_BP    2
+#define LAYER_OPT_FC_BN_FP      3
+#define LAYER_OPT_FC_BN_BP      4
 
 #include "neunet.hpp"

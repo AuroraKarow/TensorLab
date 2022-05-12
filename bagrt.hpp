@@ -1667,20 +1667,4 @@ uint64_t least_common_multiple(uint64_t l_val, uint64_t r_val)
     return res;
 }
 
-// initializer_list to net_queue
-template<typename T> net_queue<T> initilaize_net_queue(std::initializer_list<T> &src)
-{
-    net_queue<T> cpy(src.size());
-    auto cnt = 0;
-    for(auto elem : src) cpy[cnt ++] = elem;
-    return cpy;
-}
-
-template<typename T> net_queue<T> initilaize_net_list(std::initializer_list<T> &src)
-{
-    net_list<T> cpy;
-    for(auto elem : src) cpy.emplace_back(elem);
-    return cpy;
-}
-
 BASEALGO_END

@@ -113,6 +113,32 @@ set<feature> merge_channel(set<tensor> &input)
     return set_ft_map;
 }
 
+bool deduce_acc_prec_rc(set<vect> &deduce_output, set<uint64_t> &curr_lbl_batch, double net_acc, double &acc, double &prec, double &rc, bool convert_to_rate = true)
+{
+    if(deduce_output.size() == curr_lbl_batch.size())
+    {
+        auto confid = 1 - net_acc;
+        for(auto i=0; i<curr_lbl_batch.size(); ++i)
+        {
+            auto curr_prop = deduce_output[i].pos_idx(curr_lbl_batch[i]);
+            prec += curr_prop;
+            if(curr_prop > 0.5)
+            {
+                acc += 1;
+                if(curr_prop > confid) rc += 1;
+            }
+        }
+        if(convert_to_rate)
+        {
+            acc /= curr_lbl_batch.size();
+            prec /= curr_lbl_batch.size();
+            rc /= curr_lbl_batch.size();
+        }
+        return true;
+    }
+    else return false;
+}
+
 void print_train_status(vect &vecOutput, vect &vecOrgn)
 {
     std::cout << " [No.]\t[Output]\t[Origin]" << std::endl;
@@ -133,9 +159,9 @@ void print_train_status(set<vect> &setOutput, set<vect> &setOrgn)
     }
 }
 
-void print_train_status(int iEpoch, int iCurrProg, int iProg, double dAcc, double dPrec, int iDur) { std::printf("\r[Epoch][%d][Progress][%d/%d][Acc/Prec][%.2f/%.2f][Duration][%dms]", iEpoch, iCurrProg, iProg, dAcc, dPrec, iDur); }
+void print_train_status(int epoch, int curr_prog, int prog, double acc, double prec, double rc, int dur) { std::printf("\r[Ep][%d][Prog][%d/%d][Acc/Prec/Rc][%.2f/%.2f/%.2f][Dur][%dms]", epoch, curr_prog, prog, acc, prec, rc, dur); }
 
-void print_deduce_status(int iEpoch, double dAcc, double dPrec, int iDur)
-{ std::printf("\r[Epoch][%d][Accuracy][%lf][Precision][%lf][Duration][%dms]", iEpoch, dAcc, dPrec, iDur); }
+void print_deduce_status(int epoch, double acc, double prec, double rc, int dur)
+{ std::printf("\r[Ep][%d][Acc/Prec/Rc][%lf/%lf/%lf][Dur][%dms]", epoch, acc, prec, rc, dur); }
 
-void print_deduce_progress(int iCurrProg, int iProg) { std::printf("\r[Deducing][%d/%d]", iCurrProg, iProg); }
+void print_deduce_progress(int curr_prog, int prog) { std::printf("\r[Deducing][%d/%d]", curr_prog, prog); }

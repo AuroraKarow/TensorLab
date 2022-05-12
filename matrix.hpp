@@ -1,7 +1,5 @@
 MATRIX_BEGIN
 
-std::default_random_engine  rand_e;
-
 struct mtx_pos
 {
     int ln = 0;
@@ -34,24 +32,41 @@ bool mtx_pos_valid(uint64_t ln, uint64_t col, uint64_t ln_cnt, uint64_t col_cnt)
     else return false;
 }
 
-mtx_pos mtx_elem_pos(uint64_t idx, uint64_t col_cnt)
+mtx_pos mtx_elem_pos(uint64_t idx, uint64_t curr_col_cnt, uint64_t ln_from, uint64_t col_from, uint64_t ln_dilate, uint64_t col_dilate)
 {
     mtx_pos pos;
-    pos.ln = idx / col_cnt;
-    pos.col = idx % col_cnt;
+    if(ln_from || col_from  || ln_dilate || col_dilate)
+    {
+        pos.ln = (idx / curr_col_cnt) * (ln_dilate + 1) + ln_from;
+        pos.col = (idx % curr_col_cnt) * (col_dilate + 1) + col_from;
+    }
+    else
+    {
+        pos.ln = idx / curr_col_cnt;
+        pos.col = idx % curr_col_cnt;
+    }
     return pos;
 }
-
-uint64_t mtx_elem_pos(uint64_t curr_ln, uint64_t curr_col, uint64_t col_cnt, uint64_t ln_from = 0, uint64_t ln_to = 0, uint64_t col_from = 0, uint64_t col_to = 0, uint64_t ln_dilate = 0, uint64_t col_dilate = 0)
+mtx_pos mtx_elem_pos(uint64_t idx, uint64_t col_cnt) { return mtx_elem_pos(idx, col_cnt, 0, 0, 0, 0); }
+uint64_t mtx_elem_pos(uint64_t ln, uint64_t col, uint64_t orgn_col_cnt, uint64_t ln_from, uint64_t col_from, uint64_t ln_dilate, uint64_t col_dilate)
 {
-    if(ln_from || ln_to || col_from || col_to || ln_dilate || col_dilate)
+    auto curr_ln = 0, curr_col = 0;
+    if(ln_from || col_from || ln_dilate || col_dilate)
     {
-        auto ln = ln_from + curr_ln * (1 + ln_dilate),
-            col = col_from + curr_col * (1 + col_dilate);
-        return ln * col_cnt + col;
+        curr_ln = ln_from + ln * (1 + ln_dilate),
+        curr_col = col_from + col * (1 + col_dilate);
     }
-    return curr_ln * col_cnt + curr_col;
+    else
+    {
+        curr_ln = ln;
+        curr_col = col;
+    }
+    return curr_ln * orgn_col_cnt + curr_col;
 }
+uint64_t mtx_elem_pos(uint64_t ln, uint64_t col, uint64_t col_cnt) { return mtx_elem_pos(ln, col, col_cnt, 0, 0, 0, 0); }
+
+uint64_t mtx_pad_cnt(uint64_t prev_pad, uint64_t rear_pad, uint64_t dir_cnt, uint64_t dir_distance) { return prev_pad + rear_pad + dir_cnt + (dir_cnt - 1) * dir_distance; }
+uint64_t mtx_crop_cnt(uint64_t prev_crop, uint64_t rear_crop, uint64_t dir_cnt, uint64_t dir_distance) { return (dir_cnt - (prev_crop + rear_crop) + dir_distance) / (dir_distance + 1); }
 
 MATRIX mtx_init(uint64_t elem_cnt)
 {
@@ -88,7 +103,7 @@ MATRIX mtx_init_rand(uint64_t elem_cnt, double boundry_first = 0, double boundry
 {
     MATRIX mtx_val = mtx_init(elem_cnt);
     for (int i = 0; i < elem_cnt; ++i)
-        if(boundry_first==boundry_second) mtx_val[i] = (((double)rand_e() / (double)rand_e._Max) - 0.5) * 2.0;
+        if(boundry_first==boundry_second) mtx_val[i] = (((double)bagrt::rand_e() / (double)bagrt::rand_e._Max) - 0.5) * 2.0;
         else mtx_val[i] = bagrt::random_number(boundry_first, boundry_second, false, acc); 
     return mtx_val;
 }
@@ -177,8 +192,8 @@ mtx_info mtx_pad(MATRIX &mtx_val, uint64_t ln_cnt, uint64_t col_cnt, uint64_t ln
     mtx_info mtx_res;
     if(mtx_val && ln_cnt && col_cnt)
     {
-        mtx_res.ln_cnt = ln_t + ln_b + ln_cnt + (ln_cnt - 1) * ln_dist;
-        mtx_res.col_cnt = col_r + col_l + col_cnt + (col_cnt - 1) * col_dist;
+        mtx_res.ln_cnt = mtx_pad_cnt(ln_t, ln_b, ln_cnt, ln_dist);
+        mtx_res.col_cnt = mtx_pad_cnt(col_l, col_r, col_cnt, col_dist);
         auto elem_cnt = mtx_res.ln_cnt * mtx_res.col_cnt;
         mtx_res.mtx_val = mtx_init(elem_cnt);
         for(auto i=0; i<ln_cnt; ++i)
@@ -212,7 +227,7 @@ mtx_info mtx_crop(MATRIX &mtx_val, uint64_t ln_cnt, uint64_t col_cnt, uint64_t l
     return mtx_res;
 }
 
-mtx_extm mtx_extm_val(MATRIX &mtx_val, uint64_t from_ln, uint64_t to_ln, uint64_t from_col, uint64_t to_col, uint64_t ln_cnt, uint64_t col_cnt, uint64_t ln_dilation = 0, uint64_t col_dilation = 0, bool max_flag = true)
+mtx_extm mtx_extm_val(MATRIX &mtx_val, uint64_t from_ln, uint64_t to_ln, uint64_t from_col, uint64_t to_col, uint64_t ln_cnt, uint64_t col_cnt, bool max_flag = true, bool extm_pos = true, uint64_t ln_dilation = 0, uint64_t col_dilation = 0)
 {
     mtx_extm mtx_info;
     if(mtx_val && col_cnt && ln_cnt &&
@@ -230,10 +245,13 @@ mtx_extm mtx_extm_val(MATRIX &mtx_val, uint64_t from_ln, uint64_t to_ln, uint64_
                 if((max_flag&&mtx_val[curr_no]>mtx_info.val) || (!max_flag&&mtx_val[curr_no]<mtx_info.val))
                 {
                     mtx_info.val = mtx_val[curr_no];
-                    mtx_info.pos_list.reset();
-                    mtx_info.pos_list.emplace_back(curr_pos);
+                    if(extm_pos)
+                    {
+                        mtx_info.pos_list.reset();
+                        mtx_info.pos_list.emplace_back(curr_pos);
+                    }
                 }
-                else if(mtx_val[curr_no] == mtx_info.val) mtx_info.pos_list.emplace_back(curr_pos);
+                else if(mtx_val[curr_no]==mtx_info.val && extm_pos) mtx_info.pos_list.emplace_back(curr_pos);
                 else continue;
             }
     }
@@ -559,7 +577,7 @@ double mtx_max_eigenvalue(MATRIX &mtx_val, int dms, MATRIX &w, double error = 1e
             for (int i=0; i<dms; ++i) temp[i] = x[i];
             auto temp_abs =  mtx_copy(temp, dms);
             mtx_abs(temp_abs, dms);
-            double max = mtx_extm_val(temp_abs, 0, dms-1, 0, 0, dms, 1).val;
+            double max = mtx_extm_val(temp_abs, 0, dms-1, 0, 0, dms, 1, true, false).val;
             for (int i=0; i<dms; ++i) x[i] /= max;
             for (int i=0; i<dms; ++i) w[i] = x[i];
             double sum = 0.0;
@@ -567,7 +585,7 @@ double mtx_max_eigenvalue(MATRIX &mtx_val, int dms, MATRIX &w, double error = 1e
             for (int i=0; i<dms; ++i) w[i] /= sum;
             x = mtx_mult(mtx_val, x, dms, dms, dms, 1);
             for (int i=0; i<dms; ++i) temp[i] = x[i];
-            lambda_temp = mtx_extm_val(temp, 0, dms-1, 0, 0, dms, 1).val;
+            lambda_temp = mtx_extm_val(temp, 0, dms-1, 0, 0, dms, 1, true, false).val;
             mtx_reset(temp, temp_abs);
         } while (std::abs(lambda_temp - lambda) > error);
         mtx_reset(x);
@@ -1001,7 +1019,7 @@ public:
         if(is_matrix()) return matrix(mtx_transposition(info.mtx_val, info.ln_cnt, info.col_cnt), info.col_cnt, info.ln_cnt);
         else return matrix();
     }
-    mtx_extm extremum(uint64_t from_ln, uint64_t to_ln, uint64_t from_col, uint64_t to_col, uint64_t ln_dilation = 0, uint64_t col_dilation = 0, bool max_flag = true) { return mtx_extm_val(info.mtx_val, from_ln, to_ln, from_col, to_col, info.ln_cnt, info.col_cnt, ln_dilation, col_dilation, max_flag); }
+    mtx_extm extremum(uint64_t from_ln, uint64_t to_ln, uint64_t from_col, uint64_t to_col, bool max_flag = true, bool extm_pos = true, uint64_t ln_dilation = 0, uint64_t col_dilation = 0) { return mtx_extm_val(info.mtx_val, from_ln, to_ln, from_col, to_col, info.ln_cnt, info.col_cnt, max_flag, extm_pos, ln_dilation, col_dilation); }
     double atom()
     {
         if(elem_cnt==1 && is_matrix()) return info.mtx_val[IDX_ZERO];

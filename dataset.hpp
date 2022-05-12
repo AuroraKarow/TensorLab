@@ -4,14 +4,16 @@ class MNIST
 {
 public:
     /* Data sequence */
+    set<feature> curr_elem;
+    set<vect> curr_elem_im2col, curr_orgn;
+    set<uint64_t> curr_lbl;
+private:
+    /* Data sequence */
     // Element list of data
     set<feature> elem;
     set<vect> elem_im2col;
     // Element index list of data, number sequence -> label value
-    set<uint64_t> elem_lbl, curr_lbl;
-    set<vect> curr_input_im2col, curr_orgn;
-    set<feature> curr_input;
-private:
+    set<uint64_t> elem_lbl;
     /* Magic number */
     // Data
     const uint64_t MAGIC_DATA_VALID = 2051;
@@ -136,12 +138,8 @@ private:
         }
         else return set<uint64_t>::blank_queue();
     }
-    // Origin vector dimension
-    static const uint64_t ORGN_SIZE = 10;
     // Bool element flag
     const bool is_bool, im2col_flag;
-    // Check collection
-    bool check = true;
     // Set index
     set<uint64_t> idx_set;
     // Batch info
@@ -158,20 +156,28 @@ public:
         elem.reset();
         elem_im2col.reset();
         elem_lbl.reset();
+        curr_lbl.reset();
+        curr_elem_im2col.reset();
+        curr_orgn.reset();
+        curr_elem.reset();
+        idx_set.reset();
     }
-    void init_batch(uint64_t _batch_size = 0)
+    bool init_batch(uint64_t _batch_size = 1)
     {
-        if(!_batch_size) set_batch_size = size();
-        else set_batch_size = _batch_size;
-        set_batch_cnt = size() / set_batch_size;
-        // Last bacth's size
-        set_batch_rear_size = size() % set_batch_size;
-        if(set_batch_rear_size) ++ set_batch_cnt;
-        if(set_batch_size != size())
+        if(_batch_size)
         {
-            idx_set.init(size());
-            for(auto i=0; i<idx_set.size(); ++i) idx_set[i] = i;
+            set_batch_size = _batch_size;
+            set_batch_rear_size = size() % _batch_size;
+            set_batch_cnt = size() / _batch_size;
+            if(set_batch_rear_size) ++ set_batch_cnt;
+            if(_batch_size > 1)
+            {
+                idx_set.init(size());
+                for(auto i=0; i<idx_set.size(); ++i) idx_set[i] = i;
+            }
+            return true;
         }
+        else return false;
     }
     uint64_t batch_cnt() { return set_batch_cnt; }
     uint64_t batch_size(uint64_t curr_bat_idx = 0)
@@ -180,23 +186,22 @@ public:
         else return set_batch_size;
     }
     void shuffle_batch() { if(idx_set.size()) idx_set.shuffle(); }
-    void init_curr_set(uint64_t curr_batch_idx)
+    void init_curr_set(uint64_t curr_batch_idx = 0)
     {
-        auto curr_idx_set = curr_input_idx_set(curr_batch_idx);
-        if(curr_idx_set.size())
+        if(idx_set.size())
         {
-            if(elem.size()) curr_input = elem.sub_queue(curr_idx_set);
-            else curr_input_im2col = elem_im2col.sub_queue(curr_idx_set);
+            auto curr_idx_set = curr_input_idx_set(curr_batch_idx);
+            if(im2col_flag) curr_elem_im2col = elem_im2col.sub_queue(curr_idx_set);
+            else curr_elem = elem.sub_queue(curr_idx_set);
             curr_lbl = elem_lbl.sub_queue(curr_idx_set);
-            curr_orgn = orgn(curr_lbl);
         }
         else
         {
-            if(elem.size()) curr_input = elem;
-            else curr_input_im2col = elem_im2col;
+            if(im2col_flag) curr_elem_im2col = elem_im2col;
+            else curr_elem = elem;
             curr_lbl = elem_lbl;
-            curr_orgn = orgn(curr_lbl);
         }
+        curr_orgn = orgn(curr_lbl);
     }
     bool valid()
     {
@@ -224,7 +229,7 @@ public:
     {
         if(lbl_val < 10)
         {
-            vect _orgn(ORGN_SIZE, 1);
+            vect _orgn(MNIST_ORGN_SIZE, 1);
             _orgn[lbl_val][IDX_ZERO] = 1;
             return _orgn;
         }
@@ -301,33 +306,31 @@ public:
      * @retval  true    Load successfully
      * @retval  false   Load filed
      */
-    bool load_data(std::string &dat_dir, std::string &lbl_dir, std::initializer_list<uint64_t> &qnty_list, uint64_t minibatch = 0, uint64_t padding = 0)
+    bool load_data(std::string &dat_dir, std::string &lbl_dir, set<uint64_t> qnty_list, uint64_t minibatch = 0, uint64_t padding = 0)
     {
         auto pcdr_flag = true;
         if(preprocess(dat_dir, lbl_dir))
         {
-            set<uint64_t> qnty_list_cnt;
             auto elem_cnt = 0, load_qnty = 0;
             if(qnty_list.size() == 1)
             {
-                qnty_list_cnt.init(ORGN_SIZE);
-                load_qnty = (*qnty_list.begin()) * ORGN_SIZE;
+                auto sgl_qnty = qnty_list[IDX_ZERO];
+                load_qnty = sgl_qnty * MNIST_ORGN_SIZE;
+                qnty_list.init(MNIST_ORGN_SIZE);
+                for(auto i=0; i<MNIST_ORGN_SIZE; ++i) qnty_list[i] = sgl_qnty;
             }
-            else if(qnty_list.size() == ORGN_SIZE)
-            {
-                qnty_list_cnt = bagrt::initilaize_net_queue(qnty_list);
-                load_qnty = qnty_list_cnt.sum();
-            }
+            else if(qnty_list.size() == MNIST_ORGN_SIZE) load_qnty = qnty_list.sum();
             else pcdr_flag = false;
             if(pcdr_flag)
             {
                 if(im2col_flag) elem_im2col.init(load_qnty);
                 else elem.init(load_qnty);
                 elem_lbl.init(load_qnty);
+                auto check = MNIST_ORGN_SIZE;
                 while(check)
                 {
                     auto curr_lbl = read_curr_lbl();
-                    if(((qnty_list_cnt[curr_lbl]<load_qnty)&&(qnty_list.size()==1)) || ((qnty_list_cnt[curr_lbl])&&(qnty_list.size()==ORGN_SIZE)))
+                    if(qnty_list[curr_lbl])
                     {
                         if(im2col_flag) elem_im2col[elem_cnt] = read_curr_dat(true, padding, true);
                         else
@@ -337,13 +340,10 @@ public:
                         }
                         elem_lbl[elem_cnt] = curr_lbl;
                         ++ elem_cnt;
-                        if(qnty_list.size() == 1) ++ qnty_list_cnt[curr_lbl];
-                        else if(qnty_list.size()==ORGN_SIZE) -- qnty_list_cnt[curr_lbl];
+                        -- qnty_list[curr_lbl];
+                        if(!qnty_list[curr_lbl]) -- check;
                     }
                     else read_curr_dat(false);
-                    auto check_cnt = 0;
-                    for(check_cnt=0; check_cnt<ORGN_SIZE; ++check_cnt) if((qnty_list_cnt[check_cnt]<load_qnty)&&(qnty_list.size()==1) || ((qnty_list_cnt[check_cnt]>0)&&(qnty_list.size()==ORGN_SIZE))) break;
-                    check = check_cnt != ORGN_SIZE;
                 }
             }
             else pcdr_flag = false;
@@ -369,7 +369,7 @@ public:
         else
         {
             auto cnt = 0;
-            for(auto i=0; i<elem.size(); ++i)
+            for(auto i=0; i<size(); ++i)
             {
                 auto name = '[' + std::to_string(cnt++) + ']' + std::to_string(elem_lbl[i]);
                 bmio::bitmap img;
