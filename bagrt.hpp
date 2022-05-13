@@ -1115,7 +1115,7 @@ protected:
     }
     int next_key(int hash_key, int d) { return (hash_key + d) % val.mem_size(); }
 public:
-    net_map(std::function<uint64_t(_K)> hash_key_func = [](_K idx) { return idx; }) : val(IDX_MAX, IDX_MAX), hash_func(hash_key_func) {}
+    net_map(std::function<uint64_t(_K)> hash_key_func = [](_K idx) { return 0; }) : val(IDX_MAX, IDX_MAX), hash_func(hash_key_func) {}
     net_map(net_map &src) { val.value_copy(src.val); hash_func = src.hash_func; }
     net_map(net_map &&src) { val.value_move(std::move(src.val)); hash_func = std::move(src.hash_func); }
     uint64_t size() { return len; }
