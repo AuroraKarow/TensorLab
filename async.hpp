@@ -254,43 +254,59 @@ public:
     }
 };
 
+class async_control
+{
+public:
+    void thread_sleep()
+    {
+        std::unique_lock<std::mutex> lk(td_mtx);
+        cond.wait(lk);
+    }
+    void thread_wake_all() { cond.notify_all(); }
+    void thread_wake_one() { cond.notify_one(); }
+private:
+    std::mutex td_mtx;
+    std::condition_variable cond;
+};
+
 class async_concurrent
 {
 public:
     async_concurrent(uint64_t batch_size = ASYNC_CORE_CNT) : async_batch_size(batch_size) {}
-    void batch_thread_attach()
-    {
-        {
-            // Wait for preparation of train set or test set in each batch
-            std::unique_lock<std::mutex> lk(td_mtx_batch);
-            cond_batch.wait(lk);
-        }
-    }
+    void batch_thread_attach() { ctrl_batch.thread_sleep(); }
     void batch_thread_detach(std::function<void()> concurr_opt = []{ return; })
     {
         if((++proc_cnt) == async_batch_size)
         {
             concurr_opt();
-            cond_main.notify_one();
+            ctrl_main.thread_wake_one();
         }
     }
     void main_thread_deploy_batch_thread()
     {
-        // Wake up the batch threads for current training
-        cond_batch.notify_all();
-        // Wait for this round
-        {
-            std::unique_lock<std::mutex> lk(td_mtx_main);
-            cond_main.wait(lk);
-            proc_cnt = 0;
-        }
+        ctrl_batch.thread_wake_all();
+        ctrl_main.thread_sleep();
+        proc_cnt = 0;
     }
-    void main_thread_exception() { cond_batch.notify_all(); }
+    void main_thread_exception() { ctrl_batch.thread_wake_all(); }
 private:
     uint64_t async_batch_size = 0;
     async::async_digit<uint64_t> proc_cnt = 0;
-    std::condition_variable cond_batch, cond_main;
-    std::mutex td_mtx_batch, td_mtx_main;
+    async_control ctrl_batch, ctrl_main;
 };
+
+template<typename funcT, typename ... argsT> void set_batch_thread(uint64_t iAsyncBatchSize, async::async_digit<uint64_t> &asyncCnt, funcT &&funcVal, argsT &&...paras)
+{
+    
+    async::async_batch asyncBatch(iAsyncBatchSize);
+    for(auto i=0; i<iAsyncBatchSize; ++i) asyncBatch.set_task(i, 
+    [&asyncCnt, &funcVal]
+    (int idx, argsT &&...args)
+    {
+        funcVal(idx, std::forward<argsT>(args)...);
+        ++ asyncCnt;
+    }, i, std::forward<argsT>(paras)...);
+    while(asyncCnt != iAsyncBatchSize);
+}
 
 ASYNC_END

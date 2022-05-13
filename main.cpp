@@ -18,7 +18,7 @@ int main(int argc, char *argv[], char *envp[])
     // train_set.output_bitmap("E:\\VS Code project data\\MNIST_out\\train", BMIO_BMP);
     MNIST test_set(root_dir + "t10k-images.idx3-ubyte", root_dir + "t10k-labels.idx1-ubyte", true);
     // test_set.output_bitmap("E:\\VS Code project data\\MNIST_out\\test", BMIO_BMP);
-    auto dLearnRate = 0.1;
+    auto dLearnRate = 0.4;
     NetMNISTIm2Col LeNet(0.1, 125, true);
     LeNet.AddLayer<LAYER_CONV_IM2COL>(20, 5, 5, 1, 1, dLearnRate);
     LeNet.AddLayer<LAYER_CONV_BN_IM2COL>();

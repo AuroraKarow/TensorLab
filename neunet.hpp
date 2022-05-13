@@ -1,17 +1,42 @@
 NEUNET_BEGIN
 
+struct NetOutputDataBatch
+{
+    set<uint64_t> setCurrOutputLbl;
+    set<vect> setBatchOutput;
+    NetOutputDataBatch() {}
+    NetOutputDataBatch(NetOutputDataBatch &netSrc) { *this = netSrc; }
+    NetOutputDataBatch(NetOutputDataBatch &&netSrc) { *this = std::move(netSrc); }
+    void operator=(NetOutputDataBatch &netSrc)
+    {
+        setCurrOutputLbl = netSrc.setCurrOutputLbl;
+        setBatchOutput = netSrc.setBatchOutput;
+    }
+    void operator=(NetOutputDataBatch &&netSrc)
+    {
+        setCurrOutputLbl = std::move(netSrc.setCurrOutputLbl);
+        setBatchOutput = std::move(netSrc.setBatchOutput);
+    }
+    void Reset() { setCurrOutputLbl.reset(); setBatchOutput.reset(); }
+    ~NetOutputDataBatch() { Reset(); }
+};
+
 class NetBase
 {
 protected:
     virtual void ValueAssign(NetBase &netSrc)
     { 
-        dNetAcc = netSrc.dNetAcc; iNetBatchSize = netSrc.iNetBatchSize; iCurrLayerNo = netSrc.iCurrLayerNo; iConcurrTask = netSrc.iConcurrTask;
+        dNetAcc = netSrc.dNetAcc; iNetBatchSize = netSrc.iNetBatchSize; iCurrLayerNo = netSrc.iCurrLayerNo; iConcurrLayerTask = netSrc.iConcurrLayerTask;
     }
     virtual bool ForwProp(set<vect> &setInput) { return true; }
     virtual bool BackProp(set<vect> &setInput) { return true; }
     virtual bool ForwProp(vect &vecInput) { return true; }
     virtual bool BackProp(vect &vecInput) { return true; }
     virtual bool Deduce(vect &vecInput) { return true; }
+    void NeuronInit() {}
+    void UpdatePara() {}
+    bool RunLinear() { return true; }
+    bool RunThread() { return true; }
 public:
     virtual void ValueCopy(NetBase &netSrc) { ValueAssign(netSrc); seqLayer = netSrc.seqLayer; }
     virtual void ValueMove(NetBase &&netSrc) { ValueAssign(netSrc); seqLayer = std::move(netSrc.seqLayer); }
@@ -20,7 +45,7 @@ public:
     void operator=(NetBase &netSrc) { ValueCopy(netSrc); }
     void operator=(NetBase &&netSrc) { ValueMove(std::move(netSrc)); }
     
-    NetBase(double dNetAcc = 1e-5, uint64_t iBatchSize = 0, bool bUseMultiThread = true) : dNetAcc(dNetAcc), iNetBatchSize(iBatchSize), asyncConcurr(iBatchSize), bMultiThreadMode(bUseMultiThread) {}
+    NetBase(double dNetAcc = 1e-5, uint64_t iBatchSize = 0, bool bUseMultiThread = true) : dNetAcc(dNetAcc), iNetBatchSize(iBatchSize), bMultiThreadMode(bUseMultiThread), asyncConcurr(iBatchSize), asyncBatch(bUseMultiThread?iBatchSize:IDX_ZERO), asyncPool(bUseMultiThread?IDX_SGL:IDX_ZERO) {}
     /* Add layer with corresponding parameters
      * - LAYER_ACT
      * uint64_t iActFuncType
@@ -69,15 +94,23 @@ public:
      * uint64_t iChannCnt = 1
      */
     template<typename LayerType, typename ... Args,  typename = std::enable_if_t<std::is_base_of_v<_LAYER Layer, LayerType>>> bool AddLayer(Args&& ... pacArgs) { return seqLayer.emplace_back(std::make_shared<LayerType>(std::forward<Args>(pacArgs)...)); }
-    virtual uint64_t Depth() { return 0; }
-    bool Run() { return true; }
+    virtual uint64_t Depth() { return seqLayer.size(); }
+    bool Run()
+    {
+        NeuronInit();
+        if(bMultiThreadMode) return RunThread();
+        else return RunLinear();
+    }
     virtual void Reset() { seqLayer.reset(); }
     ~NetBase() { Reset(); }
 protected:
     double dNetAcc = 1e-5;
-    uint64_t iNetBatchSize = 0, iCurrLayerNo = 0, iConcurrTask = LAYER_OPT_UPDATE_PARA;
+    uint64_t iNetBatchSize = 0, iCurrLayerNo = 0, iConcurrLayerTask = LAYER_OPT_UPDATE_PARA;
     bool bMultiThreadMode = true;
     async::async_concurrent asyncConcurr;
+    async::async_control asyncMainCtrl;
+    async::async_batch asyncBatch;
+    async::async_pool asyncPool;
     NET_SEQ<LAYER_PTR> seqLayer;
 };
 
@@ -198,14 +231,14 @@ private:
             case FC_BN:
                 INSTANCE_DERIVE<LAYER_FC_BN>(seqLayer[i])->setLayerInput[iIdx] = std::move(vecInput);
                 // Detach all batch thread for main thread BN operation
-                asyncConcurr.batch_thread_detach([this, i]{ iCurrLayerNo = i; iConcurrTask = LAYER_OPT_FC_BN_FP; });
+                asyncConcurr.batch_thread_detach([this, i]{ iCurrLayerNo = i; iConcurrLayerTask = LAYER_OPT_FC_BN_FP; });
                 // Attach all batch thread after the BN operation by main thread
                 asyncConcurr.batch_thread_attach();
                 vecInput = std::move(INSTANCE_DERIVE<LAYER_FC_BN>(seqLayer[i])->BNData.setY[iIdx]); break;
             case CONV_BN_IM2COL:
                 INSTANCE_DERIVE<LAYER_CONV_BN_IM2COL>(seqLayer[i])->setLayerInput[iIdx] = std::move(vecInput);
                 // Detach all batch thread for main thread BN operation
-                asyncConcurr.batch_thread_detach([this, i]{ iCurrLayerNo = i; iConcurrTask = LAYER_OPT_CONV_BN_FP; });
+                asyncConcurr.batch_thread_detach([this, i]{ iCurrLayerNo = i; iConcurrLayerTask = LAYER_OPT_CONV_BN_FP; });
                 // Attach all batch thread after the BN operation by main thread
                 asyncConcurr.batch_thread_attach();
                 vecInput = std::move(INSTANCE_DERIVE<LAYER_CONV_BN_IM2COL>(seqLayer[i])->BNData.setIm2ColY[iIdx]); break;
@@ -230,14 +263,14 @@ private:
             case FC_BN:
                 INSTANCE_DERIVE<LAYER_FC_BN>(seqLayer[i])->setLayerOutputGrad[iIdx] = std::move(vecOutput);
                 // Detach all batch thread for main thread BN operation
-                asyncConcurr.batch_thread_detach([this, i]{ iCurrLayerNo = i; iConcurrTask = LAYER_OPT_FC_BN_BP; });
+                asyncConcurr.batch_thread_detach([this, i]{ iCurrLayerNo = i; iConcurrLayerTask = LAYER_OPT_FC_BN_BP; });
                 // Attach all batch thread after the BN operation by main thread
                 asyncConcurr.batch_thread_attach();
                 vecOutput = std::move(INSTANCE_DERIVE<LAYER_FC_BN>(seqLayer[i])->setLayerInputGrad[iIdx]); break;
             case CONV_BN_IM2COL:
                 INSTANCE_DERIVE<LAYER_CONV_BN_IM2COL>(seqLayer[i])->setLayerOutputGrad[iIdx] = std::move(vecOutput);
                 // Detach all batch thread for main thread BN operation
-                asyncConcurr.batch_thread_detach([this, i]{ iCurrLayerNo = i; iConcurrTask = LAYER_OPT_CONV_BN_BP; });
+                asyncConcurr.batch_thread_detach([this, i]{ iCurrLayerNo = i; iConcurrLayerTask = LAYER_OPT_CONV_BN_BP; });
                 // Attach all batch thread after the BN operation by main thread
                 asyncConcurr.batch_thread_attach();
                 vecOutput = std::move(INSTANCE_DERIVE<LAYER_CONV_BN_IM2COL>(seqLayer[i])->setLayerInputGrad[iIdx]); break;
@@ -350,13 +383,12 @@ private:
     }
     bool RunThread(dataset::MNIST &mnistTrainSet, dataset::MNIST &mnistTestSet)
     {
-        set<vect> setOutput(iNetBatchSize);
-        async::async_batch asyncBatch(iNetBatchSize);
+        NetOutputDataBatch netTrainTemp;
         async::async_digit<bool> bComplete = false, // true - exit      false - continue
                                 bException = false, // true - exception false - fine
                                 bTrainMode = true;  // true - train     false - deduce
-        auto iEpoch = 0; double dAcc = 0, dPrec = 0, dRc = 0;
-        for(auto i=0; i<iNetBatchSize; ++i) asyncBatch.set_task(i, [this, &bComplete, &bException, &bTrainMode, &setOutput, &mnistTrainSet, &mnistTestSet] (int idx)
+        // Batch thread        
+        for(auto i=0; i<iNetBatchSize; ++i) asyncBatch.set_task(i, [this, &bComplete, &bException, &bTrainMode, &netTrainTemp, &mnistTrainSet, &mnistTestSet] (int idx)
         {
             while(true)
             {
@@ -366,71 +398,109 @@ private:
                 {
                     if(ForwProp(mnistTrainSet.curr_elem_im2col[idx], idx))
                     {
-                        setOutput[idx] = mnistTrainSet.curr_elem_im2col[idx];
+                        netTrainTemp.setBatchOutput[idx] = mnistTrainSet.curr_elem_im2col[idx];
                         if(!BackProp(mnistTrainSet.curr_elem_im2col[idx], mnistTrainSet.curr_orgn[idx], idx)) bException = true;
                     }
                     else bException = true;
                 }
                 else { if(!Deduce(mnistTestSet.curr_elem_im2col[idx])) bException = true; }
-                asyncConcurr.batch_thread_detach([this]{ iConcurrTask = LAYER_OPT_UPDATE_PARA; });
+                asyncConcurr.batch_thread_detach([this]{ iConcurrLayerTask = LAYER_OPT_UPDATE_PARA; });
             }
         }, i);
+        // Main thread
+        async::async_queue<NetOutputDataBatch> setTrainOutput, setDeduceOutput;
         mnistTrainSet.init_batch(iNetBatchSize);
         mnistTestSet.init_batch(iNetBatchSize);
+        auto iTrainSetBatchCnt = mnistTrainSet.batch_cnt(),
+            iTestSetBatchCnt = mnistTestSet.batch_cnt();
+        asyncPool.add_task([this, &iTrainSetBatchCnt, &iTestSetBatchCnt, &bComplete, &bException, &bTrainMode, &netTrainTemp, &mnistTrainSet, &mnistTestSet, &setTrainOutput, &setDeduceOutput]
+        {
+            do
+            {
+                mnistTrainSet.shuffle_batch();
+                bTrainMode = true;
+                for(auto i=0; i<iTrainSetBatchCnt; ++i)
+                {
+                    mnistTrainSet.init_curr_set(i);
+                    netTrainTemp.setBatchOutput.init(iNetBatchSize);
+                    do
+                    {
+                        asyncConcurr.main_thread_deploy_batch_thread();
+                        if(bException)
+                        {
+                            asyncConcurr.main_thread_exception();
+                            break;
+                        }
+                        switch (iConcurrLayerTask)
+                        {
+                        case LAYER_OPT_FC_BN_FP: INSTANCE_DERIVE<LAYER_FC_BN>(seqLayer[iCurrLayerNo])->ForwPropCore(); break;
+                        case LAYER_OPT_FC_BN_BP:  INSTANCE_DERIVE<LAYER_FC_BN>(seqLayer[iCurrLayerNo])->BackPropCore(); break;
+                        case LAYER_OPT_CONV_BN_FP: INSTANCE_DERIVE<LAYER_CONV_BN_IM2COL>(seqLayer[iCurrLayerNo])->ForwPropCore(); break;
+                        case LAYER_OPT_CONV_BN_BP: INSTANCE_DERIVE<LAYER_CONV_BN_IM2COL>(seqLayer[iCurrLayerNo])->BackPropCore(); break;
+                        case LAYER_OPT_UPDATE_PARA: UpdatePara(i, iTrainSetBatchCnt);
+                        default: break;
+                        }
+                    } while(iConcurrLayerTask != LAYER_OPT_UPDATE_PARA);
+                    if(bException) break;
+                    netTrainTemp.setCurrOutputLbl = std::move(mnistTrainSet.curr_lbl);
+                    setTrainOutput.en_queue(std::move(netTrainTemp));
+                    asyncMainCtrl.thread_wake_one();
+                }
+                if(bException) break;
+                bTrainMode = false;
+                for(auto i=0; i<iTestSetBatchCnt; ++i)
+                {
+                    mnistTestSet.init_curr_set(i);
+                    asyncConcurr.main_thread_deploy_batch_thread();
+                    NetOutputDataBatch netTemp;
+                    netTemp.setBatchOutput = std::move(mnistTestSet.curr_elem_im2col);
+                    netTemp.setCurrOutputLbl = std::move(mnistTestSet.curr_lbl);
+                    setDeduceOutput.en_queue(std::move(netTemp));
+                    asyncMainCtrl.thread_wake_one();
+                }
+            } while (!bComplete);
+        });
+        // Date process
+        double dAcc = 0, dPrec = 0, dRc = 0;
+        auto iEpoch = 0;
         do
         {
             CLOCK_BEGIN(0)
-            mnistTrainSet.shuffle_batch(); ++ iEpoch;
-            bTrainMode = true;
-            for(auto i=0; i<mnistTrainSet.batch_cnt(); ++i)
+            ++ iEpoch;
+            // Train
+            for(auto i=0; i<iTrainSetBatchCnt; ++i)
             {
                 CLOCK_BEGIN(1)
-                mnistTrainSet.init_curr_set(i);
                 dAcc = 0; dPrec = 0; dRc = 0;
-                do
-                {
-                    asyncConcurr.main_thread_deploy_batch_thread();
-                    if(bException)
-                    {
-                        asyncConcurr.main_thread_exception();
-                        return false;
-                    }
-                    switch (iConcurrTask)
-                    {
-                    case LAYER_OPT_FC_BN_FP: INSTANCE_DERIVE<LAYER_FC_BN>(seqLayer[iCurrLayerNo])->ForwPropCore(); break;
-                    case LAYER_OPT_FC_BN_BP:  INSTANCE_DERIVE<LAYER_FC_BN>(seqLayer[iCurrLayerNo])->BackPropCore(); break;
-                    case LAYER_OPT_CONV_BN_FP: INSTANCE_DERIVE<LAYER_CONV_BN_IM2COL>(seqLayer[iCurrLayerNo])->ForwPropCore(); break;
-                    case LAYER_OPT_CONV_BN_BP: INSTANCE_DERIVE<LAYER_CONV_BN_IM2COL>(seqLayer[iCurrLayerNo])->BackPropCore(); break;
-                    case LAYER_OPT_UPDATE_PARA: UpdatePara(i, mnistTrainSet.batch_cnt());
-                    default: break;
-                    }
-                } while(iConcurrTask != LAYER_OPT_UPDATE_PARA);
-                deduce_acc_prec_rc(setOutput, mnistTrainSet.curr_lbl, dNetAcc, dAcc, dPrec, dRc);
+                if(!setTrainOutput.size()) asyncMainCtrl.thread_sleep();
+                if(bException) return false;
+                auto netCurrBatchIdxOutput = setTrainOutput.de_queue();
+                deduce_acc_prec_rc(netCurrBatchIdxOutput.setBatchOutput, netCurrBatchIdxOutput.setCurrOutputLbl, dNetAcc, dAcc, dPrec, dRc); 
                 CLOCK_END(1)
-                EPOCH_TRAIN_STATUS(iEpoch, i+1, mnistTrainSet.batch_cnt(), dAcc, dPrec, dRc, CLOCK_DURATION(1));
+                EPOCH_TRAIN_STATUS(iEpoch, i+1, iTrainSetBatchCnt, dAcc, dPrec, dRc, CLOCK_DURATION(1));
             }
-            bTrainMode = false;
+            // Deduce
             dAcc = 0; dPrec = 0; dRc = 0;
-            for(auto i=0; i<mnistTestSet.batch_cnt(); ++i)
+            for(auto i=0; i<iTestSetBatchCnt; ++i)
             {
-                mnistTestSet.init_curr_set(i);
-                asyncConcurr.main_thread_deploy_batch_thread();
-                EPOCH_DEDUCE_PROG(i+1, mnistTestSet.batch_cnt());
-                deduce_acc_prec_rc(mnistTestSet.curr_elem_im2col, mnistTestSet.curr_lbl, dNetAcc, dAcc, dPrec, dRc, false);
+                if(!setDeduceOutput.size()) asyncMainCtrl.thread_sleep();
+                if(bException) return false;
+                EPOCH_DEDUCE_PROG(i+1, iTestSetBatchCnt);
+                auto netCurrBatchIdxOutput = setDeduceOutput.de_queue();
+                deduce_acc_prec_rc(netCurrBatchIdxOutput.setBatchOutput, netCurrBatchIdxOutput.setCurrOutputLbl, dNetAcc, dAcc, dPrec, dRc, false);
             }
-            CLOCK_END(0)
             dAcc /= mnistTestSet.size();
             dPrec /= mnistTestSet.size();
             dRc /= mnistTestSet.size();
+            CLOCK_END(0)
             EPOCH_DEDUCE_STATUS(iEpoch, dAcc, dPrec, dRc, CLOCK_DURATION(0));
             PRINT_ENTER
-            bComplete = (dRc == mnistTestSet.size());
+            bComplete = (dRc == 1);
         } while (!bComplete);
         return true;
     }
 public:
     NetMNISTIm2Col(double dNetAcc = 1e-5, uint64_t iBatchSize = 0, bool bUseMultiThread = true) : NetBase(dNetAcc, iBatchSize, bUseMultiThread) {}
-    uint64_t Depth() { return seqLayer.size(); }
     bool Run(dataset::MNIST &mnistTrainSet, dataset::MNIST &mnistTestSet)
     {
         NeuronInit(mnistTrainSet);
