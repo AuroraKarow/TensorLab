@@ -406,7 +406,7 @@ public:
             p_val = std::make_unique<_Ty[]>(mem_len);
         }
         else len = src.len;
-        std::memmove(p_val.get(), src.p_val.get(), len*sizeof(_Ty));
+        for(auto i=0; i<len; ++i) p_val[i] = src.p_val[i];
     }
     void value_move(net_sequence &&src)
     {
@@ -432,7 +432,7 @@ public:
         auto p_tool = std::make_unique<_Ty[]>(_mem_size);
         mem_len = _mem_size;
         if(len > mem_len) len = mem_len;
-        std::memmove(p_tool.get(), p_val.get(), len*sizeof(_Ty));
+        for(auto i=0; i<len; ++i) p_tool[i] = std::move(p_val[i]);
         reset_ptr(p_val);
         p_val = std::move(p_tool);
         if(append_size) len = _mem_size;
@@ -492,7 +492,7 @@ public:
             {
                 if(first_idx > second_idx) std::swap(first_idx, second_idx);
                 temp.init(num_cnt(first_idx, second_idx));
-                std::memmove(temp.p_val.get(), p_val.get()+first_idx, sizeof(_Ty)*temp.size());
+                for(auto i=0; i<temp.size(); ++i) temp.p_val[i] = p_val[i+first_idx];
                 return temp;
             }
         }
@@ -502,10 +502,12 @@ public:
     net_sequence unit(net_sequence &val)
     {
         net_sequence u_seq(val.len + len);
-        auto p_dest_front = u_seq.p_val.get(),
-            p_dest_rear = p_dest_front + len;
-        std::memmove(p_dest_front, p_val.get(), len*sizeof(_Ty));
-        std::memmove(p_dest_rear, val.p_val.get(), val.len*sizeof(_Ty));
+        u_seq.len = u_seq.mem_len;
+        for(auto i=0; i<u_seq.len; ++i)
+        {
+            if(i<len) u_seq.p_val[i] = p_val[i];
+            else u_seq.p_val[i] = val.p_val[i-len];
+        }
         return u_seq;
     }
     net_sequence unit_union(net_sequence &val)
