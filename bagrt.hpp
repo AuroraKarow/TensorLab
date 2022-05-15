@@ -72,19 +72,6 @@ template<typename _T> void quick_sort(std::unique_ptr<_T[]> &seq_val, uint64_t b
     }
 }
 
-uint64_t string_hash(std::string &src)
-{
-    auto sum = 0;
-    for(auto i=0; i<src.length(); ++i) sum += i * src[i];
-    return sum;
-}
-uint64_t string_hash(std::wstring &src)
-{
-    auto sum = 0;
-    for(auto i=0; i<src.length(); ++i) sum += i * src[i];
-    return sum;
-}
-
 void reset_ptr() {}
 template<typename T> void reset_ptr(std::unique_ptr<T> &val)
 {
@@ -100,25 +87,25 @@ template<typename arg, typename...args> void reset_ptr(arg &&first, args &&...ot
     reset_ptr(others...);
 }
 
-template<typename _T> bool ptr_insert(_T &src, std::unique_ptr<_T[]> &ptr, int tar_idx, int len, bool mov_sgn = false)
+template<typename T> bool ptr_insert(T &src, std::unique_ptr<T[]> &ptr, int tar_idx, int len, bool mov_sgn = false)
 {
     if(ptr.get() && tar_idx<=len)
     {
-        auto ans = std::make_unique<_T[]>(len+1);
+        auto ans = std::make_unique<T[]>(len+1);
         if(tar_idx)
-            if(tar_idx == len) std::memmove(ans.get(), ptr.get(), len*sizeof(_T));
+            if(tar_idx == len) std::memmove(ans.get(), ptr.get(), len*sizeof(T));
             else
             {
                 auto head_len = tar_idx, rear_len = len - head_len;
                 auto head_ptr = ptr.get(), rear_ptr = head_ptr + head_len,
                     ans_head_ptr = ans.get(), ans_rear_ptr = ans.get() + tar_idx + 1;
-                std::memmove(ans_head_ptr, head_ptr, head_len*sizeof(_T));
-                std::memmove(ans_rear_ptr, rear_ptr, rear_len*sizeof(_T));
+                std::memmove(ans_head_ptr, head_ptr, head_len*sizeof(T));
+                std::memmove(ans_rear_ptr, rear_ptr, rear_len*sizeof(T));
             }
         else
         {
             auto dst = ans.get() + 1;
-            std::memmove(dst, ptr.get(), len*sizeof(_T));
+            std::memmove(dst, ptr.get(), len*sizeof(T));
         }
         if(mov_sgn) ans[tar_idx] = std::move(src);
         else ans[tar_idx] = src;
@@ -127,40 +114,6 @@ template<typename _T> bool ptr_insert(_T &src, std::unique_ptr<_T[]> &ptr, int t
         return true;
     }
     else return false;
-}
-
-template<typename _T> _T ptr_erase(std::unique_ptr<_T[]> &ptr, int tar_idx, int len)
-{
-    auto ans = std::move(ptr[tar_idx]);
-    if(ptr.get() && tar_idx<=len)
-    {
-        auto _ptr = std::make_unique<_T[]>(len-1);
-        if(tar_idx)
-            if(tar_idx == len)
-            {
-                auto p_src = ptr.get();
-                std::memmove(_ptr.get(), p_src, (len-1)*sizeof(_T));
-            }
-            else
-            {
-                auto p_src_front = ptr.get(),
-                    p_src_rear = p_src_front + tar_idx + 1,
-                    p_dest_front = _ptr.get(),
-                    p_dest_rear = p_dest_front + tar_idx;
-                auto len_src_front = tar_idx,
-                    len_src_rear = len - len_src_front - 1;
-                std::memmove(p_dest_front, p_src_front, len_src_front*sizeof(_T));
-                std::memmove(p_dest_rear, p_src_rear, len_src_rear*sizeof(_T));
-            }
-        else
-        {
-            auto p_src = ptr.get() + 1;
-            std::memmove(_ptr.get(), p_src, (len-1)*sizeof(_T));
-        }
-        reset_ptr(ptr);
-        ptr = std::move(_ptr);
-    }
-    return ans;
 }
 
 template<typename _Ty> class net_queue
@@ -457,7 +410,8 @@ public:
     {
         if(idx < len)
         {
-            temp_elem = ptr_erase(p_val, idx, mem_len);
+            temp_elem = std::move(p_val[idx]);
+            for(auto i=idx; i<len; ++i) p_val[i] = std::move(p_val[i+1]);
             -- len;
         }
         return temp_elem;
@@ -467,12 +421,11 @@ public:
         if(idx > len) return false;
         else
         {
-            auto flag = true;
-            if(len+1 == mem_len) realloc(mem_len+IDX_MAX);
-            if(idx == len) p_val[idx] = std::move(_Ty(std::forward<Args>(args)...));
-            else flag = ptr_insert<_Ty>(_Ty(std::forward<Args>(args)...), p_val, idx, mem_len, true);
+            if(len == mem_len) realloc(mem_len+IDX_MAX);
+            for(auto i=len; i>idx; --i) p_val[i] = std::move(p_val[i-1]);
+            p_val[idx] = std::move(_Ty(std::forward<Args>(args)...));
             ++ len;
-            return flag;
+            return true;
         }
     }
     template<typename ... Args> bool emplace_back(Args &&...args) { return insert(len, std::forward<Args>(args)...); }
@@ -1009,7 +962,7 @@ public:
             }
             else reset();
         }
-        return std::move(temp);
+        return temp;
     }
     net_link unit(net_link &src)
     {
@@ -1103,6 +1056,12 @@ public:
             return output;
         }
     };
+    uint64_t string_hash(std::string &src)
+    {
+        auto sum = 0;
+        for(auto i=0; i<src.length(); ++i) sum += i*src[i];
+        return sum;
+    }
 protected:
     int detective(int &cnt, bool &sgn)
     {
@@ -1117,7 +1076,7 @@ protected:
     }
     int next_key(int hash_key, int d) { return (hash_key + d) % val.mem_size(); }
 public:
-    net_map(std::function<uint64_t(_K)> hash_key_func = [](_K idx) { return 0; }) : val(IDX_MAX, IDX_MAX), hash_func(hash_key_func) {}
+    net_map(std::function<uint64_t(_K)> hash_key_func = [](_K idx) { return idx; }) : val(IDX_MAX, IDX_MAX), hash_func(hash_key_func) {}
     net_map(net_map &src) { val.value_copy(src.val); hash_func = src.hash_func; }
     net_map(net_map &&src) { val.value_move(std::move(src.val)); hash_func = std::move(src.hash_func); }
     uint64_t size() { return len; }
